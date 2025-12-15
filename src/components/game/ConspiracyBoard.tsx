@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useEffect } from "react";
 import {
   ReactFlow,
   Background,
@@ -18,7 +18,6 @@ import { RedStringEdge } from "./RedStringEdge";
 import { SanityMeter } from "./SanityMeter";
 import { ConnectionCounter } from "./ConnectionCounter";
 import { Scribble } from "./Scribble";
-import { GameOverlay } from "./GameOverlay";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { CaseHeader } from "./CaseHeader";
 
@@ -35,6 +34,7 @@ const edgeTypes = {
 interface ConspiracyBoardProps {
   caseData: CaseData;
   onBackToMenu: () => void;
+  onGameEnd: (isVictory: boolean, sanityRemaining: number, connectionsFound: number) => void;
 }
 
 // Convert case data to React Flow nodes
@@ -82,7 +82,7 @@ const failureScribbles = [
   "WAKE UP!",
 ];
 
-export const ConspiracyBoard = ({ caseData, onBackToMenu }: ConspiracyBoardProps) => {
+export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
@@ -95,6 +95,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu }: ConspiracyBoardProps
     isGameOver: false,
     isVictory: false,
   });
+
+  // Trigger game end when victory or game over
+  useEffect(() => {
+    if (gameState.isVictory || gameState.isGameOver) {
+      // Small delay for the user to see the final state
+      const timer = setTimeout(() => {
+        onGameEnd(gameState.isVictory, gameState.sanity, gameState.validConnections);
+      }, 800);
+      return () => clearTimeout(timer);
+    }
+  }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, onGameEnd]);
 
   // Add scribble at random position near connection
   const addScribble = useCallback((text: string, x: number, y: number) => {
@@ -217,21 +228,6 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu }: ConspiracyBoardProps
     [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble]
   );
 
-  // Restart game
-  const handleRestart = useCallback(() => {
-    setNodes(createInitialNodes(caseData));
-    setEdges([]);
-    setGameState({
-      sanity: caseData.boardState.sanity,
-      chaosLevel: caseData.boardState.chaosLevel,
-      validConnections: 0,
-      maxConnections: caseData.boardState.maxConnectionsNeeded,
-      scribbles: [],
-      isGameOver: false,
-      isVictory: false,
-    });
-  }, [caseData, setNodes, setEdges]);
-
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
   return (
@@ -286,15 +282,6 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu }: ConspiracyBoardProps
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={gameState.sanity} />
-
-      {/* Game Over / Victory Overlay */}
-      <GameOverlay
-        isGameOver={gameState.isGameOver}
-        isVictory={gameState.isVictory}
-        onRestart={handleRestart}
-        onBackToMenu={onBackToMenu}
-        theTruth={caseData.theTruth}
-      />
     </div>
   );
 };

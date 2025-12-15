@@ -1,27 +1,134 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import { MainMenu } from "@/components/game/MainMenu";
+import { FilingCabinet } from "@/components/game/FilingCabinet";
 import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
-import { CaseSelect } from "@/components/game/CaseSelect";
+import { ResultScreen } from "@/components/game/ResultScreen";
+import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { allCases } from "@/data/cases";
+import { useGameProgress } from "@/hooks/useGameProgress";
 import type { CaseData } from "@/types/game";
 
+type GameScreen = 'menu' | 'files' | 'game' | 'result' | 'gameover';
+
+interface GameResult {
+  isVictory: boolean;
+  sanityRemaining: number;
+  connectionsFound: number;
+}
+
 const Index = () => {
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>('menu');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
+  
+  const { completedCases, completeCase } = useGameProgress();
 
-  if (selectedCase) {
-    return (
-      <ConspiracyBoard
-        caseData={selectedCase}
-        onBackToMenu={() => setSelectedCase(null)}
-      />
-    );
+  const handleStartGame = useCallback(() => {
+    setCurrentScreen('files');
+  }, []);
+
+  const handleSelectCase = useCallback((caseData: CaseData) => {
+    setSelectedCase(caseData);
+    setCurrentScreen('game');
+  }, []);
+
+  const handleGameEnd = useCallback((isVictory: boolean, sanityRemaining: number, connectionsFound: number) => {
+    setGameResult({ isVictory, sanityRemaining, connectionsFound });
+    
+    if (isVictory && selectedCase) {
+      const followersGained = Math.floor(Math.random() * 500) + 100;
+      completeCase(selectedCase.id, followersGained);
+      setCurrentScreen('result');
+    } else {
+      setCurrentScreen('gameover');
+    }
+  }, [selectedCase, completeCase]);
+
+  const handleRetry = useCallback(() => {
+    setGameResult(null);
+    setCurrentScreen('game');
+  }, []);
+
+  const handleNextCase = useCallback(() => {
+    if (!selectedCase) return;
+    
+    const currentIndex = allCases.findIndex(c => c.id === selectedCase.id);
+    const nextCase = allCases[currentIndex + 1];
+    
+    if (nextCase) {
+      setSelectedCase(nextCase);
+      setGameResult(null);
+      setCurrentScreen('game');
+    } else {
+      // No more cases, go back to files
+      setSelectedCase(null);
+      setGameResult(null);
+      setCurrentScreen('files');
+    }
+  }, [selectedCase]);
+
+  const handleBackToMenu = useCallback(() => {
+    setSelectedCase(null);
+    setGameResult(null);
+    setCurrentScreen('menu');
+  }, []);
+
+  const handleBackToFiles = useCallback(() => {
+    setSelectedCase(null);
+    setGameResult(null);
+    setCurrentScreen('files');
+  }, []);
+
+  // Render current screen
+  switch (currentScreen) {
+    case 'menu':
+      return <MainMenu onStartGame={handleStartGame} />;
+    
+    case 'files':
+      return (
+        <FilingCabinet
+          cases={allCases}
+          completedCases={completedCases}
+          onSelectCase={handleSelectCase}
+          onBack={handleBackToMenu}
+        />
+      );
+    
+    case 'game':
+      if (!selectedCase) return null;
+      return (
+        <ConspiracyBoard
+          caseData={selectedCase}
+          onBackToMenu={handleBackToFiles}
+          onGameEnd={handleGameEnd}
+        />
+      );
+    
+    case 'result':
+      if (!selectedCase || !gameResult) return null;
+      return (
+        <ResultScreen
+          caseData={selectedCase}
+          isVictory={gameResult.isVictory}
+          sanityRemaining={gameResult.sanityRemaining}
+          connectionsFound={gameResult.connectionsFound}
+          onNextCase={handleNextCase}
+          onRetry={handleRetry}
+          onBackToMenu={handleBackToFiles}
+        />
+      );
+    
+    case 'gameover':
+      return (
+        <GameOverScreen
+          onRetry={handleRetry}
+          onBackToMenu={handleBackToFiles}
+        />
+      );
+    
+    default:
+      return <MainMenu onStartGame={handleStartGame} />;
   }
-
-  return (
-    <CaseSelect
-      cases={allCases}
-      onSelectCase={setSelectedCase}
-    />
-  );
 };
 
 export default Index;
