@@ -14,6 +14,8 @@ export interface EvidenceNode {
   tags: string[];
   position: Position;
   isRedHerring: boolean;
+  hiddenText?: string; // UV light reveals this hidden message
+  isCritical?: boolean; // If true, discarding this reduces credibility
 }
 
 export interface Scribble {

@@ -1,15 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Volume2, VolumeX, Info, Play } from "lucide-react";
+import { Printer } from "./Printer";
+import { useAudioContext } from "@/contexts/AudioContext";
+import { allCases } from "@/data/cases";
+import type { CaseData } from "@/types/game";
 
 interface MainMenuProps {
   onStartGame: () => void;
+  onSelectCase?: (caseData: CaseData) => void;
+  nextUnlockedCase?: CaseData | null;
 }
 
-export const MainMenu = ({ onStartGame }: MainMenuProps) => {
+export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMenuProps) => {
   const [selectedOption, setSelectedOption] = useState(0);
   const [isZooming, setIsZooming] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
+  const [showPrinter, setShowPrinter] = useState(false);
+  
+  const { initialize, isInitialized, playSFX, isMuted, toggleMute } = useAudioContext();
+
+  // Calculate the next available case
+  const nextCase = nextUnlockedCase || allCases[0];
 
   const menuOptions = [
     { label: "START INVESTIGATION", action: () => handleStart() },
@@ -18,11 +30,43 @@ export const MainMenu = ({ onStartGame }: MainMenuProps) => {
   ];
 
   const handleStart = () => {
+    // Initialize audio on first interaction
+    if (!isInitialized) {
+      initialize();
+    }
+    playSFX("button_click");
+    
     setIsZooming(true);
     setTimeout(() => {
       onStartGame();
     }, 1000);
   };
+
+  const handleAcceptCase = (caseData: CaseData) => {
+    if (onSelectCase) {
+      playSFX("button_click");
+      setIsZooming(true);
+      setTimeout(() => {
+        onSelectCase(caseData);
+      }, 1000);
+    }
+  };
+
+  const handleRejectCase = () => {
+    playSFX("button_click");
+    setShowPrinter(false);
+  };
+
+  // Show printer when returning from a completed case
+  useEffect(() => {
+    if (nextUnlockedCase) {
+      const timer = setTimeout(() => {
+        setShowPrinter(true);
+        playSFX("printer_start");
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [nextUnlockedCase, playSFX]);
 
   return (
     <motion.div 
@@ -90,6 +134,15 @@ export const MainMenu = ({ onStartGame }: MainMenuProps) => {
           </motion.div>
         </div>
       </div>
+
+      {/* Dot Matrix Printer */}
+      {showPrinter && nextCase && (
+        <Printer
+          nextCase={nextCase}
+          onAcceptCase={handleAcceptCase}
+          onRejectCase={handleRejectCase}
+        />
+      )}
 
       {/* Stack of papers - right side */}
       <div className="absolute bottom-[42%] right-[12%] transform rotate-6">
@@ -248,15 +301,23 @@ export const MainMenu = ({ onStartGame }: MainMenuProps) => {
       </motion.div>
 
       {/* Ambient sounds indicator */}
-      <div className="absolute bottom-4 right-4 text-muted-foreground/50 text-xs font-mono flex items-center gap-2">
+      <motion.button
+        className="absolute bottom-4 right-4 text-muted-foreground/50 text-xs font-mono flex items-center gap-2 cursor-pointer hover:text-muted-foreground transition-colors"
+        onClick={() => {
+          if (!isInitialized) initialize();
+          toggleMute();
+        }}
+        whileHover={{ scale: 1.05 }}
+        whileTap={{ scale: 0.95 }}
+      >
         <motion.div
-          animate={{ opacity: [0.3, 0.7, 0.3] }}
-          transition={{ duration: 4, repeat: Infinity }}
+          animate={{ opacity: isMuted ? 0.3 : [0.3, 0.7, 0.3] }}
+          transition={{ duration: 4, repeat: isMuted ? 0 : Infinity }}
         >
-          <Volume2 className="w-4 h-4" />
+          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
         </motion.div>
-        <span>FAN NOISE: ON</span>
-      </div>
+        <span>AUDIO: {isMuted ? "OFF" : "ON"}</span>
+      </motion.button>
 
       {/* Credits modal */}
       <AnimatePresence>
