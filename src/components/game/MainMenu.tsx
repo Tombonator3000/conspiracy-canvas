@@ -6,7 +6,7 @@ import { SettingsModal } from "./SettingsModal";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { allCases } from "@/data/cases";
 import type { CaseData } from "@/types/game";
-import desktopBg from "@/assets/desktop_bg.jpg";
+import desktopBg from "@/assets/desktop_bg.jpeg";
 
 interface MainMenuProps {
   onStartGame: () => void;
@@ -77,18 +77,19 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
   return (
     <>
       <motion.div 
-        className="relative w-full h-screen h-[100dvh] overflow-hidden"
-        style={{
-          backgroundImage: `url(${desktopBg})`,
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
+        className="relative w-full h-screen h-[100dvh] overflow-hidden bg-[hsl(30,15%,8%)]"
         animate={{
           scale: isZooming ? 3 : 1,
           opacity: isZooming ? 0 : 1,
         }}
         transition={{ duration: 1, ease: "easeInOut" }}
       >
+        {/* Background Image */}
+        <img 
+          src={desktopBg} 
+          alt="Desk background"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+        />
         {/* Dot Matrix Printer */}
         {showPrinter && nextCase && (
           <Printer
@@ -100,15 +101,15 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
 
         {/* Terminal Menu - positioned to fit inside the monitor */}
         <div 
-          className="absolute flex items-center justify-center"
+          className="absolute flex items-center justify-center z-10"
           style={{
-            top: '15%',
+            top: '22%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '28%',
-            height: '42%',
-            minWidth: '280px',
-            maxWidth: '400px',
+            width: '42%',
+            height: '36%',
+            minWidth: '320px',
+            maxWidth: '580px',
           }}
         >
           {/* CRT Scanline Overlay */}
