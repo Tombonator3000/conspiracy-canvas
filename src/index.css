@@ -222,43 +222,42 @@
     stroke-linecap: round;
   }
 
-  /* Handle styles - small visual, large touch area */
-  .react-flow__handle {
-    @apply w-3 h-3 rounded-full border-2;
-    background: hsl(var(--primary));
-    border-color: hsl(var(--card));
-    /* Large touch area for mobile - 44px is Apple's recommended minimum */
-    min-width: 44px;
-    min-height: 44px;
-    /* Keep visual small via background */
-    background-size: 12px 12px;
-    background-position: center;
-    background-repeat: no-repeat;
-    /* Make the actual handle circle centered */
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  /* Touch-friendly handles for mobile */
+  .touch-handle {
+    width: 24px !important;
+    height: 24px !important;
+    background: hsl(var(--primary)) !important;
+    border: 3px solid hsl(var(--card)) !important;
+    border-radius: 50% !important;
+    cursor: crosshair !important;
+    z-index: 100 !important;
+    /* Pulse animation to make it obvious */
+    box-shadow: 0 0 0 4px hsl(var(--primary) / 0.3) !important;
   }
 
-  .react-flow__handle::after {
-    content: '';
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background: hsl(var(--primary));
-    border: 2px solid hsl(var(--card));
-    box-shadow: 0 0 0 2px hsl(var(--primary) / 0.3);
+  .touch-handle-top {
+    top: -12px !important;
   }
 
-  .react-flow__handle:hover::after,
-  .react-flow__handle:active::after {
-    background: hsl(var(--string-glow));
-    box-shadow: 0 0 8px 2px hsl(var(--string-glow) / 0.6);
+  .touch-handle-bottom {
+    bottom: -12px !important;
   }
 
-  /* Connection line while dragging */
+  .touch-handle:hover,
+  .touch-handle:active {
+    background: hsl(var(--string-glow)) !important;
+    box-shadow: 0 0 12px 6px hsl(var(--string-glow) / 0.6) !important;
+    transform: scale(1.2);
+  }
+
+  /* Connection line while dragging - make it very visible */
   .react-flow__connection-line {
-    stroke: hsl(var(--string-red));
-    stroke-width: 3px;
+    stroke: hsl(var(--string-red)) !important;
+    stroke-width: 4px !important;
+  }
+
+  /* Existing connection edges */
+  .react-flow__edge-path {
+    stroke-linecap: round;
   }
 }

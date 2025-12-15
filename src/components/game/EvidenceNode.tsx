@@ -130,17 +130,12 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Target handle - large touch area, small visual */}
+      {/* Target handle - visible on mobile */}
       <Handle
         type="target"
         position={Position.Top}
-        className="!w-3 !h-3 !bg-primary !border-card !-top-1.5"
-        style={{
-          touchAction: 'none',
-        }}
+        className="touch-handle touch-handle-top"
       />
-      {/* Invisible large touch target for mobile */}
-      <div className="absolute -top-5 left-1/2 -translate-x-1/2 w-10 h-10 pointer-events-none" />
       
       <motion.div
         animate={{
@@ -153,17 +148,12 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
         {renderNodeContent()}
       </motion.div>
       
-      {/* Source handle - large touch area, small visual */}
+      {/* Source handle - visible on mobile */}
       <Handle
         type="source"
         position={Position.Bottom}
-        className="!w-3 !h-3 !bg-primary !border-card !-bottom-1.5"
-        style={{
-          touchAction: 'none',
-        }}
+        className="touch-handle touch-handle-bottom"
       />
-      {/* Invisible large touch target for mobile */}
-      <div className="absolute -bottom-5 left-1/2 -translate-x-1/2 w-10 h-10 pointer-events-none" />
     </motion.div>
   );
 });
