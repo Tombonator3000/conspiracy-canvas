@@ -18,6 +18,7 @@ export const case004: CaseData = {
     maxConnectionsNeeded: 4
   },
   nodes: [
+    // ===== REAL EVIDENCE (30%) =====
     {
       id: "ev_cloud_disk",
       type: "photo",
@@ -26,7 +27,9 @@ export const case004: CaseData = {
       description: "Cloud photographed over Seattle. Shape: FLOPPY DISK. Coincidence?",
       tags: ["SKY", "DATA", "STORAGE"],
       position: { x: 100, y: 80 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "3.5 INCH CUMULUS",
+      isCritical: true
     },
     {
       id: "ev_rain_article",
@@ -36,7 +39,9 @@ export const case004: CaseData = {
       description: "Record rainfall detected 2 hours after every iPhone launch. EVERY. SINGLE. ONE.",
       tags: ["RAIN", "TECH", "UPLOAD"],
       position: { x: 480, y: 100 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "CORR: 0.99",
+      isCritical: true
     },
     {
       id: "ev_server_smoke",
@@ -46,7 +51,9 @@ export const case004: CaseData = {
       description: "Server farm with smokestack going directly into clouds. They call it 'cooling'. WE CALL IT UPLOADING.",
       tags: ["SMOKE", "CLOUD", "DATA"],
       position: { x: 300, y: 350 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "H2O + 01100100",
+      isCritical: true
     },
     {
       id: "ev_dropbox",
@@ -56,8 +63,13 @@ export const case004: CaseData = {
       description: "The name is a confession. They DROP the data from a BOX in the sky!",
       tags: ["STORAGE", "RAIN", "NAME"],
       position: { x: 550, y: 320 },
-      isRedHerring: false
+      isRedHerring: false,
+      isCritical: true
     },
+
+    // ===== RED HERRINGS & JUNK (70%) =====
+    
+    // Distractions
     {
       id: "ev_umbrella",
       type: "photo",
@@ -66,6 +78,108 @@ export const case004: CaseData = {
       description: "Why does a 'pharmaceutical company' have an umbrella logo? THEY KNOW.",
       tags: ["SHIELD", "GAME"],
       position: { x: 80, y: 380 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_weather_app",
+      type: "document",
+      title: "Weather App Screenshot",
+      contentUrl: null,
+      description: "70% chance of rain. 70% of data uploads happen at night. COINCIDENCE?!",
+      tags: ["APP", "PERCENT"],
+      position: { x: 620, y: 200 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_ethernet",
+      type: "sticky_note",
+      title: "Ethernet Cable",
+      contentUrl: null,
+      description: "Blue cable. Blue sky. Blue screen of death. IT'S ALL BLUE.",
+      tags: ["WIRE", "BLUE"],
+      position: { x: 200, y: 200 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_icloud_terms",
+      type: "document",
+      title: "iCloud Terms of Service",
+      contentUrl: null,
+      description: "Page 847: 'We reserve the right to...' NOBODY READS THIS.",
+      tags: ["LEGAL", "TERMS"],
+      position: { x: 400, y: 200 },
+      isRedHerring: true
+    },
+
+    // Pure Trash
+    {
+      id: "ev_coffee_ring",
+      type: "sticky_note",
+      title: "Coffee Ring Stain",
+      contentUrl: null,
+      description: "Circular. Like a cloud. Or just my morning coffee.",
+      tags: ["STAIN", "CIRCLE"],
+      position: { x: 150, y: 280 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_usb_stick",
+      type: "sticky_note",
+      title: "Old USB Stick",
+      contentUrl: null,
+      description: "4GB. Contains vacation photos from 2009. Unrelated.",
+      tags: ["STORAGE", "OLD"],
+      position: { x: 650, y: 380 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_power_bill",
+      type: "document",
+      title: "Power Bill",
+      contentUrl: null,
+      description: "High electricity usage. Because I leave everything on.",
+      tags: ["ELECTRIC", "EXPENSE"],
+      position: { x: 500, y: 420 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_airplane_photo",
+      type: "photo",
+      title: "Airplane Window Shot",
+      contentUrl: null,
+      description: "Flew through clouds. Data transfer? Or just turbulence?",
+      tags: ["PLANE", "VIEW"],
+      position: { x: 250, y: 450 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_rain_jacket",
+      type: "sticky_note",
+      title: "Rain Jacket Tag",
+      contentUrl: null,
+      description: "Waterproof. Data-proof? Research needed.",
+      tags: ["CLOTHING", "WET"],
+      position: { x: 100, y: 480 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_wifi_password",
+      type: "sticky_note",
+      title: "WiFi Password Note",
+      contentUrl: null,
+      description: "password123. Very secure. Very cloud.",
+      tags: ["NETWORK", "INSECURE"],
+      position: { x: 580, y: 480 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_puddle_photo",
+      type: "photo",
+      title: "Puddle Reflection",
+      contentUrl: null,
+      description: "Water on ground. DATA on ground? No, just water.",
+      tags: ["WATER", "GROUND"],
+      position: { x: 350, y: 480 },
       isRedHerring: true
     }
   ],
@@ -76,6 +190,8 @@ export const case004: CaseData = {
     "DOWNLOAD = PRECIPITATION",
     "BILL KNOWS",
     "CHECK THE HUMIDITY",
-    "CTRL+ALT+RAIN"
+    "CTRL+ALT+RAIN",
+    "NIMBUS STORAGE",
+    "CUMULO-DATA"
   ]
 };

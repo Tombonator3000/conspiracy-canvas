@@ -8,6 +8,7 @@ interface EvidenceNodeData extends EvidenceNodeType {
   isShaking?: boolean;
   isPulsing?: boolean;
   isUVEnabled?: boolean;
+  rotation?: number;
 }
 
 interface EvidenceNodeProps {
@@ -137,12 +138,18 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
     }
   };
 
+  // Use pre-calculated rotation from board, with shake animation override
+  const baseRotation = data.rotation || 0;
+  
   return (
     <motion.div
       className="relative"
+      style={{ rotate: `${baseRotation}deg` }}
       animate={{
-        scale: isHovered ? 1.02 : 1,
-        rotate: data.isShaking ? [0, -2, 2, -2, 2, 0] : 0,
+        scale: isHovered ? 1.05 : 1,
+        rotate: data.isShaking 
+          ? [baseRotation, baseRotation - 3, baseRotation + 3, baseRotation - 3, baseRotation + 3, baseRotation] 
+          : baseRotation,
       }}
       transition={{
         scale: { duration: 0.2 },

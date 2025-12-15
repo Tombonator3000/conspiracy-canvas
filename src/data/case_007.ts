@@ -18,6 +18,7 @@ export const case007: CaseData = {
     maxConnectionsNeeded: 5
   },
   nodes: [
+    // ===== REAL EVIDENCE (30%) =====
     {
       id: "ev_iphone_1912",
       type: "photo",
@@ -26,7 +27,9 @@ export const case007: CaseData = {
       description: "Grainy 1912 photo. Man in background holding rectangular object. iPhone? IN 1912?!",
       tags: ["TECH", "OLD", "PHONE"],
       position: { x: 100, y: 80 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "MODEL: 15 PRO",
+      isCritical: true
     },
     {
       id: "ev_passenger_list",
@@ -36,7 +39,9 @@ export const case007: CaseData = {
       description: "Names include: 'M. McFly', 'Dr. E. Brown', 'Sarah Connor'. COINCIDENCE?!",
       tags: ["NAME", "TIME", "LIST"],
       position: { x: 520, y: 100 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "DECK 88",
+      isCritical: true
     },
     {
       id: "ev_iceberg",
@@ -46,7 +51,9 @@ export const case007: CaseData = {
       description: "Enhanced photo shows iceberg is too smooth. Plastic prop? Hologram?",
       tags: ["ICE", "FAKE", "PROP"],
       position: { x: 300, y: 320 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "MADE IN 2087",
+      isCritical: true
     },
     {
       id: "ev_souvenirs",
@@ -56,7 +63,9 @@ export const case007: CaseData = {
       description: "Listed cargo: 'Future memorabilia - 50 tons'. Ship capacity: 46 tons excess. THE MATH DOESN'T LIE.",
       tags: ["WEIGHT", "TIME", "CARGO"],
       position: { x: 550, y: 340 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "50T FUTURE JUNK",
+      isCritical: true
     },
     {
       id: "ev_band",
@@ -66,8 +75,13 @@ export const case007: CaseData = {
       description: "Band kept playing as ship sank. PROFESSIONAL musicians? Or FUTURE DJs with Spotify?",
       tags: ["MUSIC", "TIME", "CALM"],
       position: { x: 100, y: 400 },
-      isRedHerring: false
+      isRedHerring: false,
+      isCritical: true
     },
+
+    // ===== RED HERRINGS & JUNK (70%) =====
+    
+    // Distractions
     {
       id: "ev_movie",
       type: "photo",
@@ -76,6 +90,108 @@ export const case007: CaseData = {
       description: "James Cameron's 'Titanic' - Documentary? Or LEAKED FOOTAGE from a future tourist's camera?",
       tags: ["FILM", "LEAK"],
       position: { x: 420, y: 430 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_lifeboat",
+      type: "document",
+      title: "Lifeboat Inventory",
+      contentUrl: null,
+      description: "Not enough lifeboats. Cost cutting? Or they KNEW some passengers could time-travel away?",
+      tags: ["SAFETY", "MISSING"],
+      position: { x: 650, y: 200 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_ocean_temp",
+      type: "document",
+      title: "Ocean Temperature Log",
+      contentUrl: null,
+      description: "Water was cold. Very cold. Consistent with... being in the ocean.",
+      tags: ["WATER", "COLD"],
+      position: { x: 200, y: 200 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_dinner_menu",
+      type: "document",
+      title: "First Class Menu",
+      contentUrl: null,
+      description: "Oysters, Filet Mignon, Waldorf Pudding. No avocado toast. PROVES nothing.",
+      tags: ["FOOD", "FANCY"],
+      position: { x: 400, y: 180 },
+      isRedHerring: true
+    },
+
+    // Pure Trash
+    {
+      id: "ev_postcard",
+      type: "sticky_note",
+      title: "Souvenir Postcard",
+      contentUrl: null,
+      description: "'Wish you were here!' - Generic message. From the future? Unclear.",
+      tags: ["MAIL", "TOURIST"],
+      position: { x: 150, y: 280 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_ticket_stub",
+      type: "sticky_note",
+      title: "Ticket Stub",
+      contentUrl: null,
+      description: "Third class. $15. Expensive for 1912. Or CHEAP for time travel.",
+      tags: ["TICKET", "PRICE"],
+      position: { x: 600, y: 280 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_ship_diagram",
+      type: "document",
+      title: "Ship Blueprint",
+      contentUrl: null,
+      description: "Shows all decks. No secret time machine room marked. SUSPICIOUS.",
+      tags: ["BLUEPRINT", "SHIP"],
+      position: { x: 250, y: 450 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_newspaper",
+      type: "document",
+      title: "1912 Newspaper",
+      contentUrl: null,
+      description: "'UNSINKABLE SHIP SINKS' - They called it unsinkable. HOW DID THEY KNOW? (Marketing.)",
+      tags: ["NEWS", "HEADLINE"],
+      position: { x: 500, y: 480 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_compass",
+      type: "sticky_note",
+      title: "Broken Compass",
+      contentUrl: null,
+      description: "Points in wrong direction. Magnetic interference from TIME PORTAL? (Or just broken.)",
+      tags: ["NAVIGATION", "BROKEN"],
+      position: { x: 650, y: 400 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_violin",
+      type: "photo",
+      title: "Violin Photo",
+      contentUrl: null,
+      description: "Recovered from wreck. Music plays emotions. Emotions are timeless. Therefore... NOTHING.",
+      tags: ["MUSIC", "INSTRUMENT"],
+      position: { x: 80, y: 480 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_morse_code",
+      type: "document",
+      title: "SOS Transcript",
+      contentUrl: null,
+      description: "Distress signal sent. Normal procedure. Or FUTURE BLUETOOTH?! (No. Radio.)",
+      tags: ["SIGNAL", "HELP"],
+      position: { x: 350, y: 250 },
       isRedHerring: true
     }
   ],
@@ -87,6 +203,8 @@ export const case007: CaseData = {
     "ROSE HAD A SMARTPHONE",
     "JACK WAS FROM 2045",
     "GREAT SCOTT!",
-    "TEMPORAL OVERLOAD"
+    "TEMPORAL OVERLOAD",
+    "WHERE'S THE DELOREAN?",
+    "FLUX CAPACITOR WATERLOGGED"
   ]
 };
