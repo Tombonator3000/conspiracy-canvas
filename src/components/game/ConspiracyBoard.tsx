@@ -10,8 +10,11 @@ import {
   useNodesState,
   useEdgesState,
   BackgroundVariant,
+  ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { Hand, Cable } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { EvidenceNodeComponent } from "./EvidenceNode";
 import { RedStringEdge } from "./RedStringEdge";
@@ -38,14 +41,21 @@ interface ConspiracyBoardProps {
 }
 
 // Convert case data to React Flow nodes
-const createInitialNodes = (caseData: CaseData): Node[] => {
+const createInitialNodes = (caseData: CaseData, isDraggable: boolean): Node[] => {
   return caseData.nodes.map((node) => ({
     id: node.id,
     type: "evidence",
     position: node.position,
     data: { ...node },
-    draggable: true,
+    draggable: isDraggable,
   }));
+};
+
+// Connection line style - red string while dragging
+const connectionLineStyle = {
+  stroke: 'hsl(350, 80%, 50%)',
+  strokeWidth: 3,
+  strokeLinecap: 'round' as const,
 };
 
 // Validate connection based on shared tags
@@ -83,7 +93,10 @@ const failureScribbles = [
 ];
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData));
+  // Mobile mode: 'pan' allows moving around, 'connect' locks nodes for easier connecting
+  const [interactionMode, setInteractionMode] = useState<'pan' | 'connect'>('pan');
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan'));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
   const [gameState, setGameState] = useState<GameState>({
@@ -95,6 +108,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     isGameOver: false,
     isVictory: false,
   });
+
+  // Update node draggability when mode changes
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        draggable: interactionMode === 'pan',
+      }))
+    );
+  }, [interactionMode, setNodes]);
 
   // Trigger game end when victory or game over
   useEffect(() => {
@@ -248,6 +271,33 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           current={gameState.validConnections}
           max={gameState.maxConnections}
         />
+        
+        {/* Mobile Mode Toggle */}
+        <div className="bg-secondary/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-border">
+          <span className="text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-2">
+            Mode
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant={interactionMode === 'pan' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setInteractionMode('pan')}
+              className="flex-1 gap-1 text-xs"
+            >
+              <Hand className="w-4 h-4" />
+              Move
+            </Button>
+            <Button
+              variant={interactionMode === 'connect' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setInteractionMode('connect')}
+              className="flex-1 gap-1 text-xs"
+            >
+              <Cable className="w-4 h-4" />
+              Link
+            </Button>
+          </div>
+        </div>
       </div>
 
       {/* Scribbles */}
@@ -268,6 +318,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         fitView
         fitViewOptions={{ padding: 0.2 }}
         className="!bg-transparent"
+        // Mobile touch optimizations
+        connectionLineStyle={connectionLineStyle}
+        connectionLineType={ConnectionLineType.Straight}
+        panOnScroll={true}
+        panOnDrag={interactionMode === 'pan'}
+        zoomOnPinch={true}
+        zoomOnScroll={true}
+        selectNodesOnDrag={false}
       >
         <Background
           variant={BackgroundVariant.Dots}
