@@ -10,7 +10,7 @@ export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
   const isComplete = current >= max;
 
   return (
-    <div className="flex items-center gap-3 bg-secondary/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-border">
+    <div className="flex items-center gap-2 sm:gap-3 bg-secondary/80 backdrop-blur-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-border">
       <motion.div
         animate={{
           scale: isComplete ? [1, 1.2, 1] : 1,
@@ -19,21 +19,21 @@ export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
         transition={{ duration: 0.5 }}
       >
         {isComplete ? (
-          <Target className="w-5 h-5 text-sanity-green" />
+          <Target className="w-4 h-4 sm:w-5 sm:h-5 text-sanity-green" />
         ) : (
-          <Link className="w-5 h-5 text-primary" />
+          <Link className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
         )}
       </motion.div>
       
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider">
+      <div className="flex flex-col gap-0.5 sm:gap-1">
+        <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider hidden sm:block">
           Connections
         </span>
-        <div className="flex gap-1">
+        <div className="flex gap-0.5 sm:gap-1">
           {Array.from({ length: max }).map((_, i) => (
             <motion.div
               key={i}
-              className={`w-4 h-2 rounded-sm ${
+              className={`w-2 sm:w-4 h-1.5 sm:h-2 rounded-sm ${
                 i < current ? "bg-primary" : "bg-background border border-border"
               }`}
               initial={false}
@@ -46,7 +46,7 @@ export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
         </div>
       </div>
       
-      <span className={`font-marker text-lg ${isComplete ? "text-sanity-green" : "text-foreground"}`}>
+      <span className={`font-marker text-sm sm:text-lg ${isComplete ? "text-sanity-green" : "text-foreground"}`}>
         {current}/{max}
       </span>
     </div>

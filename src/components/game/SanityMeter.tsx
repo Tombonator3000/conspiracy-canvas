@@ -12,7 +12,7 @@ export const SanityMeter = ({ sanity, maxSanity = 100 }: SanityMeterProps) => {
   const isCritical = percentage < 15;
 
   return (
-    <div className="flex items-center gap-3 bg-secondary/80 backdrop-blur-sm px-4 py-2 rounded-lg border border-border">
+    <div className="flex items-center gap-2 sm:gap-3 bg-secondary/80 backdrop-blur-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-border">
       <motion.div
         animate={{
           rotate: isCritical ? [0, -10, 10, -10, 10, 0] : 0,
@@ -24,17 +24,17 @@ export const SanityMeter = ({ sanity, maxSanity = 100 }: SanityMeterProps) => {
         }}
       >
         {isLow ? (
-          <AlertTriangle className={`w-5 h-5 ${isCritical ? "text-destructive animate-flicker" : "text-accent"}`} />
+          <AlertTriangle className={`w-4 h-4 sm:w-5 sm:h-5 ${isCritical ? "text-destructive animate-flicker" : "text-accent"}`} />
         ) : (
-          <Brain className="w-5 h-5 text-foreground" />
+          <Brain className="w-4 h-4 sm:w-5 sm:h-5 text-foreground" />
         )}
       </motion.div>
       
-      <div className="flex flex-col gap-1">
-        <span className="text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider">
+      <div className="flex flex-col gap-0.5 sm:gap-1">
+        <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider hidden sm:block">
           Sanity Level
         </span>
-        <div className="w-32 h-3 bg-background rounded-full overflow-hidden border border-border">
+        <div className="w-16 sm:w-32 h-2 sm:h-3 bg-background rounded-full overflow-hidden border border-border">
           <motion.div
             className="h-full rounded-full"
             style={{
@@ -55,7 +55,7 @@ export const SanityMeter = ({ sanity, maxSanity = 100 }: SanityMeterProps) => {
       </div>
       
       <motion.span 
-        className={`font-mono text-sm font-bold min-w-[3ch] ${
+        className={`font-mono text-xs sm:text-sm font-bold min-w-[2ch] sm:min-w-[3ch] ${
           isCritical ? "text-destructive" : isLow ? "text-accent" : "text-foreground"
         }`}
         animate={{
