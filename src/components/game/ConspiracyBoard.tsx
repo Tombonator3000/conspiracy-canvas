@@ -43,15 +43,23 @@ interface ConspiracyBoardProps {
   onGameEnd: (isVictory: boolean, sanityRemaining: number, connectionsFound: number) => void;
 }
 
-// Convert case data to React Flow nodes
+// Convert case data to React Flow nodes with random rotation and z-index for chaos
 const createInitialNodes = (caseData: CaseData, isDraggable: boolean, isUVEnabled: boolean): Node[] => {
-  return caseData.nodes.map((node) => ({
-    id: node.id,
-    type: "evidence",
-    position: node.position,
-    data: { ...node, isUVEnabled },
-    draggable: isDraggable,
-  }));
+  return caseData.nodes.map((node, index) => {
+    // Random rotation between -15 and 15 degrees for that messy board feel
+    const rotation = Math.random() * 30 - 15;
+    // Random z-index so nodes overlap realistically
+    const zIndex = Math.floor(Math.random() * 100);
+    
+    return {
+      id: node.id,
+      type: "evidence",
+      position: node.position,
+      data: { ...node, isUVEnabled, rotation },
+      draggable: isDraggable,
+      zIndex,
+    };
+  });
 };
 
 // Connection line style - red string while dragging

@@ -18,6 +18,7 @@ export const case005: CaseData = {
     maxConnectionsNeeded: 4
   },
   nodes: [
+    // ===== REAL EVIDENCE (30%) =====
     {
       id: "ev_cat_router",
       type: "photo",
@@ -26,7 +27,9 @@ export const case005: CaseData = {
       description: "Cat sitting on router. They claim it's 'warm'. It's actually INDUCTIVE CHARGING.",
       tags: ["CAT", "HEAT", "WIFI"],
       position: { x: 120, y: 100 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "2.4GHz PURR",
+      isCritical: true
     },
     {
       id: "ev_purr_frequency",
@@ -36,7 +39,9 @@ export const case005: CaseData = {
       description: "Cat purring measured at exactly 5GHz. THE SAME AS YOUR ROUTER. Wake up.",
       tags: ["SOUND", "FREQUENCY", "5G"],
       position: { x: 500, y: 80 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "5.000 GHz EXACT",
+      isCritical: true
     },
     {
       id: "ev_cat_eyes",
@@ -46,7 +51,9 @@ export const case005: CaseData = {
       description: "Cat staring at phone screen. Reading your texts? Or TRANSMITTING them?",
       tags: ["EYES", "DATA", "CAT"],
       position: { x: 300, y: 340 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "UPLOAD: 99%",
+      isCritical: true
     },
     {
       id: "ev_ancient_egypt",
@@ -56,8 +63,13 @@ export const case005: CaseData = {
       description: "Egyptians worshipped cats. Egypt built pyramids. Pyramids = ancient cell towers?",
       tags: ["HISTORY", "WIFI", "TOWER"],
       position: { x: 550, y: 350 },
-      isRedHerring: false
+      isRedHerring: false,
+      isCritical: true
     },
+
+    // ===== RED HERRINGS & JUNK (70%) =====
+    
+    // Distractions
     {
       id: "ev_dog",
       type: "photo",
@@ -67,14 +79,118 @@ export const case005: CaseData = {
       tags: ["PET", "INNOCENT"],
       position: { x: 80, y: 380 },
       isRedHerring: true
+    },
+    {
+      id: "ev_fish_tank",
+      type: "sticky_note",
+      title: "Fish Tank Note",
+      contentUrl: null,
+      description: "Fish just swim in circles. Probably not uploading data. PROBABLY.",
+      tags: ["AQUATIC", "CIRCLE"],
+      position: { x: 650, y: 180 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_cat_food",
+      type: "document",
+      title: "Cat Food Label",
+      contentUrl: null,
+      description: "Ingredients: Chicken, Tuna, WiFi-boosting minerals. Wait, that last one...",
+      tags: ["FOOD", "NUTRITION"],
+      position: { x: 200, y: 200 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_5g_tower",
+      type: "photo",
+      title: "5G Tower Photo",
+      contentUrl: null,
+      description: "Regular 5G tower. No cats nearby. SUSPICIOUS ABSENCE.",
+      tags: ["TOWER", "ABSENT"],
+      position: { x: 420, y: 250 },
+      isRedHerring: true
+    },
+
+    // Pure Trash
+    {
+      id: "ev_lint_roller",
+      type: "sticky_note",
+      title: "Lint Roller",
+      contentUrl: null,
+      description: "For removing cat hair. Or for collecting DNA SAMPLES?! (No, just hair.)",
+      tags: ["CLEANING", "HAIR"],
+      position: { x: 150, y: 450 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_scratching_post",
+      type: "photo",
+      title: "Scratching Post",
+      contentUrl: null,
+      description: "Destroyed by claws. Message in the scratches? Just random marks.",
+      tags: ["FURNITURE", "MARKS"],
+      position: { x: 350, y: 450 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_phone_bill",
+      type: "document",
+      title: "Phone Bill",
+      contentUrl: null,
+      description: "Data usage spike when cat purrs. Correlation? Actually just Netflix.",
+      tags: ["BILL", "DATA"],
+      position: { x: 600, y: 420 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_cat_toy",
+      type: "sticky_note",
+      title: "Cat Toy Mouse",
+      contentUrl: null,
+      description: "Squeaky toy. Makes noise at 440Hz. A440 = orchestra tuning. ORCHESTRATED?!",
+      tags: ["TOY", "SOUND"],
+      position: { x: 250, y: 280 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_litter_box",
+      type: "sticky_note",
+      title: "Litter Box Receipt",
+      contentUrl: null,
+      description: "Premium clumping litter. $24.99. Absorbs... WHAT exactly?",
+      tags: ["WASTE", "PURCHASE"],
+      position: { x: 500, y: 480 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_catnip",
+      type: "document",
+      title: "Catnip Package",
+      contentUrl: null,
+      description: "Organic catnip. Makes cats 'high'. Or activates their TRANSMITTER MODE?",
+      tags: ["HERB", "BEHAVIOR"],
+      position: { x: 80, y: 280 },
+      isRedHerring: true
+    },
+    {
+      id: "ev_pet_insurance",
+      type: "document",
+      title: "Pet Insurance Form",
+      contentUrl: null,
+      description: "Covers 'signal interference damage'. WAIT, WHAT?! (Actually says 'accidental')",
+      tags: ["INSURANCE", "FINE_PRINT"],
+      position: { x: 650, y: 300 },
+      isRedHerring: true
     }
   ],
   scribblePool: [
-    "THE PURR IS A UPLOAD!",
+    "THE PURR IS AN UPLOAD!",
     "CATS HAVE 9 LIVES = 9 ANTENNAS",
     "MEOW = MORSE CODE",
     "THEY'RE ALWAYS WATCHING",
     "KNOCK THINGS OFF TABLE = DATA DUMP",
-    "HAIRBALLS = CORRUPTED FILES"
+    "HAIRBALLS = CORRUPTED FILES",
+    "WHISKERS = ANTENNAS",
+    "CATS OWN THE INTERNET"
   ]
 };
