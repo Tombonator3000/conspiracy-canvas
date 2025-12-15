@@ -22,8 +22,7 @@ import { GameOverlay } from "./GameOverlay";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { CaseHeader } from "./CaseHeader";
 
-import { case001 } from "@/data/case_001";
-import type { GameState, Scribble as ScribbleType, ConnectionResult } from "@/types/game";
+import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult } from "@/types/game";
 
 const nodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -33,9 +32,14 @@ const edgeTypes = {
   redString: RedStringEdge,
 };
 
+interface ConspiracyBoardProps {
+  caseData: CaseData;
+  onBackToMenu: () => void;
+}
+
 // Convert case data to React Flow nodes
-const createInitialNodes = (): Node[] => {
-  return case001.nodes.map((node) => ({
+const createInitialNodes = (caseData: CaseData): Node[] => {
+  return caseData.nodes.map((node) => ({
     id: node.id,
     type: "evidence",
     position: node.position,
@@ -45,9 +49,9 @@ const createInitialNodes = (): Node[] => {
 };
 
 // Validate connection based on shared tags
-const validateConnection = (sourceId: string, targetId: string): ConnectionResult => {
-  const sourceNode = case001.nodes.find((n) => n.id === sourceId);
-  const targetNode = case001.nodes.find((n) => n.id === targetId);
+const validateConnection = (caseData: CaseData, sourceId: string, targetId: string): ConnectionResult => {
+  const sourceNode = caseData.nodes.find((n) => n.id === sourceId);
+  const targetNode = caseData.nodes.find((n) => n.id === targetId);
 
   if (!sourceNode || !targetNode) {
     return { isValid: false };
@@ -58,8 +62,8 @@ const validateConnection = (sourceId: string, targetId: string): ConnectionResul
 
   if (matchingTag) {
     // Get a random scribble
-    const scribbleText = case001.scribblePool[
-      Math.floor(Math.random() * case001.scribblePool.length)
+    const scribbleText = caseData.scribblePool[
+      Math.floor(Math.random() * caseData.scribblePool.length)
     ];
     return { isValid: true, matchingTag, scribbleText };
   }
@@ -67,15 +71,26 @@ const validateConnection = (sourceId: string, targetId: string): ConnectionResul
   return { isValid: false };
 };
 
-export const ConspiracyBoard = () => {
-  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes());
+// Failure messages for wrong connections
+const failureScribbles = [
+  "NO! WRONG!",
+  "FOCUS!",
+  "THAT'S NOT IT!",
+  "THINK HARDER!",
+  "TOO OBVIOUS!",
+  "RED HERRING!",
+  "WAKE UP!",
+];
+
+export const ConspiracyBoard = ({ caseData, onBackToMenu }: ConspiracyBoardProps) => {
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
   const [gameState, setGameState] = useState<GameState>({
-    sanity: case001.boardState.sanity,
-    chaosLevel: case001.boardState.chaosLevel,
+    sanity: caseData.boardState.sanity,
+    chaosLevel: caseData.boardState.chaosLevel,
     validConnections: 0,
-    maxConnections: case001.boardState.maxConnectionsNeeded,
+    maxConnections: caseData.boardState.maxConnectionsNeeded,
     scribbles: [],
     isGameOver: false,
     isVictory: false,
@@ -141,7 +156,7 @@ export const ConspiracyBoard = () => {
       );
       if (existingEdge) return;
 
-      const result = validateConnection(connection.source, connection.target);
+      const result = validateConnection(caseData, connection.source, connection.target);
 
       if (result.isValid) {
         // Valid connection - add red string
@@ -183,7 +198,8 @@ export const ConspiracyBoard = () => {
         // Add failure scribble
         const sourceNode = nodes.find((n) => n.id === connection.source);
         if (sourceNode) {
-          addScribble("NO! WRONG!", sourceNode.position.x, sourceNode.position.y);
+          const failureText = failureScribbles[Math.floor(Math.random() * failureScribbles.length)];
+          addScribble(failureText, sourceNode.position.x, sourceNode.position.y);
         }
 
         setGameState((prev) => {
@@ -198,23 +214,23 @@ export const ConspiracyBoard = () => {
         });
       }
     },
-    [edges, nodes, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble]
   );
 
   // Restart game
   const handleRestart = useCallback(() => {
-    setNodes(createInitialNodes());
+    setNodes(createInitialNodes(caseData));
     setEdges([]);
     setGameState({
-      sanity: case001.boardState.sanity,
-      chaosLevel: case001.boardState.chaosLevel,
+      sanity: caseData.boardState.sanity,
+      chaosLevel: caseData.boardState.chaosLevel,
       validConnections: 0,
-      maxConnections: case001.boardState.maxConnectionsNeeded,
+      maxConnections: caseData.boardState.maxConnectionsNeeded,
       scribbles: [],
       isGameOver: false,
       isVictory: false,
     });
-  }, [setNodes, setEdges]);
+  }, [caseData, setNodes, setEdges]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
@@ -223,9 +239,10 @@ export const ConspiracyBoard = () => {
       {/* HUD */}
       <div className="absolute top-4 left-4 z-50 flex flex-col gap-3">
         <CaseHeader
-          title={case001.title}
-          description={case001.description}
-          difficulty={case001.difficulty}
+          title={caseData.title}
+          description={caseData.description}
+          difficulty={caseData.difficulty}
+          onBack={onBackToMenu}
         />
       </div>
 
@@ -275,7 +292,8 @@ export const ConspiracyBoard = () => {
         isGameOver={gameState.isGameOver}
         isVictory={gameState.isVictory}
         onRestart={handleRestart}
-        theTruth={case001.theTruth}
+        onBackToMenu={onBackToMenu}
+        theTruth={caseData.theTruth}
       />
     </div>
   );
