@@ -1,13 +1,15 @@
 import { motion } from "framer-motion";
-import { FileQuestion, AlertCircle } from "lucide-react";
+import { FileQuestion, AlertCircle, ArrowLeft } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 interface CaseHeaderProps {
   title: string;
   description: string;
   difficulty: string;
+  onBack?: () => void;
 }
 
-export const CaseHeader = ({ title, description, difficulty }: CaseHeaderProps) => {
+export const CaseHeader = ({ title, description, difficulty, onBack }: CaseHeaderProps) => {
   return (
     <motion.div
       className="bg-secondary/80 backdrop-blur-sm rounded-lg border border-border p-4 max-w-md"
@@ -16,6 +18,17 @@ export const CaseHeader = ({ title, description, difficulty }: CaseHeaderProps) 
       transition={{ delay: 0.2 }}
     >
       <div className="flex items-start gap-3">
+        {onBack && (
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 shrink-0 hover:bg-primary/20"
+            onClick={onBack}
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </Button>
+        )}
+        
         <div className="bg-primary/20 p-2 rounded">
           <FileQuestion className="w-5 h-5 text-primary" />
         </div>

@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Skull, Trophy, RotateCcw, Eye } from "lucide-react";
+import { Skull, Trophy, RotateCcw, Eye, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface GameOverlayProps {
   isGameOver: boolean;
   isVictory: boolean;
   onRestart: () => void;
+  onBackToMenu?: () => void;
   theTruth?: {
     subject: string;
     action: string;
@@ -14,7 +15,7 @@ interface GameOverlayProps {
   };
 }
 
-export const GameOverlay = ({ isGameOver, isVictory, onRestart, theTruth }: GameOverlayProps) => {
+export const GameOverlay = ({ isGameOver, isVictory, onRestart, onBackToMenu, theTruth }: GameOverlayProps) => {
   return (
     <AnimatePresence>
       {(isGameOver || isVictory) && (
@@ -83,15 +84,29 @@ export const GameOverlay = ({ isGameOver, isVictory, onRestart, theTruth }: Game
               </>
             )}
             
-            <Button
-              onClick={onRestart}
-              variant="outline"
-              size="lg"
-              className="font-marker text-lg border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            >
-              <RotateCcw className="w-5 h-5 mr-2" />
-              INVESTIGATE AGAIN
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Button
+                onClick={onRestart}
+                variant="outline"
+                size="lg"
+                className="font-marker text-lg border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              >
+                <RotateCcw className="w-5 h-5 mr-2" />
+                TRY AGAIN
+              </Button>
+              
+              {onBackToMenu && (
+                <Button
+                  onClick={onBackToMenu}
+                  variant="outline"
+                  size="lg"
+                  className="font-marker text-lg border-border text-foreground hover:bg-secondary"
+                >
+                  <ArrowLeft className="w-5 h-5 mr-2" />
+                  MORE CASES
+                </Button>
+              )}
+            </div>
           </motion.div>
         </motion.div>
       )}
