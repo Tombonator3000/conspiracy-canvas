@@ -1,4 +1,4 @@
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
 import type { EvidenceNode as EvidenceNodeType } from "@/types/game";
@@ -7,6 +7,7 @@ import { Camera, FileText, StickyNote, Eye, Zap, Bird, Cat, ShoppingBag, Cpu } f
 interface EvidenceNodeData extends EvidenceNodeType {
   isShaking?: boolean;
   isPulsing?: boolean;
+  isUVEnabled?: boolean;
 }
 
 interface EvidenceNodeProps {
@@ -28,7 +29,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
   
   return (
     <div 
-      className="evidence-photo w-48 cursor-grab active:cursor-grabbing"
+      className="evidence-photo w-48 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
       <div className="pin" />
@@ -49,6 +50,15 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         {getNodeIcon(data.tags) && !data.contentUrl && (
           <div className="absolute bottom-2 right-2 text-ink/50">
             {getNodeIcon(data.tags)}
+          </div>
+        )}
+        {/* UV Hidden Content */}
+        {data.hiddenText && data.isUVEnabled && (
+          <div className="absolute inset-0 bg-ink/90 flex items-center justify-center">
+            <p className="text-[#7fff00] font-mono text-xs text-center px-2 uppercase tracking-wider"
+               style={{ textShadow: "0 0 10px rgba(127,255,0,0.8)" }}>
+              {data.hiddenText}
+            </p>
           </div>
         )}
       </div>

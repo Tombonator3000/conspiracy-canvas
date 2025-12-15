@@ -26,7 +26,9 @@ export const case001: CaseData = {
       description: "Photo taken at 3 AM. Subject has not blinked for 2 hours.",
       tags: ["DRONE", "SURVEILLANCE", "EYES"],
       position: { x: 150, y: 100 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "SERIAL #: BD-7742",
+      isCritical: true
     },
     {
       id: "ev_schematic",
@@ -36,7 +38,9 @@ export const case001: CaseData = {
       description: "Blueprint for 'Autonomous Avian Data Collector'. CLASSIFIED.",
       tags: ["DRONE", "GOVERNMENT", "BATTERY"],
       position: { x: 500, y: 120 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "PROJECT NEST EGG",
+      isCritical: true
     },
     {
       id: "ev_powerline",
@@ -46,7 +50,9 @@ export const case001: CaseData = {
       description: "Energy spikes detected whenever flocks land here. COINCIDENCE?",
       tags: ["BATTERY", "ELECTRICITY", "CITY"],
       position: { x: 320, y: 380 },
-      isRedHerring: false
+      isRedHerring: false,
+      hiddenText: "5V @ 2.1A",
+      isCritical: true
     },
     {
       id: "ev_grocery_list",

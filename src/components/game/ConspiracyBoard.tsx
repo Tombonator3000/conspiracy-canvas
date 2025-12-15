@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState, useEffect } from "react";
+import { useCallback, useMemo, useState, useEffect, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -23,6 +23,9 @@ import { ConnectionCounter } from "./ConnectionCounter";
 import { Scribble } from "./Scribble";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { CaseHeader } from "./CaseHeader";
+import { EvidenceBin } from "./EvidenceBin";
+import { UVLightToggle, UVOverlay } from "./UVLight";
+import { useAudioContext } from "@/contexts/AudioContext";
 
 import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult } from "@/types/game";
 
@@ -41,12 +44,12 @@ interface ConspiracyBoardProps {
 }
 
 // Convert case data to React Flow nodes
-const createInitialNodes = (caseData: CaseData, isDraggable: boolean): Node[] => {
+const createInitialNodes = (caseData: CaseData, isDraggable: boolean, isUVEnabled: boolean): Node[] => {
   return caseData.nodes.map((node) => ({
     id: node.id,
     type: "evidence",
     position: node.position,
-    data: { ...node },
+    data: { ...node, isUVEnabled },
     draggable: isDraggable,
   }));
 };
@@ -92,11 +95,24 @@ const failureScribbles = [
   "WAKE UP!",
 ];
 
+// Trash scribbles for critical evidence
+const trashScribbles = [
+  "YOU THREW AWAY THE TRUTH!",
+  "THAT WAS IMPORTANT!",
+  "NO! NOT THAT ONE!",
+  "THE ANSWER WAS THERE!",
+];
+
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   // Mobile mode: 'pan' allows moving around, 'connect' locks nodes for easier connecting
   const [interactionMode, setInteractionMode] = useState<'pan' | 'connect'>('pan');
+  const [isUVEnabled, setIsUVEnabled] = useState(false);
+  const [binHighlighted, setBinHighlighted] = useState(false);
+  const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan'));
+  const { playSFX, updateSanity } = useAudioContext();
+  
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
   const [gameState, setGameState] = useState<GameState>({
@@ -109,17 +125,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     isVictory: false,
   });
 
+  // Update audio stress layer when sanity changes
+  useEffect(() => {
+    updateSanity(gameState.sanity);
+  }, [gameState.sanity, updateSanity]);
+
   // Update node draggability when mode changes
   useEffect(() => {
     setNodes((nds) =>
       nds.map((node) => ({
         ...node,
         draggable: interactionMode === 'pan',
+        data: { ...node.data, isUVEnabled },
       }))
     );
-  }, [interactionMode, setNodes]);
+  }, [interactionMode, isUVEnabled, setNodes]);
 
-  // Trigger game end when victory or game over
+  // Handle game end
   useEffect(() => {
     if (gameState.isVictory || gameState.isGameOver) {
       // Small delay for the user to see the final state
@@ -130,16 +152,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, onGameEnd]);
 
-  // Add scribble at random position near connection
+  // Add scribble at position
   const addScribble = useCallback((text: string, x: number, y: number) => {
     const newScribble: ScribbleType = {
       id: `scribble-${Date.now()}`,
       text,
-      x: x + Math.random() * 100 - 50,
-      y: y + Math.random() * 60 - 30,
+      x,
+      y,
       rotation: Math.random() * 20 - 10,
     };
-
     setGameState((prev) => ({
       ...prev,
       scribbles: [...prev.scribbles, newScribble],
@@ -149,34 +170,86 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // Shake a node
   const shakeNode = useCallback((nodeId: string) => {
     setNodes((nds) =>
-      nds.map((node) => {
-        if (node.id === nodeId) {
-          return {
-            ...node,
-            data: { ...node.data, isShaking: true },
-          };
-        }
-        return node;
-      })
+      nds.map((node) =>
+        node.id === nodeId
+          ? { ...node, data: { ...node.data, isShaking: true } }
+          : node
+      )
     );
-
-    // Reset shake after animation
     setTimeout(() => {
       setNodes((nds) =>
-        nds.map((node) => {
-          if (node.id === nodeId) {
-            return {
-              ...node,
-              data: { ...node.data, isShaking: false },
-            };
-          }
-          return node;
-        })
+        nds.map((node) =>
+          node.id === nodeId
+            ? { ...node, data: { ...node.data, isShaking: false } }
+            : node
+        )
       );
-    }, 500);
+    }, 400);
   }, [setNodes]);
 
-  // Handle new connections
+  // Handle UV toggle
+  const handleUVToggle = useCallback(() => {
+    setIsUVEnabled((prev) => !prev);
+    playSFX("uv_toggle");
+  }, [playSFX]);
+
+  // Handle node drop to bin
+  const handleNodeDropToBin = useCallback((nodeId: string) => {
+    const nodeData = caseData.nodes.find((n) => n.id === nodeId);
+    
+    playSFX("paper_crumple");
+    
+    // Remove node from board
+    setNodes((nds) => nds.filter((n) => n.id !== nodeId));
+    
+    // Remove any edges connected to this node
+    setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    
+    // Check if it was critical evidence
+    if (nodeData?.isCritical) {
+      const randomScribble = trashScribbles[Math.floor(Math.random() * trashScribbles.length)];
+      addScribble(randomScribble, 400, 300);
+      
+      setGameState((prev) => {
+        const newSanity = Math.max(0, prev.sanity - 20);
+        return {
+          ...prev,
+          sanity: newSanity,
+          chaosLevel: prev.chaosLevel + 1,
+          isGameOver: newSanity <= 0,
+        };
+      });
+    }
+  }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX]);
+
+  // Track node dragging for bin highlight
+  const handleNodeDrag = useCallback((event: any, node: Node) => {
+    setDraggedNodeId(node.id);
+    
+    // Check if node is near the bin (bottom-right)
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const binZone = {
+      x: viewportWidth - 100,
+      y: viewportHeight - 100,
+    };
+    
+    // Convert node position to screen coordinates (approximate)
+    const nodeScreenX = event.clientX || 0;
+    const nodeScreenY = event.clientY || 0;
+    
+    const isNearBin = nodeScreenX > binZone.x && nodeScreenY > binZone.y;
+    setBinHighlighted(isNearBin);
+  }, []);
+
+  const handleNodeDragStop = useCallback((event: any, node: Node) => {
+    if (binHighlighted && draggedNodeId) {
+      handleNodeDropToBin(draggedNodeId);
+    }
+    setBinHighlighted(false);
+    setDraggedNodeId(null);
+  }, [binHighlighted, draggedNodeId, handleNodeDropToBin]);
+
   const onConnect = useCallback(
     (connection: Connection) => {
       if (gameState.isGameOver || gameState.isVictory) return;
@@ -193,6 +266,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const result = validateConnection(caseData, connection.source, connection.target);
 
       if (result.isValid) {
+        playSFX("connect_success");
+        
         // Valid connection - add red string
         const newEdge: Edge = {
           ...connection,
@@ -225,6 +300,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           };
         });
       } else {
+        playSFX("connect_fail");
+        
         // Invalid connection - shake nodes and reduce sanity
         shakeNode(connection.source);
         shakeNode(connection.target);
@@ -248,7 +325,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         });
       }
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble, playSFX]
   );
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
@@ -271,6 +348,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           current={gameState.validConnections}
           max={gameState.maxConnections}
         />
+        
+        {/* UV Light Toggle */}
+        <UVLightToggle isEnabled={isUVEnabled} onToggle={handleUVToggle} />
         
         {/* Mobile Mode Toggle */}
         <div className="bg-secondary/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-border">
@@ -300,6 +380,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         </div>
       </div>
 
+      {/* Evidence Bin */}
+      <EvidenceBin 
+        onNodeDropped={handleNodeDropToBin} 
+        isHighlighted={binHighlighted} 
+      />
+
       {/* Scribbles */}
       {gameState.scribbles.map((scribble) => (
         <Scribble key={scribble.id} scribble={scribble} />
@@ -312,6 +398,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onNodeDrag={handleNodeDrag}
+        onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes as any}
         edgeTypes={edgeTypes as any}
         proOptions={proOptions}
@@ -337,6 +425,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           className="!bg-secondary !border-border !rounded-lg overflow-hidden [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted"
         />
       </ReactFlow>
+
+      {/* UV Light Overlay */}
+      <UVOverlay isEnabled={isUVEnabled} />
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={gameState.sanity} />
