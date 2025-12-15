@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { lightbulbOff, eclipse, telescope } from "@/assets/evidence";
 
 export const case006: CaseData = {
   id: "case_006_moon",
@@ -21,7 +22,7 @@ export const case006: CaseData = {
       id: "ev_lightbulb",
       type: "photo",
       title: "Proof of Concept",
-      contentUrl: null,
+      contentUrl: lightbulbOff,
       description: "A lightbulb turned off. Dark on one side, used to be bright. JUST LIKE THE 'MOON'.",
       tags: ["LIGHT", "OFF", "FLIP"],
       position: { x: 100, y: 80 },
@@ -41,7 +42,7 @@ export const case006: CaseData = {
       id: "ev_eclipse",
       type: "photo",
       title: "The Glitch",
-      contentUrl: null,
+      contentUrl: eclipse,
       description: "Solar eclipse = the switch mechanism malfunctioning mid-rotation. CAUGHT IN THE ACT.",
       tags: ["SKY", "FLIP", "ERROR"],
       position: { x: 280, y: 200 },
@@ -71,7 +72,7 @@ export const case006: CaseData = {
       id: "ev_telescope",
       type: "photo",
       title: "Amateur Telescope",
-      contentUrl: null,
+      contentUrl: telescope,
       description: "Can see the moon clearly. Looks real. TOO REAL. SUSPICIOUS.",
       tags: ["LENS", "FAKE"],
       position: { x: 400, y: 420 },

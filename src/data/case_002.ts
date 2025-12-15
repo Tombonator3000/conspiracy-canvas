@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { lonelySock, tidePod } from "@/assets/evidence";
 
 export const case002: CaseData = {
   id: "case_002_socks",
@@ -21,7 +22,7 @@ export const case002: CaseData = {
       id: "ev_lonely_sock",
       type: "photo",
       title: "The Survivor",
-      contentUrl: null,
+      contentUrl: lonelySock,
       description: "A lone sock. Its partner vanished without a trace. Last seen entering the drum.",
       tags: ["COTTON", "LOST", "FABRIC"],
       position: { x: 120, y: 80 },
@@ -61,7 +62,7 @@ export const case002: CaseData = {
       id: "ev_tide_pod",
       type: "photo",
       title: "Tide Pod",
-      contentUrl: null,
+      contentUrl: tidePod,
       description: "Looks delicious. Probably unrelated.",
       tags: ["SNACK", "FORBIDDEN"],
       position: { x: 600, y: 280 },

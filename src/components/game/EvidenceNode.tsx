@@ -32,10 +32,21 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
       <div className="pin" />
-      <div className="bg-ink/10 h-28 flex items-center justify-center mb-2 relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-paper-aged/50 to-transparent" />
-        <Camera className="w-12 h-12 text-ink/30" />
-        {getNodeIcon(data.tags) && (
+      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden">
+        {data.contentUrl ? (
+          <img 
+            src={data.contentUrl} 
+            alt={data.title}
+            className="w-full h-full object-cover"
+            draggable={false}
+          />
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-br from-paper-aged/50 to-transparent" />
+            <Camera className="w-12 h-12 text-ink/30" />
+          </>
+        )}
+        {getNodeIcon(data.tags) && !data.contentUrl && (
           <div className="absolute bottom-2 right-2 text-ink/50">
             {getNodeIcon(data.tags)}
           </div>

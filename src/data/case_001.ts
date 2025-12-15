@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { pigeonSuspicious, powerlinesBirds, catSuspicious } from "@/assets/evidence";
 
 export const case001: CaseData = {
   id: "case_001_birds",
@@ -21,7 +22,7 @@ export const case001: CaseData = {
       id: "ev_pigeon_photo",
       type: "photo",
       title: "Suspicious Bird",
-      contentUrl: null,
+      contentUrl: pigeonSuspicious,
       description: "Photo taken at 3 AM. Subject has not blinked for 2 hours.",
       tags: ["DRONE", "SURVEILLANCE", "EYES"],
       position: { x: 150, y: 100 },
@@ -41,7 +42,7 @@ export const case001: CaseData = {
       id: "ev_powerline",
       type: "photo",
       title: "Power Line Anomaly",
-      contentUrl: null,
+      contentUrl: powerlinesBirds,
       description: "Energy spikes detected whenever flocks land here. COINCIDENCE?",
       tags: ["BATTERY", "ELECTRICITY", "CITY"],
       position: { x: 320, y: 380 },
@@ -61,7 +62,7 @@ export const case001: CaseData = {
       id: "ev_cat_picture",
       type: "photo",
       title: "Mr. Whiskers",
-      contentUrl: null,
+      contentUrl: catSuspicious,
       description: "Just a cute cat. Or is it? Those eyes...",
       tags: ["FUR", "PET"],
       position: { x: 620, y: 340 },

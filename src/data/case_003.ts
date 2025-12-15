@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { bodybuilderMilk, oatMilk } from "@/assets/evidence";
 
 export const case003: CaseData = {
   id: "case_003_milk",
@@ -21,7 +22,7 @@ export const case003: CaseData = {
       id: "ev_bodybuilder",
       type: "photo",
       title: "The Enlightened One",
-      contentUrl: null,
+      contentUrl: bodybuilderMilk,
       description: "Champion bodybuilder caught drinking chunky milk. His secret? IGNORING THE DATE.",
       tags: ["MILK", "STRONG", "MUSCLE"],
       position: { x: 150, y: 100 },
@@ -61,7 +62,7 @@ export const case003: CaseData = {
       id: "ev_oatmilk",
       type: "photo",
       title: "Oat Milk Carton",
-      contentUrl: null,
+      contentUrl: oatMilk,
       description: "Oats don't have nipples. Think about it.",
       tags: ["PLANT", "IMPOSTER"],
       position: { x: 620, y: 300 },

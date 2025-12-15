@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { iphone1912, fakeIceberg, titanicMovie } from "@/assets/evidence";
 
 export const case007: CaseData = {
   id: "case_007_titanic",
@@ -21,7 +22,7 @@ export const case007: CaseData = {
       id: "ev_iphone_1912",
       type: "photo",
       title: "Temporal Anomaly",
-      contentUrl: null,
+      contentUrl: iphone1912,
       description: "Grainy 1912 photo. Man in background holding rectangular object. iPhone? IN 1912?!",
       tags: ["TECH", "OLD", "PHONE"],
       position: { x: 100, y: 80 },
@@ -41,7 +42,7 @@ export const case007: CaseData = {
       id: "ev_iceberg",
       type: "photo",
       title: "The 'Iceberg'",
-      contentUrl: null,
+      contentUrl: fakeIceberg,
       description: "Enhanced photo shows iceberg is too smooth. Plastic prop? Hologram?",
       tags: ["ICE", "FAKE", "PROP"],
       position: { x: 300, y: 320 },
@@ -71,7 +72,7 @@ export const case007: CaseData = {
       id: "ev_movie",
       type: "photo",
       title: "The Movie (1997)",
-      contentUrl: null,
+      contentUrl: titanicMovie,
       description: "James Cameron's 'Titanic' - Documentary? Or LEAKED FOOTAGE from a future tourist's camera?",
       tags: ["FILM", "LEAK"],
       position: { x: 420, y: 430 },
