@@ -444,10 +444,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
         panOnScroll={true}
-        panOnDrag={interactionMode === 'pan'}
+        // In connect mode: disable pan on drag, enable click-to-connect
+        panOnDrag={interactionMode === 'pan' ? true : false}
+        // CRITICAL: connectOnClick lets users tap handle, then tap another - works great on mobile!
+        connectOnClick={interactionMode === 'connect'}
         zoomOnPinch={true}
         zoomOnScroll={true}
         selectNodesOnDrag={false}
+        // Disable node selection to prevent touch conflicts
+        elementsSelectable={interactionMode === 'pan'}
+        nodesDraggable={interactionMode === 'pan'}
       >
         <Background
           variant={BackgroundVariant.Dots}
