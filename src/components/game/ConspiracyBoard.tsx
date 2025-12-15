@@ -3,6 +3,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  useReactFlow,
   type Node,
   type Edge,
   type Connection,
@@ -111,12 +112,25 @@ const trashScribbles = [
   "THE ANSWER WAS THERE!",
 ];
 
+// Collision detection helper
+const isColliding = (nodeRect: DOMRect, binRect: DOMRect): boolean => {
+  return !(
+    nodeRect.right < binRect.left ||
+    nodeRect.left > binRect.right ||
+    nodeRect.bottom < binRect.top ||
+    nodeRect.top > binRect.bottom
+  );
+};
+
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   // Mobile mode: 'pan' allows moving around, 'connect' locks nodes for easier connecting
   const [interactionMode, setInteractionMode] = useState<'pan' | 'connect'>('pan');
   const [isUVEnabled, setIsUVEnabled] = useState(false);
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  
+  // Ref for the evidence bin for collision detection
+  const binRef = useRef<HTMLDivElement>(null);
   
   const { playSFX, updateSanity } = useAudioContext();
   
@@ -230,27 +244,35 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX]);
 
-  // Track node dragging for bin highlight
-  const handleNodeDrag = useCallback((event: any, node: Node) => {
+  // Track node dragging for bin highlight using getBoundingClientRect
+  const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
     setDraggedNodeId(node.id);
     
-    // Check if node is near the bin (bottom-right)
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
-    const binZone = {
-      x: viewportWidth - 100,
-      y: viewportHeight - 100,
-    };
+    if (!binRef.current) return;
     
-    // Convert node position to screen coordinates (approximate)
-    const nodeScreenX = event.clientX || 0;
-    const nodeScreenY = event.clientY || 0;
+    // Get the bin's bounding rectangle
+    const binRect = binRef.current.getBoundingClientRect();
     
-    const isNearBin = nodeScreenX > binZone.x && nodeScreenY > binZone.y;
-    setBinHighlighted(isNearBin);
+    // Get client coordinates from mouse or touch event
+    let clientX: number, clientY: number;
+    if ('touches' in event && event.touches.length > 0) {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else if ('clientX' in event) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      return;
+    }
+    
+    // Create a small rect around the cursor/touch point for collision
+    const cursorRect = new DOMRect(clientX - 20, clientY - 20, 40, 40);
+    
+    const colliding = isColliding(cursorRect, binRect);
+    setBinHighlighted(colliding);
   }, []);
 
-  const handleNodeDragStop = useCallback((event: any, node: Node) => {
+  const handleNodeDragStop = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
     if (binHighlighted && draggedNodeId) {
       handleNodeDropToBin(draggedNodeId);
     }
@@ -390,7 +412,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* Evidence Bin */}
       <EvidenceBin 
-        onNodeDropped={handleNodeDropToBin} 
+        ref={binRef}
         isHighlighted={binHighlighted} 
       />
 
