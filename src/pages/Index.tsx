@@ -6,7 +6,7 @@ import { ResultScreen } from "@/components/game/ResultScreen";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { allCases } from "@/data/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
-import type { CaseData } from "@/types/game";
+import type { CaseData, CredibilityStats } from "@/types/game";
 
 type GameScreen = 'menu' | 'files' | 'game' | 'result' | 'gameover';
 
@@ -14,6 +14,7 @@ interface GameResult {
   isVictory: boolean;
   sanityRemaining: number;
   connectionsFound: number;
+  credibilityStats: CredibilityStats;
 }
 
 const Index = () => {
@@ -32,9 +33,14 @@ const Index = () => {
     setCurrentScreen('game');
   }, []);
 
-  const handleGameEnd = useCallback((isVictory: boolean, sanityRemaining: number, connectionsFound: number) => {
-    setGameResult({ isVictory, sanityRemaining, connectionsFound });
-    
+  const handleGameEnd = useCallback((
+    isVictory: boolean,
+    sanityRemaining: number,
+    connectionsFound: number,
+    credibilityStats: CredibilityStats
+  ) => {
+    setGameResult({ isVictory, sanityRemaining, connectionsFound, credibilityStats });
+
     if (isVictory && selectedCase) {
       const followersGained = Math.floor(Math.random() * 500) + 100;
       completeCase(selectedCase.id, followersGained);
@@ -112,6 +118,7 @@ const Index = () => {
           isVictory={gameResult.isVictory}
           sanityRemaining={gameResult.sanityRemaining}
           connectionsFound={gameResult.connectionsFound}
+          credibilityStats={gameResult.credibilityStats}
           onNextCase={handleNextCase}
           onRetry={handleRetry}
           onBackToMenu={handleBackToFiles}

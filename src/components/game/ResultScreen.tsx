@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ThumbsUp, ThumbsDown, Share2, AlertTriangle, ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import type { CaseData } from "@/types/game";
+import type { CaseData, CredibilityStats } from "@/types/game";
 
 interface ResultScreenProps {
   caseData: CaseData;
   isVictory: boolean;
   sanityRemaining: number;
   connectionsFound: number;
+  credibilityStats: CredibilityStats;
   onNextCase: () => void;
   onRetry: () => void;
   onBackToMenu: () => void;
@@ -64,23 +65,29 @@ const generateHeadline = (caseData: CaseData, isVictory: boolean) => {
   return "INCOHERENT RAMBLINGS POSTED, INTERNET COLLECTIVELY SIGHS";
 };
 
-export const ResultScreen = ({ 
-  caseData, 
-  isVictory, 
-  sanityRemaining, 
+export const ResultScreen = ({
+  caseData,
+  isVictory,
+  sanityRemaining,
   connectionsFound,
-  onNextCase, 
-  onRetry, 
-  onBackToMenu 
+  credibilityStats,
+  onNextCase,
+  onRetry,
+  onBackToMenu
 }: ResultScreenProps) => {
   const [showStamp, setShowStamp] = useState(false);
   const [comments, setComments] = useState<Array<{ user: string; text: string; likes: number }>>([]);
 
-  // Calculate scores
+  // Calculate scores using new Credibility Engine
+  const investigationScore = connectionsFound * 100; // Points from connections
+  const cleanupBonus = credibilityStats.cleanupBonus; // Points from trashing junk
+  const hoarderPenalty = credibilityStats.junkRemaining * 50; // -50 per junk left
+  const totalCredibility = credibilityStats.credibility - hoarderPenalty;
+
+  // Legacy scores for backward compatibility with comments
   const madnessScore = Math.min(100, Math.round(100 - sanityRemaining + (connectionsFound * 10)));
-  const logicScore = Math.max(0, Math.round(sanityRemaining / 10) + Math.floor(Math.random() * 15));
-  const followersGained = isVictory 
-    ? Math.floor(Math.random() * 500) + 100 
+  const followersGained = isVictory
+    ? Math.floor(Math.random() * 500) + 100
     : Math.floor(Math.random() * 5) - 10;
 
   useEffect(() => {
@@ -157,12 +164,41 @@ export const ResultScreen = ({
               </p>
             </div>
 
-            {/* Stats panel */}
+            {/* Credibility Breakdown Panel */}
+            <div className="bg-white border-2 border-[#808080] p-4 mb-4">
+              <div className="font-mono text-xs text-[#000080] font-bold uppercase mb-3 border-b border-[#ccc] pb-2">
+                📊 CREDIBILITY BREAKDOWN
+              </div>
+              <div className="space-y-2 font-mono text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-[#333]">Investigation Score:</span>
+                  <span className="font-bold text-[#008000]">+{investigationScore}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[#333]">Cleanup Bonus:</span>
+                  <span className="font-bold text-[#008000]">+{cleanupBonus}</span>
+                </div>
+                {hoarderPenalty > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#333]">Hoarder Penalty:</span>
+                    <span className="font-bold text-[#ff0000]">-{hoarderPenalty}</span>
+                  </div>
+                )}
+                <div className="border-t border-[#999] pt-2 mt-2 flex justify-between items-center">
+                  <span className="text-[#000080] font-bold">TOTAL CREDIBILITY:</span>
+                  <span className={`font-marker text-xl ${totalCredibility >= 500 ? 'text-[#008000]' : totalCredibility >= 0 ? 'text-[#ff6600]' : 'text-[#ff0000]'}`}>
+                    {totalCredibility}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Secondary Stats */}
             <div className="grid grid-cols-3 gap-4 mb-4 text-center">
               <div className="bg-white border-2 border-[#808080] p-3">
-                <div className="font-mono text-[10px] text-[#666] uppercase">Logic Score</div>
-                <div className={`font-marker text-2xl ${logicScore < 20 ? 'text-[#ff0000]' : 'text-[#008000]'}`}>
-                  {logicScore}%
+                <div className="font-mono text-[10px] text-[#666] uppercase">Junk Cleared</div>
+                <div className="font-marker text-2xl text-[#008000]">
+                  {credibilityStats.trashedJunkCount}
                 </div>
               </div>
               <div className="bg-white border-2 border-[#808080] p-3">

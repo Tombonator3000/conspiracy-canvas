@@ -26,9 +26,10 @@ import { MadnessOverlay } from "./MadnessOverlay";
 import { CaseHeader } from "./CaseHeader";
 import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
+import { FloatingScoreText } from "./FloatingScoreText";
 import { useAudioContext } from "@/contexts/AudioContext";
 
-import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult } from "@/types/game";
+import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats } from "@/types/game";
 
 const nodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -41,7 +42,12 @@ const edgeTypes = {
 interface ConspiracyBoardProps {
   caseData: CaseData;
   onBackToMenu: () => void;
-  onGameEnd: (isVictory: boolean, sanityRemaining: number, connectionsFound: number) => void;
+  onGameEnd: (
+    isVictory: boolean,
+    sanityRemaining: number,
+    connectionsFound: number,
+    credibilityStats: CredibilityStats
+  ) => void;
 }
 
 // Convert case data to React Flow nodes with random rotation and z-index for chaos
@@ -104,12 +110,22 @@ const failureScribbles = [
   "WAKE UP!",
 ];
 
-// Trash scribbles for critical evidence
+// Trash scribbles for critical evidence (failure)
 const trashScribbles = [
   "YOU THREW AWAY THE TRUTH!",
   "THAT WAS IMPORTANT!",
   "NO! NOT THAT ONE!",
   "THE ANSWER WAS THERE!",
+];
+
+// Success scribbles for trashing junk
+const junkTrashScribbles = [
+  "GOOD! THAT WAS GARBAGE!",
+  "JUNK CLEARED!",
+  "RED HERRING GONE!",
+  "DECLUTTERING THE TRUTH!",
+  "NOISE REMOVED!",
+  "DISTRACTION DELETED!",
 ];
 
 // Collision detection helper
@@ -128,6 +144,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [isUVEnabled, setIsUVEnabled] = useState(false);
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
+  const [floatingScores, setFloatingScores] = useState<FloatingScore[]>([]);
+  const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
   
   // Ref for the evidence bin for collision detection
   const binRef = useRef<HTMLDivElement>(null);
@@ -145,6 +163,10 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     scribbles: [],
     isGameOver: false,
     isVictory: false,
+    // Credibility Engine - starts at 500
+    credibility: 500,
+    cleanupBonus: 0,
+    trashedJunkCount: 0,
   });
 
   // Update audio stress layer when sanity changes
@@ -163,16 +185,30 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     );
   }, [interactionMode, isUVEnabled, setNodes]);
 
+  // Calculate remaining junk on the board
+  const getRemainingJunkCount = useCallback(() => {
+    const currentNodeIds = nodes.map((n) => n.id);
+    return caseData.nodes.filter(
+      (n) => n.isRedHerring && !n.isCritical && currentNodeIds.includes(n.id)
+    ).length;
+  }, [nodes, caseData.nodes]);
+
   // Handle game end
   useEffect(() => {
     if (gameState.isVictory || gameState.isGameOver) {
       // Small delay for the user to see the final state
       const timer = setTimeout(() => {
-        onGameEnd(gameState.isVictory, gameState.sanity, gameState.validConnections);
+        const credibilityStats: CredibilityStats = {
+          credibility: gameState.credibility,
+          cleanupBonus: gameState.cleanupBonus,
+          trashedJunkCount: gameState.trashedJunkCount,
+          junkRemaining: getRemainingJunkCount(),
+        };
+        onGameEnd(gameState.isVictory, gameState.sanity, gameState.validConnections, credibilityStats);
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, onGameEnd]);
+  }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, gameState.credibility, gameState.cleanupBonus, gameState.trashedJunkCount, getRemainingJunkCount, onGameEnd]);
 
   // Add scribble at position
   const addScribble = useCallback((text: string, x: number, y: number) => {
@@ -187,6 +223,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       ...prev,
       scribbles: [...prev.scribbles, newScribble],
     }));
+  }, []);
+
+  // Spawn floating score text at position
+  const spawnFloatingScore = useCallback((value: number, x: number, y: number, isPositive: boolean) => {
+    const newScore: FloatingScore = {
+      id: `score-${Date.now()}-${Math.random()}`,
+      value,
+      x: x - 30, // Center the text
+      y: y - 20,
+      isPositive,
+    };
+    setFloatingScores((prev) => [...prev, newScore]);
+
+    // Remove after animation completes
+    setTimeout(() => {
+      setFloatingScores((prev) => prev.filter((s) => s.id !== newScore.id));
+    }, 1500);
   }, []);
 
   // Shake a node
@@ -215,44 +268,77 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     playSFX("uv_toggle");
   }, [playSFX]);
 
-  // Handle node drop to bin
+  // Handle node drop to bin - Credibility Engine scoring
   const handleNodeDropToBin = useCallback((nodeId: string) => {
     const nodeData = caseData.nodes.find((n) => n.id === nodeId);
-    
+    if (!nodeData) return;
+
+    // Always play paper crumple first
     playSFX("paper_crumple");
-    
+
     // Remove node from board
     setNodes((nds) => nds.filter((n) => n.id !== nodeId));
-    
+
     // Remove any edges connected to this node
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
-    
-    // Check if it was critical evidence
-    if (nodeData?.isCritical) {
+
+    // Determine if this is JUNK (red herring) or REAL EVIDENCE
+    const isJunk = nodeData.isRedHerring;
+    const isRealEvidence = !nodeData.isRedHerring || nodeData.isCritical;
+
+    if (isJunk && !nodeData.isCritical) {
+      // TRASHING JUNK - +150 Credibility
+      playSFX("trash_junk_success");
+
+      // Spawn floating score at cursor position
+      spawnFloatingScore(150, cursorPosition.x, cursorPosition.y, true);
+
+      // Add success scribble
+      const randomScribble = junkTrashScribbles[Math.floor(Math.random() * junkTrashScribbles.length)];
+      addScribble(randomScribble, 400, 300);
+
+      setGameState((prev) => ({
+        ...prev,
+        credibility: prev.credibility + 150,
+        cleanupBonus: prev.cleanupBonus + 150,
+        trashedJunkCount: prev.trashedJunkCount + 1,
+      }));
+    } else if (isRealEvidence) {
+      // TRASHING REAL EVIDENCE - -500 Credibility
+      playSFX("trash_evidence_fail");
+
+      // Spawn floating score at cursor position
+      spawnFloatingScore(-500, cursorPosition.x, cursorPosition.y, false);
+
+      // Add failure scribble
       const randomScribble = trashScribbles[Math.floor(Math.random() * trashScribbles.length)];
       addScribble(randomScribble, 400, 300);
-      
+
       setGameState((prev) => {
+        const newCredibility = prev.credibility - 500;
         const newSanity = Math.max(0, prev.sanity - 20);
+        // Game over if credibility drops below 0
+        const isCredibilityGameOver = newCredibility < 0;
         return {
           ...prev,
+          credibility: newCredibility,
           sanity: newSanity,
           chaosLevel: prev.chaosLevel + 1,
-          isGameOver: newSanity <= 0,
+          isGameOver: newSanity <= 0 || isCredibilityGameOver,
         };
       });
     }
-  }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX]);
+  }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX, spawnFloatingScore, cursorPosition]);
 
   // Track node dragging for bin highlight using getBoundingClientRect
   const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
     setDraggedNodeId(node.id);
-    
+
     if (!binRef.current) return;
-    
+
     // Get the bin's bounding rectangle
     const binRect = binRef.current.getBoundingClientRect();
-    
+
     // Get client coordinates from mouse or touch event
     let clientX: number, clientY: number;
     if ('touches' in event && event.touches.length > 0) {
@@ -264,10 +350,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     } else {
       return;
     }
-    
+
+    // Track cursor position for floating score
+    setCursorPosition({ x: clientX, y: clientY });
+
     // Create a small rect around the cursor/touch point for collision
     const cursorRect = new DOMRect(clientX - 20, clientY - 20, 40, 40);
-    
+
     const colliding = isColliding(cursorRect, binRect);
     setBinHighlighted(colliding);
   }, []);
@@ -421,6 +510,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       {gameState.scribbles.map((scribble) => (
         <Scribble key={scribble.id} scribble={scribble} />
       ))}
+
+      {/* Floating Score Text */}
+      <FloatingScoreText scores={floatingScores} />
 
       {/* React Flow Board */}
       <ReactFlow

@@ -6,14 +6,16 @@ interface AudioState {
   sanityLevel: number;
 }
 
-type SoundEffect = 
-  | "connect_success" 
-  | "connect_fail" 
-  | "uv_toggle" 
-  | "paper_crumple" 
+type SoundEffect =
+  | "connect_success"
+  | "connect_fail"
+  | "uv_toggle"
+  | "paper_crumple"
   | "printer_start"
   | "printer_loop"
-  | "button_click";
+  | "button_click"
+  | "trash_junk_success"
+  | "trash_evidence_fail";
 
 // Using Web Audio API for sound generation (no external files needed)
 export const useAudio = () => {
@@ -187,6 +189,85 @@ export const useAudio = () => {
         gain.connect(ctx.destination);
         osc.start(now);
         osc.stop(now + 0.03);
+        break;
+      }
+
+      case "trash_junk_success": {
+        // Satisfying cash register "cha-ching" + rising ding
+        // First: Short click
+        const click = ctx.createOscillator();
+        const clickGain = ctx.createGain();
+        click.type = "square";
+        click.frequency.value = 1500;
+        clickGain.gain.setValueAtTime(0.1, now);
+        clickGain.gain.exponentialRampToValueAtTime(0.01, now + 0.03);
+        click.connect(clickGain);
+        clickGain.connect(ctx.destination);
+        click.start(now);
+        click.stop(now + 0.03);
+
+        // Second: Rising ding (two-tone chime)
+        const ding1 = ctx.createOscillator();
+        const ding1Gain = ctx.createGain();
+        ding1.type = "sine";
+        ding1.frequency.value = 880; // A5
+        ding1Gain.gain.setValueAtTime(0.2, now + 0.05);
+        ding1Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+        ding1.connect(ding1Gain);
+        ding1Gain.connect(ctx.destination);
+        ding1.start(now + 0.05);
+        ding1.stop(now + 0.4);
+
+        const ding2 = ctx.createOscillator();
+        const ding2Gain = ctx.createGain();
+        ding2.type = "sine";
+        ding2.frequency.value = 1318; // E6 (higher harmony)
+        ding2Gain.gain.setValueAtTime(0.15, now + 0.1);
+        ding2Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+        ding2.connect(ding2Gain);
+        ding2Gain.connect(ctx.destination);
+        ding2.start(now + 0.1);
+        ding2.stop(now + 0.5);
+        break;
+      }
+
+      case "trash_evidence_fail": {
+        // Harsh error/glitch sound - buzzer + static burst
+        // Buzzer tone
+        const buzzer = ctx.createOscillator();
+        const buzzerGain = ctx.createGain();
+        buzzer.type = "sawtooth";
+        buzzer.frequency.setValueAtTime(150, now);
+        buzzer.frequency.linearRampToValueAtTime(80, now + 0.3);
+        buzzerGain.gain.setValueAtTime(0.25, now);
+        buzzerGain.gain.linearRampToValueAtTime(0.15, now + 0.15);
+        buzzerGain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+        buzzer.connect(buzzerGain);
+        buzzerGain.connect(ctx.destination);
+        buzzer.start(now);
+        buzzer.stop(now + 0.4);
+
+        // Digital glitch/static burst
+        const bufferSize = ctx.sampleRate * 0.25;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) {
+          // Create harsher digital noise with bit-crushing effect
+          data[i] = (Math.random() > 0.5 ? 1 : -1) * Math.random() * 0.8;
+        }
+        const noise = ctx.createBufferSource();
+        const noiseGain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        filter.type = "bandpass";
+        filter.frequency.value = 800;
+        filter.Q.value = 2;
+        noise.buffer = buffer;
+        noiseGain.gain.setValueAtTime(0.2, now + 0.05);
+        noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        noise.connect(filter);
+        filter.connect(noiseGain);
+        noiseGain.connect(ctx.destination);
+        noise.start(now + 0.05);
         break;
       }
     }
