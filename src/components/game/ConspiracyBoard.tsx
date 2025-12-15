@@ -361,9 +361,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
   return (
-    <div className="w-full h-screen cork-texture relative overflow-hidden">
-      {/* HUD */}
-      <div className="absolute top-4 left-4 z-50 flex flex-col gap-3">
+    <div className="w-full h-screen h-[100dvh] cork-texture relative overflow-hidden">
+      {/* HUD - Left side */}
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex flex-col gap-2 sm:gap-3">
         <CaseHeader
           title={caseData.title}
           description={caseData.description}
@@ -372,7 +372,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         />
       </div>
 
-      <div className="absolute top-4 right-4 z-50 flex flex-col gap-3">
+      {/* HUD - Right side (stacked vertically on mobile) */}
+      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-50 flex flex-col gap-2 sm:gap-3 max-w-[140px] sm:max-w-none">
         <SanityMeter sanity={gameState.sanity} />
         <ConnectionCounter
           current={gameState.validConnections}
@@ -383,8 +384,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <UVLightToggle isEnabled={isUVEnabled} onToggle={handleUVToggle} />
         
         {/* Mobile Mode Toggle */}
-        <div className="bg-secondary/80 backdrop-blur-sm px-3 py-2 rounded-lg border border-border">
-          <span className="text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-2">
+        <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
+          <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-1 sm:mb-2">
             Mode
           </span>
           <div className="flex gap-1">
@@ -392,19 +393,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
               variant={interactionMode === 'pan' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setInteractionMode('pan')}
-              className="flex-1 gap-1 text-xs"
+              className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
             >
-              <Hand className="w-4 h-4" />
-              Move
+              <Hand className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Move</span>
             </Button>
             <Button
               variant={interactionMode === 'connect' ? 'default' : 'outline'}
               size="sm"
               onClick={() => setInteractionMode('connect')}
-              className="flex-1 gap-1 text-xs"
+              className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
             >
-              <Cable className="w-4 h-4" />
-              Link
+              <Cable className="w-3 h-3 sm:w-4 sm:h-4" />
+              <span className="hidden sm:inline">Link</span>
             </Button>
           </div>
         </div>
@@ -434,8 +435,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         edgeTypes={edgeTypes as any}
         proOptions={proOptions}
         fitView
-        fitViewOptions={{ padding: 0.2 }}
+        fitViewOptions={{ padding: 0.3, minZoom: 0.1, maxZoom: 2 }}
         className="!bg-transparent"
+        // Extended zoom limits
+        minZoom={0.1}
+        maxZoom={3}
         // Mobile touch optimizations
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
@@ -452,7 +456,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           color="hsl(30, 20%, 25%)"
         />
         <Controls 
-          className="!bg-secondary !border-border !rounded-lg overflow-hidden [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted"
+          className="!bg-secondary !border-border !rounded-lg overflow-hidden [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted !bottom-20 sm:!bottom-4"
+          showInteractive={false}
         />
       </ReactFlow>
 
