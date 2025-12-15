@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { catRouter, catPhone, goodDog } from "@/assets/evidence";
 
 export const case005: CaseData = {
   id: "case_005_cats",
@@ -21,7 +22,7 @@ export const case005: CaseData = {
       id: "ev_cat_router",
       type: "photo",
       title: "Charging Station",
-      contentUrl: null,
+      contentUrl: catRouter,
       description: "Cat sitting on router. They claim it's 'warm'. It's actually INDUCTIVE CHARGING.",
       tags: ["CAT", "HEAT", "WIFI"],
       position: { x: 120, y: 100 },
@@ -41,7 +42,7 @@ export const case005: CaseData = {
       id: "ev_cat_eyes",
       type: "photo",
       title: "The Gaze",
-      contentUrl: null,
+      contentUrl: catPhone,
       description: "Cat staring at phone screen. Reading your texts? Or TRANSMITTING them?",
       tags: ["EYES", "DATA", "CAT"],
       position: { x: 300, y: 340 },
@@ -61,7 +62,7 @@ export const case005: CaseData = {
       id: "ev_dog",
       type: "photo",
       title: "Good Boy",
-      contentUrl: null,
+      contentUrl: goodDog,
       description: "A dog. Loyal. Honest. NOT A SPY. ...Right?",
       tags: ["PET", "INNOCENT"],
       position: { x: 80, y: 380 },

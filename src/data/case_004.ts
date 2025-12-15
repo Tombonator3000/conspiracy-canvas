@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { cloudDisk, serverSmoke, umbrella } from "@/assets/evidence";
 
 export const case004: CaseData = {
   id: "case_004_cloud",
@@ -21,7 +22,7 @@ export const case004: CaseData = {
       id: "ev_cloud_disk",
       type: "photo",
       title: "Suspicious Formation",
-      contentUrl: null,
+      contentUrl: cloudDisk,
       description: "Cloud photographed over Seattle. Shape: FLOPPY DISK. Coincidence?",
       tags: ["SKY", "DATA", "STORAGE"],
       position: { x: 100, y: 80 },
@@ -41,7 +42,7 @@ export const case004: CaseData = {
       id: "ev_server_smoke",
       type: "photo",
       title: "Data Center Exhaust",
-      contentUrl: null,
+      contentUrl: serverSmoke,
       description: "Server farm with smokestack going directly into clouds. They call it 'cooling'. WE CALL IT UPLOADING.",
       tags: ["SMOKE", "CLOUD", "DATA"],
       position: { x: 300, y: 350 },
@@ -61,7 +62,7 @@ export const case004: CaseData = {
       id: "ev_umbrella",
       type: "photo",
       title: "Umbrella Corp Logo",
-      contentUrl: null,
+      contentUrl: umbrella,
       description: "Why does a 'pharmaceutical company' have an umbrella logo? THEY KNOW.",
       tags: ["SHIELD", "GAME"],
       position: { x: 80, y: 380 },
