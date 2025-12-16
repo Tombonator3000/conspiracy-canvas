@@ -17,6 +17,8 @@ export const case001: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 3
   },
+  // Semantic Truth Tags: Connect evidence proving THE_DRONE + THE_TECH + THE_POWER_SOURCE
+  requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case001: CaseData = {
       position: { x: 180, y: 140 },
       isRedHerring: false,
       hiddenText: "SERIAL #: BD-7742",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_DRONE"]  // This IS the drone/bird
     },
     {
       id: "ev_schematic",
@@ -41,7 +44,8 @@ export const case001: CaseData = {
       position: { x: 520, y: 180 },
       isRedHerring: false,
       hiddenText: "PROJECT NEST EGG",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_TECH"]  // The technology/proof they're manufactured
     },
     {
       id: "ev_powerline",
@@ -53,7 +57,8 @@ export const case001: CaseData = {
       position: { x: 350, y: 420 },
       isRedHerring: false,
       hiddenText: "5V @ 2.1A",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_POWER_SOURCE"]  // Where they recharge
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -213,7 +218,8 @@ export const case001: CaseData = {
           position: { x: 350, y: 100 },
           isRedHerring: false,
           hiddenText: "AVIAN UNIT SPECS v2.3",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_TECH"]  // Inherits + confirms THE_TECH
         },
         {
           id: "ev_hidden_memo",
@@ -247,7 +253,8 @@ export const case001: CaseData = {
           position: { x: 400, y: 250 },
           isRedHerring: false,
           hiddenText: "5V USB-BEAK",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_POWER_SOURCE", "THE_TECH"]  // Confirms the charging network
         }
       ]
     },
@@ -268,7 +275,8 @@ export const case001: CaseData = {
           position: { x: 280, y: 320 },
           isRedHerring: false,
           hiddenText: "FIRMWARE: HAWK.EYE",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_DRONE", "THE_TECH"]  // Proves the bird IS a drone
         }
       ]
     }

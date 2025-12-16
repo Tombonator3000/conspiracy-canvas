@@ -17,6 +17,8 @@ export const case006: CaseData = {
     chaosLevel: 2,
     maxConnectionsNeeded: 5
   },
+  // Semantic Truth Tags: Connect evidence proving THE_CONCEPT + THE_MOTIVE + THE_GLITCH + THE_VENTS + THE_CONTROL
+  requiredTruthTags: ["THE_CONCEPT", "THE_MOTIVE", "THE_GLITCH", "THE_VENTS", "THE_CONTROL"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case006: CaseData = {
       position: { x: 100, y: 80 },
       isRedHerring: false,
       hiddenText: "60W = SUN POWER",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CONCEPT"]  // The flip concept
     },
     {
       id: "ev_budget",
@@ -41,7 +44,8 @@ export const case006: CaseData = {
       position: { x: 500, y: 100 },
       isRedHerring: false,
       hiddenText: "-$400B SAVINGS",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_MOTIVE"]  // Why they do it
     },
     {
       id: "ev_eclipse",
@@ -53,7 +57,8 @@ export const case006: CaseData = {
       position: { x: 280, y: 200 },
       isRedHerring: false,
       hiddenText: "FLIP ERROR 404",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_GLITCH"]  // When the flip fails
     },
     {
       id: "ev_craters",
@@ -65,7 +70,8 @@ export const case006: CaseData = {
       position: { x: 550, y: 330 },
       isRedHerring: false,
       hiddenText: "HEAT EXHAUST",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_VENTS"]  // The cooling system
     },
     {
       id: "ev_phases",
@@ -76,7 +82,8 @@ export const case006: CaseData = {
       tags: ["LIGHT", "OFF", "TEST"],
       position: { x: 120, y: 380 },
       isRedHerring: false,
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CONTROL"]  // How they control it
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -224,7 +231,8 @@ export const case006: CaseData = {
           position: { x: 350, y: 150 },
           isRedHerring: false,
           hiddenText: "MOTOR: FAILING",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_CONCEPT", "THE_GLITCH"]  // Flip mechanism proof
         }
       ]
     },
@@ -268,7 +276,8 @@ export const case006: CaseData = {
           position: { x: 380, y: 350 },
           isRedHerring: false,
           hiddenText: "OPERATOR: ARMSTRONG",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_CONTROL", "THE_VENTS"]  // Control panel proof
         }
       ]
     },
@@ -290,7 +299,8 @@ export const case006: CaseData = {
           position: { x: 300, y: 420 },
           isRedHerring: false,
           hiddenText: "HOWL = PASSWORD",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_CONTROL", "THE_CONCEPT", "THE_MOTIVE"]  // Final revelation
         }
       ]
     }
