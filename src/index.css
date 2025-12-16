@@ -242,11 +242,9 @@
     mix-blend-mode: overlay;
   }
 
-  /* Pin effect */
-  .pin {
-    @apply absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 rounded-full;
-    background: radial-gradient(circle at 30% 30%, #ff6b6b, #c41e3a);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  /* Push pin positioning helper - pins are now SVG in EvidenceNode */
+  .push-pin {
+    pointer-events: none;
   }
 
   /* Shake animation */

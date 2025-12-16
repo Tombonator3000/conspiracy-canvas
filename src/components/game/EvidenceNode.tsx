@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
 import { motion } from "framer-motion";
 import type { EvidenceNode as EvidenceNodeType } from "@/types/game";
@@ -17,6 +17,60 @@ interface EvidenceNodeProps {
   data: EvidenceNodeData;
 }
 
+// Realistic push pin component
+const PushPin = ({ color = "red" }: { color?: "red" | "yellow" | "blue" | "green" }) => {
+  const colors = {
+    red: { top: "#e53935", mid: "#c62828", bottom: "#b71c1c", shine: "#ff8a80" },
+    yellow: { top: "#fdd835", mid: "#f9a825", bottom: "#f57f17", shine: "#fff59d" },
+    blue: { top: "#1e88e5", mid: "#1565c0", bottom: "#0d47a1", shine: "#82b1ff" },
+    green: { top: "#43a047", mid: "#2e7d32", bottom: "#1b5e20", shine: "#b9f6ca" },
+  };
+  const c = colors[color];
+  
+  return (
+    <svg 
+      className="push-pin" 
+      width="24" 
+      height="32" 
+      viewBox="0 0 24 32" 
+      style={{ 
+        position: "absolute", 
+        top: "-14px", 
+        left: "50%", 
+        transform: "translateX(-50%)",
+        zIndex: 10,
+        filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.4))"
+      }}
+    >
+      {/* Pin needle */}
+      <path 
+        d="M12 18 L12 30" 
+        stroke="#666" 
+        strokeWidth="2" 
+        strokeLinecap="round"
+      />
+      <path 
+        d="M12 28 L12 31" 
+        stroke="#888" 
+        strokeWidth="1.5" 
+        strokeLinecap="round"
+      />
+      
+      {/* Pin head - main dome */}
+      <ellipse cx="12" cy="10" rx="10" ry="8" fill={c.mid} />
+      
+      {/* Pin head - top highlight */}
+      <ellipse cx="12" cy="8" rx="9" ry="6" fill={c.top} />
+      
+      {/* Shine/reflection */}
+      <ellipse cx="9" cy="6" rx="3" ry="2" fill={c.shine} opacity="0.6" />
+      
+      {/* Bottom shadow on dome */}
+      <ellipse cx="12" cy="13" rx="8" ry="3" fill={c.bottom} opacity="0.5" />
+    </svg>
+  );
+};
+
 const getNodeIcon = (tags: string[]) => {
   if (tags.includes("DRONE") || tags.includes("SURVEILLANCE")) return <Bird className="w-5 h-5" />;
   if (tags.includes("BATTERY") || tags.includes("ELECTRICITY")) return <Zap className="w-5 h-5" />;
@@ -27,16 +81,24 @@ const getNodeIcon = (tags: string[]) => {
   return null;
 };
 
+// Get random pin color based on node id for consistency
+const getPinColor = (id: string): "red" | "yellow" | "blue" | "green" => {
+  const colors: Array<"red" | "yellow" | "blue" | "green"> = ["red", "yellow", "blue", "green"];
+  const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return colors[hash % colors.length];
+};
+
 const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
   const rotation = data.rotation || (Math.random() * 6 - 3);
+  const pinColor = getPinColor(data.id);
   
   return (
     <div 
       className="evidence-photo w-48 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <div className="pin" />
-      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden rounded-sm">
+      <PushPin color={pinColor} />
+      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden rounded-sm mt-2">
         {data.contentUrl ? (
           <img 
             src={data.contentUrl} 
@@ -75,14 +137,15 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
 
 const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
   const rotation = data.rotation || (Math.random() * 4 - 2);
+  const pinColor = getPinColor(data.id);
   
   return (
     <div 
-      className="evidence-document w-52 cursor-grab active:cursor-grabbing"
+      className="evidence-document w-52 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <div className="pin" />
-      <div className="flex items-start gap-2 mb-2">
+      <PushPin color={pinColor} />
+      <div className="flex items-start gap-2 mb-2 mt-4">
         <FileText className="w-5 h-5 text-primary flex-shrink-0" />
         <h3 className="font-typewriter text-sm font-bold text-ink tracking-tight">{data.title}</h3>
       </div>
@@ -114,13 +177,15 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
 
 const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
   const rotation = data.rotation || (Math.random() * 8 - 4);
+  const pinColor = getPinColor(data.id);
   
   return (
     <div 
       className="evidence-sticky w-36 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <div className="flex items-start gap-1 mb-1">
+      <PushPin color={pinColor} />
+      <div className="flex items-start gap-1 mb-1 mt-4">
         <StickyNote className="w-4 h-4 text-ink/50 flex-shrink-0" />
         <h3 className="font-marker text-sm text-ink">{data.title}</h3>
       </div>
