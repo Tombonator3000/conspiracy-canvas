@@ -21,8 +21,8 @@ interface EvidenceNodeProps {
   data: EvidenceNodeData;
 }
 
-// Realistic push pin component
-const PushPin = ({ color = "red" }: { color?: "red" | "yellow" | "blue" | "green" }) => {
+// Realistic push pin component - now wrapped with Handle for connections
+const PushPin = ({ color = "red", isDesktop = false }: { color?: "red" | "yellow" | "blue" | "green"; isDesktop?: boolean }) => {
   const colors = {
     red: { top: "#e53935", mid: "#c62828", bottom: "#b71c1c", shine: "#ff8a80" },
     yellow: { top: "#fdd835", mid: "#f9a825", bottom: "#f57f17", shine: "#fff59d" },
@@ -32,46 +32,64 @@ const PushPin = ({ color = "red" }: { color?: "red" | "yellow" | "blue" | "green
   const c = colors[color];
   
   return (
-    <svg 
-      className="push-pin" 
-      width="24" 
-      height="32" 
-      viewBox="0 0 24 32" 
-      style={{ 
-        position: "absolute", 
-        top: "-14px", 
-        left: "50%", 
+    <Handle
+      type="source"
+      position={Position.Top}
+      id="pin-source"
+      className="nodrag"
+      style={{
+        position: "absolute",
+        top: "-12px",
+        left: "50%",
         transform: "translateX(-50%)",
+        width: "28px",
+        height: "36px",
+        background: "transparent",
+        border: "none",
         zIndex: 10,
-        filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.4))"
+        cursor: "crosshair",
       }}
     >
-      {/* Pin needle */}
-      <path 
-        d="M12 18 L12 30" 
-        stroke="#666" 
-        strokeWidth="2" 
-        strokeLinecap="round"
-      />
-      <path 
-        d="M12 28 L12 31" 
-        stroke="#888" 
-        strokeWidth="1.5" 
-        strokeLinecap="round"
-      />
-      
-      {/* Pin head - main dome */}
-      <ellipse cx="12" cy="10" rx="10" ry="8" fill={c.mid} />
-      
-      {/* Pin head - top highlight */}
-      <ellipse cx="12" cy="8" rx="9" ry="6" fill={c.top} />
-      
-      {/* Shine/reflection */}
-      <ellipse cx="9" cy="6" rx="3" ry="2" fill={c.shine} opacity="0.6" />
-      
-      {/* Bottom shadow on dome */}
-      <ellipse cx="12" cy="13" rx="8" ry="3" fill={c.bottom} opacity="0.5" />
-    </svg>
+      <svg 
+        className="push-pin pointer-events-none" 
+        width="24" 
+        height="32" 
+        viewBox="0 0 24 32" 
+        style={{ 
+          position: "absolute",
+          top: "0",
+          left: "50%",
+          transform: "translateX(-50%)",
+          filter: "drop-shadow(1px 2px 3px rgba(0,0,0,0.4))"
+        }}
+      >
+        {/* Pin needle */}
+        <path 
+          d="M12 18 L12 30" 
+          stroke="#666" 
+          strokeWidth="2" 
+          strokeLinecap="round"
+        />
+        <path 
+          d="M12 28 L12 31" 
+          stroke="#888" 
+          strokeWidth="1.5" 
+          strokeLinecap="round"
+        />
+        
+        {/* Pin head - main dome */}
+        <ellipse cx="12" cy="10" rx="10" ry="8" fill={c.mid} />
+        
+        {/* Pin head - top highlight */}
+        <ellipse cx="12" cy="8" rx="9" ry="6" fill={c.top} />
+        
+        {/* Shine/reflection */}
+        <ellipse cx="9" cy="6" rx="3" ry="2" fill={c.shine} opacity="0.6" />
+        
+        {/* Bottom shadow on dome */}
+        <ellipse cx="12" cy="13" rx="8" ry="3" fill={c.bottom} opacity="0.5" />
+      </svg>
+    </Handle>
   );
 };
 
@@ -94,18 +112,19 @@ const getPinColor = (id: string): "red" | "yellow" | "blue" | "green" => {
 
 // Scribble display component for node-parented scribbles
 const NodeScribbleDisplay = ({ scribbles }: { scribbles: NodeScribble[] }) => {
-  const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperties => {
+const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperties => {
+    // Scribbles are now parented INSIDE the node, positioned with absolute
     switch (position) {
       case "top":
-        return { top: "-24px", left: "50%", transform: "translateX(-50%)" };
+        return { position: "absolute", top: "0", left: "50%", transform: "translateX(-50%)", width: "100%" };
       case "bottom":
-        return { bottom: "-20px", left: "50%", transform: "translateX(-50%)" };
+        return { position: "absolute", bottom: "0", left: "50%", transform: "translateX(-50%)", width: "100%" };
       case "center":
-        return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+        return { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "100%" };
       case "diagonal":
-        return { top: "30%", left: "10%", transform: "rotate(-15deg)" };
+        return { position: "absolute", top: "40%", left: "5%", transform: "rotate(-12deg)", width: "100%" };
       default:
-        return { bottom: "10px", left: "50%", transform: "translateX(-50%)" };
+        return { position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", width: "100%" };
     }
   };
 
@@ -154,11 +173,11 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
   
   return (
     <div 
-      className="evidence-photo w-48 cursor-grab active:cursor-grabbing relative"
+      className="evidence-photo paper-base w-48 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <PushPin color={pinColor} />
-      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden rounded-sm mt-2">
+      <PushPin color={pinColor} isDesktop={data.isDesktop} />
+      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden rounded-sm mt-4">
         {data.contentUrl ? (
           <img 
             src={data.contentUrl} 
@@ -201,11 +220,11 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
   
   return (
     <div 
-      className="evidence-document w-52 cursor-grab active:cursor-grabbing relative"
+      className="evidence-document paper-base w-52 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <PushPin color={pinColor} />
-      <div className="flex items-start gap-2 mb-2 mt-4">
+      <PushPin color={pinColor} isDesktop={data.isDesktop} />
+      <div className="flex items-start gap-2 mb-2 mt-6">
         <FileText className="w-5 h-5 text-primary flex-shrink-0" />
         <h3 className="font-typewriter text-sm font-bold text-ink tracking-tight">{data.title}</h3>
       </div>
@@ -241,11 +260,11 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
   
   return (
     <div 
-      className="evidence-sticky w-36 cursor-grab active:cursor-grabbing relative"
+      className="evidence-sticky paper-base w-36 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
-      <PushPin color={pinColor} />
-      <div className="flex items-start gap-1 mb-1 mt-4">
+      <PushPin color={pinColor} isDesktop={data.isDesktop} />
+      <div className="flex items-start gap-1 mb-1 mt-6">
         <StickyNote className="w-4 h-4 text-ink/50 flex-shrink-0" />
         <h3 className="font-marker text-sm text-ink">{data.title}</h3>
       </div>
@@ -274,7 +293,6 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
 
   // Use pre-calculated rotation from board, with shake animation override
   const baseRotation = data.rotation || 0;
-  const isDesktop = data.isDesktop || false;
 
   return (
     <motion.div
@@ -296,34 +314,24 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Target handle - at top for incoming connections */}
+      {/* Target handle - invisible but at top for incoming connections */}
       <Handle
         type="target"
         position={Position.Top}
-        className="touch-handle touch-handle-top"
+        className="nodrag"
+        style={{
+          position: 'absolute',
+          top: '-12px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: '28px',
+          height: '36px',
+          background: 'transparent',
+          border: 'none',
+          zIndex: 9,
+          opacity: 0,
+        }}
       />
-
-      {/* Desktop: Source handle positioned on the push pin for intuitive drag-to-connect */}
-      {isDesktop && (
-        <Handle
-          type="source"
-          position={Position.Top}
-          id="pin-source"
-          className="desktop-pin-handle"
-          style={{
-            position: 'absolute',
-            top: '-8px',
-            left: '50%',
-            transform: 'translateX(-50%)',
-            width: '28px',
-            height: '28px',
-            background: 'transparent',
-            border: 'none',
-            zIndex: 15,
-            cursor: 'crosshair',
-          }}
-        />
-      )}
 
       <motion.div
         animate={{
@@ -336,40 +344,9 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
         {renderNodeContent()}
       </motion.div>
 
-      {/* Node-parented scribbles */}
+      {/* Node-parented scribbles - positioned inside the node */}
       {data.nodeScribbles && data.nodeScribbles.length > 0 && (
         <NodeScribbleDisplay scribbles={data.nodeScribbles} />
-      )}
-
-      {/* Mobile: Source handle at bottom */}
-      {!isDesktop && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          className="touch-handle touch-handle-bottom"
-        />
-      )}
-
-      {/* Full-node overlay handle for Link Mode (mobile only) - makes entire node a source */}
-      {data.isLinkMode && !isDesktop && (
-        <Handle
-          type="source"
-          position={Position.Bottom}
-          id="fullnode-source"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            opacity: 0,
-            zIndex: 10,
-            borderRadius: 0,
-            transform: 'none',
-            border: 'none',
-            background: 'transparent',
-          }}
-        />
       )}
     </motion.div>
   );

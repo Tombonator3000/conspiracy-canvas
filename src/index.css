@@ -99,6 +99,14 @@
     border-radius: inherit;
   }
 
+  /* Paper base texture - applies to ALL evidence nodes */
+  .paper-base {
+    position: relative;
+    background-color: #fdfdfd;
+    background-image: url('https://www.transparenttextures.com/patterns/old-wall.png');
+    background-repeat: repeat;
+  }
+
   /* Evidence card styles */
   .evidence-card {
     @apply bg-card rounded-sm;
