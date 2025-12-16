@@ -100,16 +100,16 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
         )}
 
         {/* Terminal Menu - positioned to fit inside the monitor */}
-        <div 
+        <div
           className="absolute flex items-center justify-center z-10"
           style={{
-            top: '14%',
+            top: '17.5%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '28%',
-            height: '42%',
-            minWidth: '280px',
-            maxWidth: '420px',
+            width: '22%',
+            height: '38%',
+            minWidth: '260px',
+            maxWidth: '380px',
           }}
         >
           {/* CRT Scanline Overlay */}
@@ -128,7 +128,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
           />
 
           {/* Terminal content */}
-          <div className="relative z-10 p-4 sm:p-6 h-full w-full flex flex-col">
+          <div className="relative z-10 p-3 sm:p-4 h-full w-full flex flex-col">
             {/* Header */}
             <div 
               className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-1 opacity-70"
