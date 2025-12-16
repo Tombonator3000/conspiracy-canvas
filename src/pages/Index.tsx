@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { MainMenu } from "@/components/game/MainMenu";
 import { FilingCabinet } from "@/components/game/FilingCabinet";
 import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
-import { ResultScreen } from "@/components/game/ResultScreen";
+import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { allCases } from "@/data/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
@@ -112,8 +112,10 @@ const Index = () => {
     
     case 'result':
       if (!selectedCase || !gameResult) return null;
+      const currentCaseIndex = allCases.findIndex(c => c.id === selectedCase.id);
+      const hasNextCase = currentCaseIndex < allCases.length - 1;
       return (
-        <ResultScreen
+        <VictoryScreenModal
           caseData={selectedCase}
           isVictory={gameResult.isVictory}
           sanityRemaining={gameResult.sanityRemaining}
@@ -122,6 +124,7 @@ const Index = () => {
           onNextCase={handleNextCase}
           onRetry={handleRetry}
           onBackToMenu={handleBackToFiles}
+          hasNextCase={hasNextCase}
         />
       );
     
