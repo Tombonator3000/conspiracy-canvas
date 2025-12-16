@@ -13,6 +13,8 @@ interface EvidenceNodeData extends EvidenceNodeType {
   revealedTags?: string[];
   isDesktop?: boolean;
   nodeScribbles?: NodeScribble[];
+  isSpawning?: boolean;
+  isCombineTarget?: boolean;
 }
 
 interface EvidenceNodeProps {
@@ -276,17 +278,20 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
 
   return (
     <motion.div
-      className="relative"
+      className={`relative ${data.isCombineTarget ? 'combine-target-highlight' : ''}`}
       style={{ rotate: `${baseRotation}deg` }}
+      initial={data.isSpawning ? { scale: 0, opacity: 0 } : false}
       animate={{
-        scale: isHovered ? 1.05 : 1,
+        scale: data.isSpawning ? [0, 1.2, 1] : isHovered ? 1.05 : 1,
+        opacity: 1,
         rotate: data.isShaking
           ? [baseRotation, baseRotation - 3, baseRotation + 3, baseRotation - 3, baseRotation + 3, baseRotation]
           : baseRotation,
       }}
       transition={{
-        scale: { duration: 0.2 },
+        scale: data.isSpawning ? { duration: 0.5, ease: "backOut" } : { duration: 0.2 },
         rotate: { duration: 0.4, ease: "easeInOut" },
+        opacity: { duration: 0.3 },
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
