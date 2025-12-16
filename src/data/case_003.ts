@@ -181,5 +181,72 @@ export const case003: CaseData = {
     "LACTOSE INTOLERANT? OR TOLERANT OF LIES?",
     "EXPIRATION IS FAKE",
     "BIG DAIRY WINS AGAIN"
+  ],
+  combinations: [
+    {
+      itemA: "ev_bodybuilder",
+      itemB: "ev_memo",
+      unlockText: "HE'S IN ON IT! HE KNOWS!",
+      hint: "WHO WROTE THE MEMO?",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_conspiracy_photo",
+          type: "photo",
+          title: "The Meeting",
+          contentUrl: null,
+          description: "Photo of bodybuilder shaking hands with Dairy CEO. Caption: 'Keep them weak, except for us.'",
+          tags: ["DAIRY", "STRONG", "SECRET"],
+          position: { x: 350, y: 150 },
+          isRedHerring: false,
+          hiddenText: "ILLUMINATI GAINS",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_calendar",
+      itemB: "ev_cheese",
+      unlockText: "CHEESE PROVES THE DATES ARE FAKE!",
+      hint: "HOW OLD IS CHEESE?",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_aging_chart",
+          type: "document",
+          title: "Aging Truth Chart",
+          contentUrl: null,
+          description: "Parmesan: 2 years old. Cheddar: 10 years. Milk: 'Expires' in 2 weeks?! THE MATH DOESN'T WORK!",
+          tags: ["DATE", "FAKE", "DAIRY", "STRONG"],
+          position: { x: 400, y: 280 },
+          isRedHerring: false,
+          hiddenText: "TIME IS A CONSTRUCT",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_aging_chart",
+      itemB: "ev_lactaid",
+      unlockText: "THE PILLS BLOCK THE POWER!",
+      hint: "WHAT DO THE PILLS REALLY DO?",
+      difficulty: "hard",
+      bonusCredibility: 300,
+      resultNodes: [
+        {
+          id: "ev_suppression_formula",
+          type: "document",
+          title: "Strength Suppression Formula",
+          contentUrl: null,
+          description: "Lactaid ingredient list: 'Lactase enzyme, WEAKNESS COMPOUND X-7, cellulose'. They're drugging us!",
+          tags: ["WEAK", "DAIRY", "SECRET"],
+          position: { x: 300, y: 350 },
+          isRedHerring: false,
+          hiddenText: "FDA APPROVED WEAKNESS",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };

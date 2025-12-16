@@ -196,6 +196,44 @@ const findCombination = (combinations: Combination[] | undefined, nodeA: string,
   ) || null;
 };
 
+// Get combination hint for a node (shown under UV light)
+const getCombinationHint = (combinations: Combination[] | undefined, nodeId: string): string | undefined => {
+  if (!combinations) return undefined;
+  // Find a combination where this node is itemA (hint is shown on itemA)
+  const combo = combinations.find((c) => c.itemA === nodeId && c.hint);
+  return combo?.hint;
+};
+
+// Check if a node can be combined with any other node currently on the board
+const getCombinable = (combinations: Combination[] | undefined, nodeId: string, currentNodeIds: string[]): { canCombine: boolean; isChainResult: boolean } => {
+  if (!combinations) return { canCombine: false, isChainResult: false };
+
+  for (const combo of combinations) {
+    // Check if this node is part of any combination
+    if (combo.itemA === nodeId || combo.itemB === nodeId) {
+      // Check if the partner node exists on the board
+      const partnerId = combo.itemA === nodeId ? combo.itemB : combo.itemA;
+      if (currentNodeIds.includes(partnerId)) {
+        return { canCombine: true, isChainResult: false };
+      }
+    }
+  }
+
+  // Check if this node is a chain result (came from a combination and can be used in another)
+  const isChainResult = combinations.some((c) =>
+    c.isChainResult && c.resultNodes.some((rn) => rn.id === nodeId)
+  );
+
+  return { canCombine: false, isChainResult };
+};
+
+// Check if two specific nodes are nearby based on their positions
+const areNodesNearby = (posA: { x: number; y: number }, posB: { x: number; y: number }, threshold = 200): boolean => {
+  const dx = posA.x - posB.x;
+  const dy = posA.y - posB.y;
+  return Math.sqrt(dx * dx + dy * dy) < threshold;
+};
+
 // Combination unlock scribbles
 const combineUnlockScribbles = [
   "IT ALL MAKES SENSE NOW!",
@@ -368,25 +406,57 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     };
   }, [startAmbient, stopAmbient]);
 
-  // Update node draggability, link mode, and revealed hints when mode changes
+  // Update node draggability, link mode, revealed hints, and combination data when mode changes
   useEffect(() => {
     // On desktop, link mode is never used (source handle is on pin)
     const isLinkMode = isDesktop ? false : interactionMode === 'connect';
+    const currentNodeIds = nodes.map((n) => n.id);
+
+    // Calculate nearby combinable pairs
+    const nearbyPairs = new Set<string>();
+    if (caseData.combinations) {
+      for (const combo of caseData.combinations) {
+        const nodeA = nodes.find((n) => n.id === combo.itemA);
+        const nodeB = nodes.find((n) => n.id === combo.itemB);
+        if (nodeA && nodeB && areNodesNearby(nodeA.position, nodeB.position)) {
+          nearbyPairs.add(combo.itemA);
+          nearbyPairs.add(combo.itemB);
+        }
+      }
+    }
+
     setNodes((nds) =>
       nds.map((node) => {
         const nodeHints = revealedHints.get(node.id) || [];
         const nodeData = caseData.nodes.find((n) => n.id === node.id);
         const revealedTags = nodeHints.map((idx) => nodeData?.tags[idx]).filter(Boolean) as string[];
         const scribbles = gameState.nodeScribbles.filter((s) => s.nodeId === node.id);
+
+        // Get combination-related data
+        const combinationHint = getCombinationHint(caseData.combinations, node.id);
+        const { canCombine, isChainResult } = getCombinable(caseData.combinations, node.id, currentNodeIds);
+        const isNearbyCombinable = nearbyPairs.has(node.id);
+
         return {
           ...node,
           // On desktop, always draggable. On mobile, only in pan mode.
           draggable: isDesktop ? true : interactionMode === 'pan',
-          data: { ...node.data, isUVEnabled, isLinkMode, revealedTags, isDesktop, nodeScribbles: scribbles },
+          data: {
+            ...node.data,
+            isUVEnabled,
+            isLinkMode,
+            revealedTags,
+            isDesktop,
+            nodeScribbles: scribbles,
+            // Combination features
+            combinationHint,
+            isNearbyCombinable: isNearbyCombinable && canCombine,
+            isChainCombinable: isChainResult && canCombine,
+          },
         };
       })
     );
-  }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes, isDesktop, gameState.nodeScribbles]);
+  }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes, caseData.combinations, isDesktop, gameState.nodeScribbles, nodes]);
 
   // Update combine target highlighting
   useEffect(() => {
@@ -832,11 +902,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const unlockText = combination.unlockText || combineUnlockScribbles[Math.floor(Math.random() * combineUnlockScribbles.length)];
         addScribble(unlockText, centerPos.x, centerPos.y - 50);
 
-        // Bonus credibility for successful combine
-        spawnFloatingScore(200, cursorPosition.x, cursorPosition.y, true);
+        // Bonus credibility for successful combine (use custom bonus if defined)
+        const credBonus = combination.bonusCredibility ?? 200;
+        spawnFloatingScore(credBonus, cursorPosition.x, cursorPosition.y, true);
         setGameState((prev) => ({
           ...prev,
-          credibility: prev.credibility + 200,
+          credibility: prev.credibility + credBonus,
         }));
       } else {
         // Invalid combination - shake both nodes

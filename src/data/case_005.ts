@@ -192,5 +192,72 @@ export const case005: CaseData = {
     "HAIRBALLS = CORRUPTED FILES",
     "WHISKERS = ANTENNAS",
     "CATS OWN THE INTERNET"
+  ],
+  combinations: [
+    {
+      itemA: "ev_cat_router",
+      itemB: "ev_purr_frequency",
+      unlockText: "THE FREQUENCIES ARE IDENTICAL!",
+      hint: "MEASURE THE PURR",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_signal_match",
+          type: "document",
+          title: "Signal Analysis",
+          contentUrl: null,
+          description: "Cat purr: 5.0GHz. Home router: 5.0GHz. THEY ARE THE SAME DEVICE.",
+          tags: ["FREQUENCY", "5G", "WIFI"],
+          position: { x: 320, y: 180 },
+          isRedHerring: false,
+          hiddenText: "BANDWIDTH: 9 LIVES",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_cat_eyes",
+      itemB: "ev_ancient_egypt",
+      unlockText: "THE EGYPTIANS KNEW!",
+      hint: "ANCIENT SURVEILLANCE",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_hieroglyph",
+          type: "document",
+          title: "Decoded Hieroglyphs",
+          contentUrl: null,
+          description: "Translation: 'The all-seeing cat shall record for the gods.' THEY'VE BEEN SPYING FOR MILLENNIA!",
+          tags: ["HISTORY", "CAT", "DATA"],
+          position: { x: 400, y: 280 },
+          isRedHerring: false,
+          hiddenText: "SINCE 3000 BCE",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_hieroglyph",
+      itemB: "ev_catnip",
+      unlockText: "CATNIP IS THE UPDATE PROTOCOL!",
+      hint: "WHY DO THEY NEED IT?",
+      difficulty: "hard",
+      bonusCredibility: 350,
+      resultNodes: [
+        {
+          id: "ev_firmware_update",
+          type: "document",
+          title: "Feline Firmware Protocol",
+          contentUrl: null,
+          description: "Catnip triggers firmware updates. The 'high' is actually a reboot cycle. Version: CAT.OS 2024.9.1",
+          tags: ["CAT", "WIFI", "5G"],
+          position: { x: 350, y: 380 },
+          isRedHerring: false,
+          hiddenText: "MEOW.EXE",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };

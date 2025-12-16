@@ -15,6 +15,10 @@ interface EvidenceNodeData extends EvidenceNodeType {
   nodeScribbles?: NodeScribble[];
   isSpawning?: boolean;
   isCombineTarget?: boolean;
+  // New combination features
+  isNearbyCombinable?: boolean;  // Glow when near a valid combination partner
+  isChainCombinable?: boolean;   // Purple glow for chain combination items
+  combinationHint?: string;      // UV-light hint for combinations (e.g., "COMBINE WITH MANUAL")
 }
 
 interface EvidenceNodeProps {
@@ -294,9 +298,16 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
   // Use pre-calculated rotation from board, with shake animation override
   const baseRotation = data.rotation || 0;
 
+  // Build class list for combination glow effects
+  const glowClasses = [
+    data.isCombineTarget ? 'combine-target-highlight' : '',
+    data.isNearbyCombinable ? 'combinable-glow' : '',
+    data.isChainCombinable ? 'chain-combinable-glow' : '',
+  ].filter(Boolean).join(' ');
+
   return (
     <motion.div
-      className={`relative ${data.isCombineTarget ? 'combine-target-highlight' : ''}`}
+      className={`relative ${glowClasses}`}
       style={{ rotate: `${baseRotation}deg` }}
       initial={data.isSpawning ? { scale: 0, opacity: 0 } : false}
       animate={{
@@ -343,6 +354,13 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
       >
         {renderNodeContent()}
       </motion.div>
+
+      {/* UV-light combination hint */}
+      {data.isUVEnabled && data.combinationHint && (
+        <div className="uv-combination-hint">
+          {data.combinationHint}
+        </div>
+      )}
 
       {/* Node-parented scribbles - positioned inside the node */}
       {data.nodeScribbles && data.nodeScribbles.length > 0 && (

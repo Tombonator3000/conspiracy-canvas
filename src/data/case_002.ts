@@ -182,5 +182,72 @@ export const case002: CaseData = {
     "UNDERGROUND FASHION",
     "53% MISSING!",
     "THE HOLE TRUTH"
+  ],
+  combinations: [
+    {
+      itemA: "ev_lonely_sock",
+      itemB: "ev_seismograph",
+      unlockText: "THE VIBRATIONS MATCH THE SOCK FIBERS!",
+      hint: "COMPARE WITH SEISMIC DATA",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_portal_frequency",
+          type: "document",
+          title: "Portal Frequency Analysis",
+          contentUrl: null,
+          description: "The sock's cotton fibers resonate at exactly 4.5km depth frequency. THEY'RE BEING PULLED DOWN!",
+          tags: ["FABRIC", "HOLE", "EARTH"],
+          position: { x: 300, y: 200 },
+          isRedHerring: false,
+          hiddenText: "TELEPORT FREQ: 7.83Hz",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_instruction_manual",
+      itemB: "ev_lint",
+      unlockText: "PAGE 47 WAS HIDDEN IN THE LINT!",
+      hint: "CHECK THE LINT TRAP",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_hidden_page",
+          type: "document",
+          title: "Hidden Manual Page",
+          contentUrl: null,
+          description: "Page 47: 'In case of dimensional rift, do NOT contact customer service.'",
+          tags: ["INSTRUCTIONS", "MISSING", "PORTAL"],
+          position: { x: 400, y: 300 },
+          isRedHerring: false,
+          hiddenText: "PATENT #4815162342",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_hidden_page",
+      itemB: "ev_receipt",
+      unlockText: "THE PATENT NUMBER MATCHES THE RECEIPT BARCODE!",
+      hint: "CROSS-REFERENCE THE NUMBERS",
+      difficulty: "hard",
+      bonusCredibility: 350,
+      resultNodes: [
+        {
+          id: "ev_smoking_gun",
+          type: "document",
+          title: "The Smoking Gun",
+          contentUrl: null,
+          description: "Patent for 'Textile-Based Dimensional Gateway'. Filed by: HOLLOW EARTH IMPORTS LLC.",
+          tags: ["EARTH", "HOLE", "MISSING", "FABRIC"],
+          position: { x: 350, y: 250 },
+          isRedHerring: false,
+          hiddenText: "CEO: M. SOCKINGTON",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };

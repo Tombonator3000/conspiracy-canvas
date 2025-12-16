@@ -206,5 +206,94 @@ export const case007: CaseData = {
     "TEMPORAL OVERLOAD",
     "WHERE'S THE DELOREAN?",
     "FLUX CAPACITOR WATERLOGGED"
+  ],
+  combinations: [
+    {
+      itemA: "ev_iphone_1912",
+      itemB: "ev_passenger_list",
+      unlockText: "M. MCFLY IS HOLDING THE PHONE!",
+      hint: "WHO OWNS THE DEVICE?",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_time_tourist",
+          type: "document",
+          title: "Time Tourist ID",
+          contentUrl: null,
+          description: "Enhanced photo reveals iPhone case with text: 'Time Tours Inc. - Est. 2087'. It's a TOUR GROUP!",
+          tags: ["TIME", "PHONE", "TOURIST"],
+          position: { x: 300, y: 150 },
+          isRedHerring: false,
+          hiddenText: "BOOKING #88MPH",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_iceberg",
+      itemB: "ev_souvenirs",
+      unlockText: "THE ICEBERG WAS A COVER-UP!",
+      hint: "WHAT REALLY SANK IT?",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_weight_analysis",
+          type: "document",
+          title: "Weight Distribution Report",
+          contentUrl: null,
+          description: "Souvenir weight: 50 tons. Ship exceeded capacity by EXACTLY 50 tons. The iceberg was a SCAPEGOAT!",
+          tags: ["WEIGHT", "CARGO", "FAKE"],
+          position: { x: 450, y: 280 },
+          isRedHerring: false,
+          hiddenText: "ICEBERG: HOLOGRAM",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_weight_analysis",
+      itemB: "ev_band",
+      unlockText: "THE BAND KNEW THE FUTURE!",
+      hint: "WHY WERE THEY SO CALM?",
+      difficulty: "hard",
+      bonusCredibility: 400,
+      resultNodes: [
+        {
+          id: "ev_playlist",
+          type: "document",
+          title: "The Impossible Playlist",
+          contentUrl: null,
+          description: "Band's setlist found: 'My Heart Will Go On - Celine Dion (1997)'. They were playing songs FROM THE FUTURE!",
+          tags: ["MUSIC", "TIME", "CALM"],
+          position: { x: 380, y: 380 },
+          isRedHerring: false,
+          hiddenText: "SPOTIFY: 1912",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_time_tourist",
+      itemB: "ev_movie",
+      unlockText: "CAMERON WAS A PASSENGER!",
+      hint: "HOW DID HE KNOW?",
+      difficulty: "hard",
+      bonusCredibility: 500,
+      resultNodes: [
+        {
+          id: "ev_cameron_confession",
+          type: "document",
+          title: "The Cameron Confession",
+          contentUrl: null,
+          description: "Passenger list entry: 'J. Cameron, filmmaker, future/past'. The movie wasn't fiction - IT WAS HIS HOME VIDEO!",
+          tags: ["TIME", "LIST", "FILM"],
+          position: { x: 280, y: 450 },
+          isRedHerring: false,
+          hiddenText: "BUDGET: $200M PAST DOLLARS",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };

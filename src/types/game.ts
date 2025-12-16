@@ -58,6 +58,18 @@ export interface Combination {
   itemB: string;  // Node ID of second item
   resultNodes: EvidenceNode[];  // New nodes that spawn when combined
   unlockText: string;  // Scribble text shown on success
+  // Enhanced combination features
+  hint?: string;  // UV-light hint shown on one of the items (e.g., "COMBINE WITH MANUAL")
+  isChainResult?: boolean;  // If true, this combination's result can be used in further combos
+  bonusCredibility?: number;  // Override default +200 bonus (for chain combos: higher reward)
+  difficulty?: 'easy' | 'medium' | 'hard';  // Affects hint visibility
+}
+
+// Track discovered combinations for achievements
+export interface CombinationProgress {
+  caseId: string;
+  discoveredCombinations: string[];  // Array of "itemA+itemB" keys
+  totalCombinations: number;
 }
 
 export interface CaseData {
