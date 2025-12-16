@@ -686,7 +686,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   );
 
   // Handle connection start - track source for tag visualization
-  const onConnectStart = useCallback((event: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
+  const onConnectStart = useCallback((_: unknown, { nodeId }: { nodeId: string | null }) => {
     if (nodeId) {
       setConnectingSourceId(nodeId);
     }
@@ -863,16 +863,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
         panOnScroll={true}
-        // In connect mode: disable pan on drag, enable click-to-connect
-        panOnDrag={interactionMode === 'pan' ? true : false}
-        // CRITICAL: connectOnClick lets users tap handle, then tap another - works great on mobile!
-        connectOnClick={interactionMode === 'connect'}
+        // Pan mode: drag nodes, scroll to pan. Connect mode: tap handles to connect
+        panOnDrag={interactionMode === 'pan' ? [0, 1, 2] : [1, 2]}
+        // CRITICAL: Always allow connecting via handle drag
+        connectOnClick={true}
         zoomOnPinch={true}
         zoomOnScroll={true}
         selectNodesOnDrag={false}
-        // Disable node selection to prevent touch conflicts
-        elementsSelectable={interactionMode === 'pan'}
+        elementsSelectable={false}
         nodesDraggable={interactionMode === 'pan'}
+        // Ensure edges are not updatable to prevent conflicts
+        edgesFocusable={false}
+        edgesReconnectable={false}
       >
         <Background
           variant={BackgroundVariant.Dots}
