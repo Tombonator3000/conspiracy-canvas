@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&family=Courier+Prime:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&family=Courier+Prime:wght@400;700&family=VT323&family=Press+Start+2P&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -500,5 +500,202 @@
   /* Prevent text from becoming too small when zoomed out */
   .react-flow__viewport {
     font-size: 1rem;
+  }
+
+  /* === CRT MONITOR EFFECTS FOR BRIEFING SCREEN === */
+
+  /* CRT monitor container with curve effect */
+  .crt-monitor {
+    position: relative;
+    background: #0a0a0a;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow:
+      inset 0 0 100px rgba(0, 255, 0, 0.05),
+      0 0 20px rgba(0, 0, 0, 0.8),
+      0 10px 40px rgba(0, 0, 0, 0.6);
+  }
+
+  /* Inner curve simulation */
+  .crt-monitor::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 0%,
+      transparent 60%,
+      rgba(0, 0, 0, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  /* Scanlines overlay */
+  .crt-scanlines {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 0, 0, 0.3) 1px,
+      rgba(0, 0, 0, 0.3) 2px
+    );
+    pointer-events: none;
+    z-index: 20;
+    animation: scanline-flicker 0.1s infinite;
+  }
+
+  @keyframes scanline-flicker {
+    0%, 100% { opacity: 0.8; }
+    50% { opacity: 0.9; }
+  }
+
+  /* CRT screen glow */
+  .crt-glow {
+    position: absolute;
+    inset: 0;
+    box-shadow: inset 0 0 80px rgba(0, 255, 0, 0.1);
+    pointer-events: none;
+    z-index: 5;
+  }
+
+  /* Screen flicker effect */
+  .crt-flicker {
+    animation: crt-flicker 8s infinite;
+  }
+
+  @keyframes crt-flicker {
+    0%, 100% { opacity: 1; }
+    92% { opacity: 1; }
+    93% { opacity: 0.95; }
+    94% { opacity: 1; }
+    97% { opacity: 0.98; }
+    98% { opacity: 1; }
+  }
+
+  /* Terminal text glow */
+  .terminal-text {
+    font-family: 'VT323', 'Courier New', monospace;
+    color: #00ff00;
+    text-shadow:
+      0 0 5px rgba(0, 255, 0, 0.8),
+      0 0 10px rgba(0, 255, 0, 0.5),
+      0 0 20px rgba(0, 255, 0, 0.3);
+  }
+
+  /* Pixel font for headers */
+  .pixel-font {
+    font-family: 'Press Start 2P', 'VT323', monospace;
+    text-transform: uppercase;
+  }
+
+  /* Flashing classified header */
+  .classified-flash {
+    animation: classified-blink 1s infinite;
+  }
+
+  @keyframes classified-blink {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0.3; }
+  }
+
+  /* DOS-style window border */
+  .dos-window {
+    border: 3px solid #00ff00;
+    box-shadow:
+      inset 2px 2px 0 rgba(0, 255, 0, 0.3),
+      inset -2px -2px 0 rgba(0, 100, 0, 0.5),
+      0 0 20px rgba(0, 255, 0, 0.2);
+    background: rgba(0, 20, 0, 0.95);
+  }
+
+  /* DOS-style button */
+  .dos-button {
+    font-family: 'VT323', monospace;
+    background: #001a00;
+    border: 2px solid #00ff00;
+    color: #00ff00;
+    padding: 8px 16px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.1s;
+    box-shadow:
+      inset 1px 1px 0 rgba(0, 255, 0, 0.4),
+      inset -1px -1px 0 rgba(0, 100, 0, 0.6);
+    text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
+  }
+
+  .dos-button:hover {
+    background: #003300;
+    box-shadow:
+      0 0 15px rgba(0, 255, 0, 0.4),
+      inset 1px 1px 0 rgba(0, 255, 0, 0.4),
+      inset -1px -1px 0 rgba(0, 100, 0, 0.6);
+  }
+
+  .dos-button:active {
+    transform: translateY(1px);
+    box-shadow:
+      inset 2px 2px 0 rgba(0, 100, 0, 0.6),
+      inset -1px -1px 0 rgba(0, 255, 0, 0.2);
+  }
+
+  /* Typing cursor animation */
+  .typing-cursor::after {
+    content: "█";
+    animation: blink-cursor 0.7s infinite;
+  }
+
+  @keyframes blink-cursor {
+    0%, 49% { opacity: 1; }
+    50%, 100% { opacity: 0; }
+  }
+
+  /* Boot-up animation */
+  @keyframes boot-up {
+    0% {
+      opacity: 0;
+      filter: blur(10px);
+    }
+    30% {
+      opacity: 0.5;
+      filter: blur(5px);
+    }
+    100% {
+      opacity: 1;
+      filter: blur(0);
+    }
+  }
+
+  .crt-boot {
+    animation: boot-up 0.5s ease-out forwards;
+  }
+
+  /* Hard drive activity indicator */
+  .hdd-activity {
+    animation: hdd-blink 0.1s infinite;
+  }
+
+  @keyframes hdd-blink {
+    0%, 100% { opacity: 1; background: #ff6600; }
+    50% { opacity: 0.3; background: #ff3300; }
+  }
+
+  /* Redacted/classified stamp effect */
+  .stamp-classified {
+    position: relative;
+    display: inline-block;
+    padding: 4px 12px;
+    border: 2px solid #ff0000;
+    color: #ff0000;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    transform: rotate(-3deg);
+    text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
   }
 }

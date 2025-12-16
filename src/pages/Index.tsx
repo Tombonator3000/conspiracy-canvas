@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { MainMenu } from "@/components/game/MainMenu";
 import { FilingCabinet } from "@/components/game/FilingCabinet";
+import { BriefingScreen } from "@/components/game/BriefingScreen";
 import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
 import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
@@ -8,7 +9,7 @@ import { allCases } from "@/data/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
 import type { CaseData, CredibilityStats } from "@/types/game";
 
-type GameScreen = 'menu' | 'files' | 'game' | 'result' | 'gameover';
+type GameScreen = 'menu' | 'files' | 'briefing' | 'game' | 'result' | 'gameover';
 
 interface GameResult {
   isVictory: boolean;
@@ -30,7 +31,15 @@ const Index = () => {
 
   const handleSelectCase = useCallback((caseData: CaseData) => {
     setSelectedCase(caseData);
+    setCurrentScreen('briefing');
+  }, []);
+
+  const handleExecuteBriefing = useCallback(() => {
     setCurrentScreen('game');
+  }, []);
+
+  const handleAbortBriefing = useCallback(() => {
+    setCurrentScreen('files');
   }, []);
 
   const handleGameEnd = useCallback((
@@ -57,14 +66,14 @@ const Index = () => {
 
   const handleNextCase = useCallback(() => {
     if (!selectedCase) return;
-    
+
     const currentIndex = allCases.findIndex(c => c.id === selectedCase.id);
     const nextCase = allCases[currentIndex + 1];
-    
+
     if (nextCase) {
       setSelectedCase(nextCase);
       setGameResult(null);
-      setCurrentScreen('game');
+      setCurrentScreen('briefing');
     } else {
       // No more cases, go back to files
       setSelectedCase(null);
@@ -96,7 +105,17 @@ const Index = () => {
           onBack={handleBackToMenu}
         />
       );
-    
+
+    case 'briefing':
+      if (!selectedCase) return null;
+      return (
+        <BriefingScreen
+          caseData={selectedCase}
+          onExecute={handleExecuteBriefing}
+          onAbort={handleAbortBriefing}
+        />
+      );
+
     case 'game':
       if (!selectedCase) return null;
       return (
