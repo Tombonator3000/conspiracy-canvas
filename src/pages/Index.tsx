@@ -73,17 +73,14 @@ const Index = () => {
     }
   }, [selectedCase]);
 
-  const handleBackToMenu = useCallback(() => {
+  const resetAndNavigate = useCallback((screen: GameScreen) => {
     setSelectedCase(null);
     setGameResult(null);
-    setCurrentScreen('menu');
+    setCurrentScreen(screen);
   }, []);
 
-  const handleBackToFiles = useCallback(() => {
-    setSelectedCase(null);
-    setGameResult(null);
-    setCurrentScreen('files');
-  }, []);
+  const handleBackToMenu = useCallback(() => resetAndNavigate('menu'), [resetAndNavigate]);
+  const handleBackToFiles = useCallback(() => resetAndNavigate('files'), [resetAndNavigate]);
 
   // Render current screen
   switch (currentScreen) {
