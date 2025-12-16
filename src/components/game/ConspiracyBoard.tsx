@@ -101,12 +101,8 @@ const createInitialNodes = (
   });
 };
 
-// Connection line style - red string while dragging
-const connectionLineStyle = {
-  stroke: 'hsl(350, 80%, 50%)',
-  strokeWidth: 3,
-  strokeLinecap: 'round' as const,
-};
+// Connection line style is now computed dynamically based on threadType
+// See getConnectionLineStyle useMemo inside ConspiracyBoard component
 
 // Validate connection based on shared tags and thread type
 const validateConnection = (caseData: CaseData, sourceId: string, targetId: string, threadType: 'red' | 'blue' = 'red'): ConnectionResult => {
@@ -251,6 +247,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [spawningNodes, setSpawningNodes] = useState<Set<string>>(new Set());
   const [threadType, setThreadType] = useState<'red' | 'blue'>('red');
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+
+  // Dynamic connection line style based on thread type (preview color while dragging)
+  const connectionLineStyle = useMemo(() => ({
+    stroke: threadType === 'blue' ? 'hsl(220, 80%, 50%)' : 'hsl(350, 80%, 50%)',
+    strokeWidth: 3,
+    strokeLinecap: 'round' as const,
+  }), [threadType]);
 
   // Ref for the evidence bin for collision detection
   const binRef = useRef<HTMLDivElement>(null);
@@ -1188,6 +1191,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Connection line style
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
+        // Larger snap radius for better mobile touch UX (default is 20)
+        connectionRadius={50}
         // Desktop: scroll to zoom, spacebar+click or middle mouse to pan
         // Mobile: pinch to zoom, scroll to pan
         panOnScroll={!isDesktop}
