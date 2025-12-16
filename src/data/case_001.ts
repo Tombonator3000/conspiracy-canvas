@@ -31,7 +31,7 @@ export const case001: CaseData = {
       isRedHerring: false,
       hiddenText: "SERIAL #: BD-7742",
       isCritical: true,
-      truthTags: ["THE_DRONE"]  // This IS the drone/bird
+      truthTags: ["subject"]  // THE SUBJECT of the conspiracy (the bird/drone)
     },
     {
       id: "ev_schematic",
@@ -44,7 +44,7 @@ export const case001: CaseData = {
       isRedHerring: false,
       hiddenText: "PROJECT NEST EGG",
       isCritical: true,
-      truthTags: ["THE_TECH"]  // The technology/proof they're manufactured
+      truthTags: ["proof"]  // THE PROOF that birds are drones
     },
     {
       id: "ev_powerline",
@@ -57,7 +57,7 @@ export const case001: CaseData = {
       isRedHerring: false,
       hiddenText: "5V @ 2.1A",
       isCritical: true,
-      truthTags: ["THE_POWER_SOURCE"]  // Where they recharge
+      truthTags: ["location"]  // THE LOCATION where they recharge
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -218,7 +218,7 @@ export const case001: CaseData = {
           isRedHerring: false,
           hiddenText: "AVIAN UNIT SPECS v2.3",
           isCritical: true,
-          truthTags: ["THE_TECH"]  // Inherits + confirms THE_TECH
+          truthTags: ["proof"]  // Inherits + confirms proof of the technology
         },
         {
           id: "ev_hidden_memo",
@@ -253,7 +253,7 @@ export const case001: CaseData = {
           isRedHerring: false,
           hiddenText: "5V USB-BEAK",
           isCritical: true,
-          truthTags: ["THE_POWER_SOURCE", "THE_TECH"]  // Confirms the charging network
+          truthTags: ["location", "proof"]  // Confirms the location + proof of charging network
         }
       ]
     },
@@ -275,7 +275,7 @@ export const case001: CaseData = {
           isRedHerring: false,
           hiddenText: "FIRMWARE: HAWK.EYE",
           isCritical: true,
-          truthTags: ["THE_DRONE", "THE_TECH"]  // Proves the bird IS a drone
+          truthTags: ["subject", "proof"]  // Proves the bird IS a drone (subject + proof)
         }
       ]
     }

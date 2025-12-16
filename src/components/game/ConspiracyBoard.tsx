@@ -426,6 +426,36 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     ).length;
   }, [nodes, caseData.nodes]);
 
+  // WIN CONDITION CHECK: Trigger whenever edges or nodes change
+  // This ensures we check victory AFTER state has been updated (not during callbacks)
+  useEffect(() => {
+    // Don't check if game is already over
+    if (gameState.isVictory || gameState.isGameOver) return;
+
+    // Don't check if no requiredTags defined
+    if (!caseData.requiredTags || caseData.requiredTags.length === 0) return;
+
+    // Must have at least some edges to win
+    if (edges.length === 0) return;
+
+    console.log('🔄 Win condition useEffect triggered (edges/nodes changed)');
+
+    // Perform the win condition check with the current state
+    const isVictory = checkWinCondition(
+      allEvidenceNodes,
+      toWinValidationEdges(edges),
+      caseData.requiredTags
+    );
+
+    if (isVictory && !gameState.isVictory) {
+      console.log('🎉 VICTORY detected in useEffect!');
+      setGameState((prev) => ({
+        ...prev,
+        isVictory: true,
+      }));
+    }
+  }, [edges, nodes, allEvidenceNodes, caseData.requiredTags, gameState.isVictory, gameState.isGameOver]);
+
   // Handle game end
   useEffect(() => {
     if (gameState.isVictory || gameState.isGameOver) {
