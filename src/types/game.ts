@@ -83,7 +83,7 @@ export interface CaseData {
   nodes: EvidenceNode[];
   scribblePool: string[];
   combinations?: Combination[];  // Optional combinations for adventure-style puzzles
-  requiredTruthTags?: string[]; // Tags that must ALL be present in a connected cluster to win
+  requiredTags?: string[]; // Tags that must ALL be present in a connected cluster to win
 }
 
 export interface GameState {

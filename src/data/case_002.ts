@@ -18,7 +18,7 @@ export const case002: CaseData = {
     maxConnectionsNeeded: 3
   },
   // Semantic Truth Tags: Connect evidence proving THE_VICTIM + THE_EVIDENCE + THE_DESTINATION
-  requiredTruthTags: ["THE_VICTIM", "THE_EVIDENCE", "THE_DESTINATION"],
+  requiredTags: ["THE_VICTIM", "THE_EVIDENCE", "THE_DESTINATION"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {

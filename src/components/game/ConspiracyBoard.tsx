@@ -275,15 +275,14 @@ const getLargestConnectedCluster = (edges: Edge[], allNodeIds: string[]): Set<st
   return largestCluster;
 };
 
-// Collect all truthTags from nodes in a cluster
+// Collect all relevant tags (standard + truthTags) from nodes in a cluster
 const collectTruthTagsFromCluster = (clusterNodeIds: Set<string>, allNodes: EvidenceNodeType[]): Set<string> => {
   const collectedTags = new Set<string>();
 
   clusterNodeIds.forEach((nodeId) => {
     const node = allNodes.find((n) => n.id === nodeId);
-    if (node?.truthTags) {
-      node.truthTags.forEach((tag) => collectedTags.add(tag));
-    }
+    node?.tags.forEach((tag) => collectedTags.add(tag));
+    node?.truthTags?.forEach((tag) => collectedTags.add(tag));
   });
 
   return collectedTags;
@@ -293,10 +292,10 @@ const collectTruthTagsFromCluster = (clusterNodeIds: Set<string>, allNodes: Evid
 const checkTruthTagsWinCondition = (
   edges: Edge[],
   allNodes: EvidenceNodeType[],
-  requiredTruthTags: string[] | undefined
+  requiredTags: string[] | undefined
 ): boolean => {
-  // If no requiredTruthTags defined, fall back to legacy critical node check
-  if (!requiredTruthTags || requiredTruthTags.length === 0) {
+  // If no requiredTags defined, fall back to legacy critical node check
+  if (!requiredTags || requiredTags.length === 0) {
     return false; // Will use legacy check
   }
 
@@ -308,7 +307,7 @@ const checkTruthTagsWinCondition = (
   const collectedTags = collectTruthTagsFromCluster(largestCluster, allNodes);
 
   // Check if all required tags are present in the cluster
-  return requiredTruthTags.every((tag) => collectedTags.has(tag));
+  return requiredTags.every((tag) => collectedTags.has(tag));
 };
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
@@ -863,14 +862,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const checkWinConditionAfterCombination = useCallback((
     currentEdges: Edge[],
     currentNodes: EvidenceNodeType[],
-    requiredTruthTags: string[] | undefined
+    requiredTags: string[] | undefined
   ): boolean => {
-    if (!requiredTruthTags || requiredTruthTags.length === 0) {
+    if (!requiredTags || requiredTags.length === 0) {
       return false;
     }
 
     // First, try the standard cluster-based check
-    const clusterWin = checkTruthTagsWinCondition(currentEdges, currentNodes, requiredTruthTags);
+    const clusterWin = checkTruthTagsWinCondition(currentEdges, currentNodes, requiredTags);
     if (clusterWin) return true;
 
     // If cluster check fails, check if ALL required truthTags exist across ANY connected nodes
@@ -915,7 +914,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       // Check if this cluster has all required tags
       const clusterTags = collectTruthTagsFromCluster(cluster, currentNodes);
-      if (requiredTruthTags.every((tag) => clusterTags.has(tag))) {
+      if (requiredTags.every((tag) => clusterTags.has(tag))) {
         return true;
       }
     }
@@ -1039,7 +1038,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const isVictoryAfterCombine = checkWinConditionAfterCombination(
           remainingEdges,
           allNodesAfterCombination,
-          caseData.requiredTruthTags
+          caseData.requiredTags
         );
 
         // Update connected critical count for display
@@ -1066,7 +1065,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setBinHighlighted(false);
     setDraggedNodeId(null);
     setCombineTargetId(null);
-  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTruthTags, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
+  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTags, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -1117,13 +1116,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         }
 
         // Use tag-based semantic truth verification for win condition
-        // Falls back to legacy critical node check if no requiredTruthTags defined
+        // Falls back to legacy critical node check if no requiredTags defined
         const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
         const linkedEvidenceCount = connectedCritical.size;
-        const tagBasedVictory = checkTruthTagsWinCondition(updatedEdges, allEvidenceNodes, caseData.requiredTruthTags);
+        const tagBasedVictory = checkTruthTagsWinCondition(updatedEdges, allEvidenceNodes, caseData.requiredTags);
         const legacyVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
-        // Tag-based takes priority if requiredTruthTags is defined, otherwise use legacy
-        const isVictory = caseData.requiredTruthTags?.length ? tagBasedVictory : legacyVictory;
+        // Tag-based takes priority if requiredTags is defined, otherwise use legacy
+        const isVictory = caseData.requiredTags?.length ? tagBasedVictory : legacyVictory;
 
         // Calculate combo bonus for consecutive correct connections
         const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;

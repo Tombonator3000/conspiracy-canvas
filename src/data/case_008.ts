@@ -19,7 +19,7 @@ export const case008: CaseData = {
     maxConnectionsNeeded: 5,
   },
   // Semantic Truth Tags: Connect evidence proving THE_ORIGIN + THE_ANOMALY + THE_MECHANISM + THE_PROOF + THE_TESTIMONY
-  requiredTruthTags: ["THE_ORIGIN", "THE_ANOMALY", "THE_MECHANISM", "THE_PROOF", "THE_TESTIMONY"],
+  requiredTags: ["THE_ORIGIN", "THE_ANOMALY", "THE_MECHANISM", "THE_PROOF", "THE_TESTIMONY"],
   nodes: [
     // ===== CRITICAL EVIDENCE - REQUIRES BOTH THREAD TYPES =====
     // Red thread connections: via tags
