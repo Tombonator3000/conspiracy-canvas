@@ -110,7 +110,7 @@ const Index = () => {
         />
       );
     
-    case 'result':
+    case 'result': {
       if (!selectedCase || !gameResult) return null;
       const currentCaseIndex = allCases.findIndex(c => c.id === selectedCase.id);
       const hasNextCase = currentCaseIndex < allCases.length - 1;
@@ -127,6 +127,7 @@ const Index = () => {
           hasNextCase={hasNextCase}
         />
       );
+    }
     
     case 'gameover':
       return (

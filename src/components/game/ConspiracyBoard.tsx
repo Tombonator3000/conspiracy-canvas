@@ -7,6 +7,8 @@ import {
   type Node,
   type Edge,
   type Connection,
+  type NodeTypes,
+  type EdgeTypes,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -35,11 +37,11 @@ import { useDesktopDetection } from "@/hooks/useDesktopDetection";
 import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal, NodeScribble, Combination, EvidenceNode as EvidenceNodeType } from "@/types/game";
 import { TagMatchIndicator } from "./TagMatchIndicator";
 
-const nodeTypes = {
+const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
 };
 
-const edgeTypes = {
+const edgeTypes: EdgeTypes = {
   redString: RedStringEdge,
   blueString: BlueStringEdge,
 };
@@ -125,10 +127,10 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
   return { isValid: false };
 };
 
-// Calculate progressive penalty for evidence mistakes (100→200→300→400→500 max)
+// Calculate progressive penalty for evidence mistakes (50→100→150→200 max)
 const calculateEvidencePenalty = (mistakeCount: number): number => {
-  const basePenalty = 100;
-  const multiplier = Math.min(mistakeCount + 1, 5);  // Max 5x
+  const basePenalty = 50;
+  const multiplier = Math.min(mistakeCount + 1, 4);  // Max 4x
   return basePenalty * multiplier;
 };
 
@@ -622,7 +624,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Perform undo action
   const performUndo = useCallback(() => {
-    if (!undoState || !gameState.undoAvailable || gameState.sanity < 30) return;
+    if (!undoState || !gameState.undoAvailable || gameState.sanity < 20) return;
 
     playSFX("uv_toggle"); // Use a sound for undo
 
@@ -645,7 +647,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       ...prev,
       ...undoState.gameState,
       scribbles: prev.scribbles,
-      sanity: Math.max(0, prev.sanity - 30),
+      sanity: Math.max(0, prev.sanity - 20),
       undoAvailable: false,
     }));
 
@@ -1043,7 +1045,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setTagMatchInfo((prev) => ({ ...prev, visible: false }));
       setConnectingSourceId(null);
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop, threadType]
   );
 
   // Handle connection start - track source for tag visualization
@@ -1155,12 +1157,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             variant={gameState.undoAvailable && undoState ? 'default' : 'outline'}
             size="sm"
             onClick={performUndo}
-            disabled={!gameState.undoAvailable || !undoState || gameState.sanity < 30}
+            disabled={!gameState.undoAvailable || !undoState || gameState.sanity < 20}
             className="w-full gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
-            title={!gameState.undoAvailable ? "Already used" : gameState.sanity < 30 ? "Need 30 sanity" : "Undo last action (-30 sanity)"}
+            title={!gameState.undoAvailable ? "Already used" : gameState.sanity < 20 ? "Need 20 sanity" : "Undo last action (-20 sanity)"}
           >
             <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
-            <span className="hidden sm:inline">-30 HP</span>
+            <span className="hidden sm:inline">-20 HP</span>
             {!gameState.undoAvailable && <span className="text-[8px] opacity-50">(used)</span>}
           </Button>
         </div>
@@ -1241,8 +1243,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         onNodeDragStop={handleNodeDragStop}
         onNodeMouseEnter={onNodeMouseEnter}
         onNodeMouseLeave={onNodeMouseLeave}
-        nodeTypes={nodeTypes as any}
-        edgeTypes={edgeTypes as any}
+        nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         proOptions={proOptions}
         fitView
         fitViewOptions={{ padding: 0.3, minZoom: 0.2, maxZoom: 2 }}
