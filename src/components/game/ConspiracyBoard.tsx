@@ -51,18 +51,18 @@ interface ConspiracyBoardProps {
 }
 
 // Convert case data to React Flow nodes with random rotation and z-index for chaos
-const createInitialNodes = (caseData: CaseData, isDraggable: boolean, isUVEnabled: boolean): Node[] => {
+const createInitialNodes = (caseData: CaseData, isDraggable: boolean, isUVEnabled: boolean, isLinkMode: boolean): Node[] => {
   return caseData.nodes.map((node, index) => {
     // Random rotation between -15 and 15 degrees for that messy board feel
     const rotation = Math.random() * 30 - 15;
     // Random z-index so nodes overlap realistically
     const zIndex = Math.floor(Math.random() * 100);
-    
+
     return {
       id: node.id,
       type: "evidence",
       position: node.position,
-      data: { ...node, isUVEnabled, rotation },
+      data: { ...node, isUVEnabled, rotation, isLinkMode },
       draggable: isDraggable,
       zIndex,
     };
@@ -138,7 +138,57 @@ const isColliding = (nodeRect: DOMRect, binRect: DOMRect): boolean => {
   );
 };
 
+// Cluster detection: Check if all critical nodes are in the same connected component
+const getConnectedCriticalNodes = (edges: Edge[], criticalNodeIds: string[]): Set<string> => {
+  if (criticalNodeIds.length === 0) return new Set();
+
+  // Build adjacency list from edges
+  const adjacency: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
+    if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
+    adjacency.get(edge.source)!.add(edge.target);
+    adjacency.get(edge.target)!.add(edge.source);
+  });
+
+  // BFS from first critical node that has connections
+  const startNode = criticalNodeIds.find((id) => adjacency.has(id));
+  if (!startNode) return new Set();
+
+  const visited = new Set<string>();
+  const queue = [startNode];
+  visited.add(startNode);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const neighbors = adjacency.get(current);
+    if (neighbors) {
+      neighbors.forEach((neighbor) => {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push(neighbor);
+        }
+      });
+    }
+  }
+
+  // Return which critical nodes are connected
+  return new Set(criticalNodeIds.filter((id) => visited.has(id)));
+};
+
+// Check if all critical nodes form a single cluster
+const checkAllCriticalConnected = (edges: Edge[], criticalNodeIds: string[]): boolean => {
+  const connectedCritical = getConnectedCriticalNodes(edges, criticalNodeIds);
+  return criticalNodeIds.every((id) => connectedCritical.has(id));
+};
+
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
+  // Get all critical node IDs for cluster detection
+  const criticalNodeIds = useMemo(
+    () => caseData.nodes.filter((n) => n.isCritical).map((n) => n.id),
+    [caseData.nodes]
+  );
+
   // Mobile mode: 'pan' allows moving around, 'connect' locks nodes for easier connecting
   const [interactionMode, setInteractionMode] = useState<'pan' | 'connect'>('pan');
   const [isUVEnabled, setIsUVEnabled] = useState(false);
@@ -152,7 +202,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   
   const { playSFX, updateSanity } = useAudioContext();
   
-  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled));
+  const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled, interactionMode === 'connect'));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   
   const [gameState, setGameState] = useState<GameState>({
@@ -174,13 +224,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     updateSanity(gameState.sanity);
   }, [gameState.sanity, updateSanity]);
 
-  // Update node draggability when mode changes
+  // Update node draggability and link mode when mode changes
   useEffect(() => {
+    const isLinkMode = interactionMode === 'connect';
     setNodes((nds) =>
       nds.map((node) => ({
         ...node,
         draggable: interactionMode === 'pan',
-        data: { ...node.data, isUVEnabled },
+        data: { ...node.data, isUVEnabled, isLinkMode },
       }))
     );
   }, [interactionMode, isUVEnabled, setNodes]);
@@ -386,7 +437,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       if (result.isValid) {
         playSFX("connect_success");
-        
+
         // Valid connection - add red string
         const newEdge: Edge = {
           ...connection,
@@ -397,7 +448,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           target: connection.target,
         };
 
-        setEdges((eds) => addEdge(newEdge, eds));
+        // Calculate new edges array to check cluster connectivity
+        const updatedEdges = addEdge(newEdge, edges);
+        setEdges(updatedEdges);
 
         // Get position for scribble (midpoint)
         const sourceNode = nodes.find((n) => n.id === connection.source);
@@ -408,16 +461,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           addScribble(result.scribbleText, midX, midY);
         }
 
-        // Update game state
-        setGameState((prev) => {
-          const newValidConnections = prev.validConnections + 1;
-          const isVictory = newValidConnections >= prev.maxConnections;
-          return {
-            ...prev,
-            validConnections: newValidConnections,
-            isVictory,
-          };
-        });
+        // Use cluster detection for win condition
+        const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
+        const linkedEvidenceCount = connectedCritical.size;
+        const isVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
+
+        // Update game state with cluster-based detection
+        setGameState((prev) => ({
+          ...prev,
+          validConnections: linkedEvidenceCount,
+          isVictory,
+        }));
       } else {
         playSFX("connect_fail");
         
@@ -444,7 +498,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         });
       }
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble, playSFX]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble, playSFX, criticalNodeIds]
   );
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
@@ -466,7 +520,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <SanityMeter sanity={gameState.sanity} />
         <ConnectionCounter
           current={gameState.validConnections}
-          max={gameState.maxConnections}
+          max={criticalNodeIds.length}
         />
         
         {/* UV Light Toggle */}

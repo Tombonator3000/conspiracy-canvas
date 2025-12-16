@@ -24,10 +24,10 @@ export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
           <Link className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
         )}
       </motion.div>
-      
+
       <div className="flex flex-col gap-0.5 sm:gap-1">
         <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider hidden sm:block">
-          Connections
+          Evidence Linked
         </span>
         <div className="flex gap-0.5 sm:gap-1">
           {Array.from({ length: max }).map((_, i) => (
@@ -45,7 +45,7 @@ export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
           ))}
         </div>
       </div>
-      
+
       <span className={`font-marker text-sm sm:text-lg ${isComplete ? "text-sanity-green" : "text-foreground"}`}>
         {current}/{max}
       </span>

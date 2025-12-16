@@ -9,6 +9,7 @@ interface EvidenceNodeData extends EvidenceNodeType {
   isPulsing?: boolean;
   isUVEnabled?: boolean;
   rotation?: number;
+  isLinkMode?: boolean;
 }
 
 interface EvidenceNodeProps {
@@ -182,6 +183,28 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
         position={Position.Bottom}
         className="touch-handle touch-handle-bottom"
       />
+
+      {/* Full-node overlay handle for Link Mode - makes entire node a source */}
+      {data.isLinkMode && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="fullnode-source"
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            opacity: 0,
+            zIndex: 10,
+            borderRadius: 0,
+            transform: 'none',
+            border: 'none',
+            background: 'transparent',
+          }}
+        />
+      )}
     </motion.div>
   );
 });
