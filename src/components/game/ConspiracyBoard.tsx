@@ -863,11 +863,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       if (gameState.isGameOver || gameState.isVictory) return;
       if (!connection.source || !connection.target) return;
 
-      // Check if this connection already exists
+      // Check if this connection already exists with the same thread type
+      const expectedEdgeType = threadType === 'blue' ? "blueString" : "redString";
       const existingEdge = edges.find(
         (e) =>
-          (e.source === connection.source && e.target === connection.target) ||
-          (e.source === connection.target && e.target === connection.source)
+          e.type === expectedEdgeType &&
+          ((e.source === connection.source && e.target === connection.target) ||
+           (e.source === connection.target && e.target === connection.source))
       );
       if (existingEdge) return;
 
