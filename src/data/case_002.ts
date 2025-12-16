@@ -17,6 +17,8 @@ export const case002: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 3
   },
+  // Semantic Truth Tags: Connect evidence proving THE_VICTIM + THE_EVIDENCE + THE_DESTINATION
+  requiredTruthTags: ["THE_VICTIM", "THE_EVIDENCE", "THE_DESTINATION"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case002: CaseData = {
       position: { x: 120, y: 80 },
       isRedHerring: false,
       hiddenText: "TELEPORT RESIDUE",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_VICTIM"]  // The sock that disappeared
     },
     {
       id: "ev_receipt",
@@ -41,7 +44,8 @@ export const case002: CaseData = {
       position: { x: 480, y: 100 },
       isRedHerring: false,
       hiddenText: "53 GONE = 53%",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_EVIDENCE"]  // Proof of disappearance
     },
     {
       id: "ev_seismograph",
@@ -53,7 +57,8 @@ export const case002: CaseData = {
       position: { x: 300, y: 350 },
       isRedHerring: false,
       hiddenText: "4.5 KM DEEP",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_DESTINATION"]  // Where socks go
     },
     {
       id: "ev_lint",
@@ -201,7 +206,8 @@ export const case002: CaseData = {
           position: { x: 300, y: 200 },
           isRedHerring: false,
           hiddenText: "TELEPORT FREQ: 7.83Hz",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_VICTIM", "THE_DESTINATION"]  // Links victim to destination
         }
       ]
     },
@@ -245,7 +251,8 @@ export const case002: CaseData = {
           position: { x: 350, y: 250 },
           isRedHerring: false,
           hiddenText: "CEO: M. SOCKINGTON",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_EVIDENCE", "THE_DESTINATION"]  // Ultimate proof
         }
       ]
     }

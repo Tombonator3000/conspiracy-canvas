@@ -17,6 +17,8 @@ export const case005: CaseData = {
     chaosLevel: 1,
     maxConnectionsNeeded: 4
   },
+  // Semantic Truth Tags: Connect evidence proving THE_CHARGER + THE_FREQUENCY + THE_SURVEILLANCE + THE_HISTORY
+  requiredTruthTags: ["THE_CHARGER", "THE_FREQUENCY", "THE_SURVEILLANCE", "THE_HISTORY"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case005: CaseData = {
       position: { x: 120, y: 100 },
       isRedHerring: false,
       hiddenText: "2.4GHz PURR",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CHARGER"]  // How they charge
     },
     {
       id: "ev_purr_frequency",
@@ -41,7 +44,8 @@ export const case005: CaseData = {
       position: { x: 500, y: 80 },
       isRedHerring: false,
       hiddenText: "5.000 GHz EXACT",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_FREQUENCY"]  // The 5G frequency match
     },
     {
       id: "ev_cat_eyes",
@@ -53,7 +57,8 @@ export const case005: CaseData = {
       position: { x: 300, y: 340 },
       isRedHerring: false,
       hiddenText: "UPLOAD: 99%",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_SURVEILLANCE"]  // The spying
     },
     {
       id: "ev_ancient_egypt",
@@ -64,7 +69,8 @@ export const case005: CaseData = {
       tags: ["HISTORY", "WIFI", "TOWER"],
       position: { x: 550, y: 350 },
       isRedHerring: false,
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_HISTORY"]  // Ancient origins
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -211,7 +217,8 @@ export const case005: CaseData = {
           position: { x: 320, y: 180 },
           isRedHerring: false,
           hiddenText: "BANDWIDTH: 9 LIVES",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_FREQUENCY", "THE_CHARGER"]  // Frequency proof
         }
       ]
     },
@@ -255,7 +262,8 @@ export const case005: CaseData = {
           position: { x: 350, y: 380 },
           isRedHerring: false,
           hiddenText: "MEOW.EXE",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_SURVEILLANCE", "THE_HISTORY"]  // The firmware/software proof
         }
       ]
     }

@@ -19,6 +19,7 @@ export interface EvidenceNode {
   timelineTags?: string[]; // Tags for blue thread (timeline) connections
   timestamp?: number; // For chronological ordering in timeline connections
   hasRedactedContent?: boolean; // If true, shows scratch-to-reveal minigame
+  truthTags?: string[]; // Semantic truth tags for win condition (e.g., ['CULPRIT', 'MOTIVE'])
 }
 
 export interface Scribble {
@@ -82,6 +83,7 @@ export interface CaseData {
   nodes: EvidenceNode[];
   scribblePool: string[];
   combinations?: Combination[];  // Optional combinations for adventure-style puzzles
+  requiredTruthTags?: string[]; // Tags that must ALL be present in a connected cluster to win
 }
 
 export interface GameState {

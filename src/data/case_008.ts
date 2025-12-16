@@ -18,6 +18,8 @@ export const case008: CaseData = {
     chaosLevel: 2,
     maxConnectionsNeeded: 5,
   },
+  // Semantic Truth Tags: Connect evidence proving THE_ORIGIN + THE_ANOMALY + THE_MECHANISM + THE_PROOF + THE_TESTIMONY
+  requiredTruthTags: ["THE_ORIGIN", "THE_ANOMALY", "THE_MECHANISM", "THE_PROOF", "THE_TESTIMONY"],
   nodes: [
     // ===== CRITICAL EVIDENCE - REQUIRES BOTH THREAD TYPES =====
     // Red thread connections: via tags
@@ -36,6 +38,7 @@ export const case008: CaseData = {
       isRedHerring: false,
       hiddenText: "TIMELINE: 1947 ORIGIN → CONNECT TO OTHER TIMELINE EVENTS (BLUE)",
       isCritical: true,
+      truthTags: ["THE_ORIGIN"]  // The beginning of the conspiracy
     },
     {
       id: "ev_popcorn_anomaly",
@@ -50,6 +53,7 @@ export const case008: CaseData = {
       isRedHerring: false,
       hiddenText: "TIMELINE: TIME ANOMALY DETECTED → BLUE THREAD TO OTHER ANOMALIES",
       isCritical: true,
+      truthTags: ["THE_ANOMALY"]  // Time anomaly evidence
     },
     {
       id: "ev_rotating_plate",
@@ -64,6 +68,7 @@ export const case008: CaseData = {
       isRedHerring: false,
       hiddenText: "TIMELINE: MECHANISM → BLUE THREAD TO COLD SPOTS & ANOMALIES",
       isCritical: true,
+      truthTags: ["THE_MECHANISM"]  // How it works
     },
     {
       id: "ev_cold_spots",
@@ -78,6 +83,7 @@ export const case008: CaseData = {
       isRedHerring: false,
       hiddenText: "TIMELINE: 2010 EVIDENCE → BLUE THREAD TO CLOCK & POPCORN",
       isCritical: true,
+      truthTags: ["THE_PROOF"]  // Physical proof
     },
     {
       id: "ev_clock_testimony",
@@ -92,6 +98,7 @@ export const case008: CaseData = {
       isRedHerring: false,
       hiddenText: "TIMELINE: ONGOING SINCE 1947 → BLUE THREAD TO PATENT & COLD SPOTS",
       isCritical: true,
+      truthTags: ["THE_TESTIMONY"]  // Witness testimony
     },
 
     // ===== RED HERRINGS & JUNK =====

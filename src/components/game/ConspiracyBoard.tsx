@@ -218,10 +218,97 @@ const getConnectedCriticalNodes = (edges: Edge[], criticalNodeIds: string[]): Se
   return new Set(criticalNodeIds.filter((id) => visited.has(id)));
 };
 
-// Check if all critical nodes form a single cluster
+// Check if all critical nodes form a single cluster (legacy fallback)
 const checkAllCriticalConnected = (edges: Edge[], criticalNodeIds: string[]): boolean => {
   const connectedCritical = getConnectedCriticalNodes(edges, criticalNodeIds);
   return criticalNodeIds.every((id) => connectedCritical.has(id));
+};
+
+// NEW: Tag-Based Semantic Truth Verification
+// Get the largest connected cluster of nodes
+const getLargestConnectedCluster = (edges: Edge[], allNodeIds: string[]): Set<string> => {
+  if (allNodeIds.length === 0) return new Set();
+
+  // Build adjacency list from edges
+  const adjacency: Map<string, Set<string>> = new Map();
+  edges.forEach((edge) => {
+    if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
+    if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
+    adjacency.get(edge.source)!.add(edge.target);
+    adjacency.get(edge.target)!.add(edge.source);
+  });
+
+  // Find all connected components using BFS
+  const visited = new Set<string>();
+  let largestCluster = new Set<string>();
+
+  for (const nodeId of allNodeIds) {
+    if (visited.has(nodeId) || !adjacency.has(nodeId)) continue;
+
+    // BFS to find this component
+    const cluster = new Set<string>();
+    const queue = [nodeId];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+
+      visited.add(current);
+      cluster.add(current);
+
+      const neighbors = adjacency.get(current);
+      if (neighbors) {
+        neighbors.forEach((neighbor) => {
+          if (!visited.has(neighbor)) {
+            queue.push(neighbor);
+          }
+        });
+      }
+    }
+
+    // Keep track of the largest cluster
+    if (cluster.size > largestCluster.size) {
+      largestCluster = cluster;
+    }
+  }
+
+  return largestCluster;
+};
+
+// Collect all truthTags from nodes in a cluster
+const collectTruthTagsFromCluster = (clusterNodeIds: Set<string>, allNodes: EvidenceNodeType[]): Set<string> => {
+  const collectedTags = new Set<string>();
+
+  clusterNodeIds.forEach((nodeId) => {
+    const node = allNodes.find((n) => n.id === nodeId);
+    if (node?.truthTags) {
+      node.truthTags.forEach((tag) => collectedTags.add(tag));
+    }
+  });
+
+  return collectedTags;
+};
+
+// Check if the largest connected cluster contains all required truth tags
+const checkTruthTagsWinCondition = (
+  edges: Edge[],
+  allNodes: EvidenceNodeType[],
+  requiredTruthTags: string[] | undefined
+): boolean => {
+  // If no requiredTruthTags defined, fall back to legacy critical node check
+  if (!requiredTruthTags || requiredTruthTags.length === 0) {
+    return false; // Will use legacy check
+  }
+
+  const allNodeIds = allNodes.map((n) => n.id);
+  const largestCluster = getLargestConnectedCluster(edges, allNodeIds);
+
+  if (largestCluster.size === 0) return false;
+
+  const collectedTags = collectTruthTagsFromCluster(largestCluster, allNodes);
+
+  // Check if all required tags are present in the cluster
+  return requiredTruthTags.every((tag) => collectedTags.has(tag));
 };
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
@@ -822,11 +909,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     // Priority 2: Combine with another node
     if (combineTargetId && draggedNodeId && draggedNodeId !== combineTargetId) {
       const combination = findCombination(caseData.combinations, draggedNodeId, combineTargetId);
-      
+
       if (combination) {
         // Valid combination!
         playSFX("connect_success");
-        
+
         // Get position for spawning (between the two nodes)
         const targetNode = nodes.find((n) => n.id === combineTargetId);
         const sourceNode = nodes.find((n) => n.id === draggedNodeId);
@@ -834,15 +921,32 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ? { x: (targetNode.position.x + sourceNode.position.x) / 2, y: (targetNode.position.y + sourceNode.position.y) / 2 }
           : { x: 400, y: 300 };
 
+        // CRITICAL: Inherit truthTags from parent nodes to result nodes
+        // This ensures the semantic meaning is preserved even after merging
+        const sourceData = sourceNode?.data as EvidenceNodeType | undefined;
+        const targetData = targetNode?.data as EvidenceNodeType | undefined;
+        const parentTruthTags = new Set<string>();
+        sourceData?.truthTags?.forEach((tag) => parentTruthTags.add(tag));
+        targetData?.truthTags?.forEach((tag) => parentTruthTags.add(tag));
+
+        // Create result nodes with inherited truthTags
+        const resultNodesWithInheritedTags = combination.resultNodes.map((node) => ({
+          ...node,
+          truthTags: [
+            ...(node.truthTags || []),
+            ...Array.from(parentTruthTags),
+          ].filter((tag, idx, arr) => arr.indexOf(tag) === idx), // Remove duplicates
+        }));
+
         // Remove the two combined nodes
         setNodes((nds) => nds.filter((n) => n.id !== draggedNodeId && n.id !== combineTargetId));
-        setEdges((eds) => eds.filter((e) => 
+        setEdges((eds) => eds.filter((e) =>
           e.source !== draggedNodeId && e.target !== draggedNodeId &&
           e.source !== combineTargetId && e.target !== combineTargetId
         ));
 
-        // Spawn new nodes
-        spawnCombinationNodes(combination.resultNodes, centerPos);
+        // Spawn new nodes with inherited truthTags
+        spawnCombinationNodes(resultNodesWithInheritedTags, centerPos);
 
         // Add unlock scribble
         const unlockText = combination.unlockText || getRandomFromArray(COMBINE_UNLOCK_SCRIBBLES);
@@ -919,10 +1023,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           }
         }
 
-        // Use cluster detection for win condition
+        // Use tag-based semantic truth verification for win condition
+        // Falls back to legacy critical node check if no requiredTruthTags defined
         const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
         const linkedEvidenceCount = connectedCritical.size;
-        const isVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
+        const tagBasedVictory = checkTruthTagsWinCondition(updatedEdges, allEvidenceNodes, caseData.requiredTruthTags);
+        const legacyVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
+        // Tag-based takes priority if requiredTruthTags is defined, otherwise use legacy
+        const isVictory = caseData.requiredTruthTags?.length ? tagBasedVictory : legacyVictory;
 
         // Calculate combo bonus for consecutive correct connections
         const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;

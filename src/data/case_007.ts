@@ -17,6 +17,8 @@ export const case007: CaseData = {
     chaosLevel: 2,
     maxConnectionsNeeded: 5
   },
+  // Semantic Truth Tags: Connect evidence proving THE_TECH + THE_PASSENGERS + THE_COVER_UP + THE_WEIGHT + THE_WITNESSES
+  requiredTruthTags: ["THE_TECH", "THE_PASSENGERS", "THE_COVER_UP", "THE_WEIGHT", "THE_WITNESSES"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case007: CaseData = {
       position: { x: 100, y: 80 },
       isRedHerring: false,
       hiddenText: "MODEL: 15 PRO",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_TECH"]  // Future technology found
     },
     {
       id: "ev_passenger_list",
@@ -41,7 +44,8 @@ export const case007: CaseData = {
       position: { x: 520, y: 100 },
       isRedHerring: false,
       hiddenText: "DECK 88",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_PASSENGERS"]  // Time traveler names
     },
     {
       id: "ev_iceberg",
@@ -53,7 +57,8 @@ export const case007: CaseData = {
       position: { x: 300, y: 320 },
       isRedHerring: false,
       hiddenText: "MADE IN 2087",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_COVER_UP"]  // The fake iceberg
     },
     {
       id: "ev_souvenirs",
@@ -65,7 +70,8 @@ export const case007: CaseData = {
       position: { x: 550, y: 340 },
       isRedHerring: false,
       hiddenText: "50T FUTURE JUNK",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_WEIGHT"]  // The overloaded cargo
     },
     {
       id: "ev_band",
@@ -76,7 +82,8 @@ export const case007: CaseData = {
       tags: ["MUSIC", "TIME", "CALM"],
       position: { x: 100, y: 400 },
       isRedHerring: false,
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_WITNESSES"]  // People who knew
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -225,7 +232,8 @@ export const case007: CaseData = {
           position: { x: 300, y: 150 },
           isRedHerring: false,
           hiddenText: "BOOKING #88MPH",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_TECH", "THE_PASSENGERS"]  // Links tech to passengers
         }
       ]
     },
@@ -269,7 +277,8 @@ export const case007: CaseData = {
           position: { x: 380, y: 380 },
           isRedHerring: false,
           hiddenText: "SPOTIFY: 1912",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_WITNESSES", "THE_TECH"]  // Music from future
         }
       ]
     },
@@ -291,7 +300,8 @@ export const case007: CaseData = {
           position: { x: 280, y: 450 },
           isRedHerring: false,
           hiddenText: "BUDGET: $200M PAST DOLLARS",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_PASSENGERS", "THE_COVER_UP", "THE_WITNESSES"]  // Cameron proof
         }
       ]
     }

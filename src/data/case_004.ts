@@ -17,6 +17,8 @@ export const case004: CaseData = {
     chaosLevel: 1,
     maxConnectionsNeeded: 4
   },
+  // Semantic Truth Tags: Connect evidence proving THE_CLOUD + THE_CORRELATION + THE_UPLOAD + THE_CONFESSION
+  requiredTruthTags: ["THE_CLOUD", "THE_CORRELATION", "THE_UPLOAD", "THE_CONFESSION"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case004: CaseData = {
       position: { x: 100, y: 80 },
       isRedHerring: false,
       hiddenText: "3.5 INCH CUMULUS",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CLOUD"]  // The literal cloud
     },
     {
       id: "ev_rain_article",
@@ -41,7 +44,8 @@ export const case004: CaseData = {
       position: { x: 480, y: 100 },
       isRedHerring: false,
       hiddenText: "CORR: 0.99",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CORRELATION"]  // The upload-rain correlation
     },
     {
       id: "ev_server_smoke",
@@ -53,7 +57,8 @@ export const case004: CaseData = {
       position: { x: 300, y: 350 },
       isRedHerring: false,
       hiddenText: "H2O + 01100100",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_UPLOAD"]  // How data gets up there
     },
     {
       id: "ev_dropbox",
@@ -64,7 +69,8 @@ export const case004: CaseData = {
       tags: ["STORAGE", "RAIN", "NAME"],
       position: { x: 550, y: 320 },
       isRedHerring: false,
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CONFESSION"]  // They admit it in the name
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
@@ -212,7 +218,8 @@ export const case004: CaseData = {
           position: { x: 280, y: 180 },
           isRedHerring: false,
           hiddenText: "R² = 0.9999",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_CORRELATION", "THE_CLOUD"]  // Statistical proof
         }
       ]
     },
@@ -256,7 +263,8 @@ export const case004: CaseData = {
           position: { x: 380, y: 380 },
           isRedHerring: false,
           hiddenText: "LEGALLY BINDING RAIN",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_CONFESSION", "THE_CLOUD"]  // Legal admission
         }
       ]
     }

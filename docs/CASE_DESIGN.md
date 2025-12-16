@@ -4,7 +4,55 @@ Denne dokumentasjonen beskriver hvordan man designer og lager nye cases for Cons
 
 ## Oversikt
 
-Cases er data-drevne JSON-strukturer som definerer alt innhold i et spill: beviser, koblinger, scribbles og seierbetingelser. Systemet bruker **tag-matching** for å validere koblinger mellom noder.
+Cases er data-drevne JSON-strukturer som definerer alt innhold i et spill: beviser, koblinger, scribbles og seierbetingelser.
+
+Systemet bruker **to typer tags**:
+1. **`tags`** - For å validere om to noder KAN kobles (matching)
+2. **`truthTags`** - For å sjekke om spilleren har funnet "sannheten" (win condition)
+
+---
+
+## ⚠️ VIKTIG: Semantic Truth Verification System
+
+### Hvorfor dette systemet?
+
+Det gamle systemet sjekket om spesifikke node-ID-er var koblet sammen. MEN: Når spilleren kombinerer to noder, slettes de gamle ID-ene og en ny ID oppstår. Da vet ikke spillet lenger hva som er "riktig svar".
+
+### Løsningen: Tag-basert seiersjekk
+
+I stedet for å sjekke ID-er, sjekker vi nå om spillerens koblede klynge inneholder alle **requiredTruthTags**.
+
+```typescript
+// Gammelt system (FEILER ved kombinasjoner):
+// Win: Connect node-1 to node-4
+
+// Nytt system (FUNGERER alltid):
+// requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"]
+// Win: Cluster must contain ALL these tags
+```
+
+### Hvordan det fungerer
+
+1. Spilleren kobler noder med rød tråd
+2. Systemet finner den største koblede klyngen
+3. Systemet samler alle `truthTags` fra nodene i klyngen
+4. Hvis klyngen inneholder ALLE `requiredTruthTags` → SEIER!
+
+### Kombinasjons-arv (KRITISK!)
+
+Når to noder kombineres til en ny node:
+- Den nye noden **arver automatisk** alle `truthTags` fra begge foreldre-noder
+- Dette betyr at selv om original-nodene forsvinner, bevares deres "sannhets-mening"
+- Puzzle forblir løsbart uansett hvilke kombinasjoner spilleren gjør
+
+```
+Eksempel:
+  ev_bird (truthTags: ["THE_DRONE"])
+  +
+  ev_patent (truthTags: ["THE_TECH"])
+  =
+  ev_combined (truthTags: ["THE_DRONE", "THE_TECH"]) ← Arvet automatisk!
+```
 
 ---
 
@@ -23,8 +71,11 @@ interface CaseData {
   nodes: EvidenceNode[];         // Array med alle beviser
   scribblePool: string[];        // Tilfeldige tekster ved gyldige koblinger
   combinations?: Combination[];  // Valgfritt: Node-kombinasjoner
+  requiredTruthTags?: string[];  // ← NYTT! Tags som MÅ være i klynge for å vinne
 }
 ```
+
+**VIKTIG:** `requiredTruthTags` definerer "fasiten" for caset. Spilleren vinner når en koblet klynge inneholder ALLE disse tags.
 
 ---
 
@@ -77,15 +128,26 @@ interface EvidenceNode {
   title: string;                 // Kort tittel
   contentUrl: string | null;     // Bilde-import eller null
   description: string;           // Tooltip-tekst (konspiratorisk tone!)
-  tags: string[];                // KRITISK: Tags for matching
+  tags: string[];                // For matching mellom noder (rød tråd)
   position: { x: number; y: number }; // Startposisjon på canvas
   isRedHerring: boolean;         // true = junk, false = ekte bevis
-  isCritical?: boolean;          // true = MÅ kobles for å vinne
+  isCritical?: boolean;          // true = viktig bevis (legacy)
   hiddenText?: string;           // Tekst som avsløres med UV-lys
   timelineTags?: string[];       // For blå tråd (timeline)
   timestamp?: number;            // For kronologisk sortering
+  truthTags?: string[];          // ← NYTT! Semantisk sannhet for win condition
 }
 ```
+
+### Forskjell mellom `tags` og `truthTags`
+
+| Property | Formål | Eksempel |
+|----------|--------|----------|
+| `tags` | Tillater kobling mellom noder | `["DRONE", "SURVEILLANCE"]` |
+| `truthTags` | Beviser del av "sannheten" | `["THE_DRONE"]` |
+
+**`tags`** bestemmer HVORDAN noder kan kobles (matching).
+**`truthTags`** bestemmer HVORFOR noder er viktige for å vinne.
 
 ---
 
@@ -129,25 +191,35 @@ ev_security_cam              ev_powerline
 
 ## Win Condition
 
-### Klynge-basert seier
+### Tag-basert seier (NYE SYSTEM)
 
-Spilleren vinner når **alle kritiske noder er i samme sammenkoblede komponent**.
+Spilleren vinner når den største koblede klyngen inneholder **alle requiredTruthTags**.
 
 ```
-VIKTIG: Nodene trenger IKKE direkte koblinger til hverandre!
+VIKTIG: Det spiller ingen rolle HVILKE noder som er koblet!
+Alt som betyr noe er at klyngen har alle nødvendige truthTags.
 
-✓ GYLDIG: A ─── B ─── C  (A og C koblet via B)
-✓ GYLDIG: A ─┬─ B
-             └─ C        (A koblet til både B og C)
-✗ UGYLDIG: A ─── B   C   (C er isolert)
+Eksempel - Case 1 (Birds):
+requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"]
+
+✓ SEIER: Klynge inneholder noder med alle 3 tags
+✗ IKKE SEIER: Klynge mangler én eller flere tags
 ```
 
-### Beregning
+### Hvordan systemet sjekker seier
 
 ```typescript
-// Systemet bruker BFS (Breadth-First Search) for å finne klynger
-// Seier = alle isCritical:true noder er i samme klynge
+// 1. Finn største koblede klynge (BFS)
+// 2. Samle alle truthTags fra noder i klyngen
+// 3. Sjekk: Har klyngen ALLE requiredTruthTags?
+// 4. Hvis ja → SEIER!
+
+// Fordel: Fungerer selv etter node-kombinasjoner!
 ```
+
+### Legacy fallback
+
+Hvis `requiredTruthTags` ikke er definert, faller systemet tilbake til det gamle `isCritical`-baserte systemet.
 
 ---
 
@@ -156,14 +228,30 @@ VIKTIG: Nodene trenger IKKE direkte koblinger til hverandre!
 ### Kritiske noder (30%)
 
 - Sett `isRedHerring: false` og `isCritical: true`
-- MÅ ha tags som overlapper med andre kritiske noder
+- **Gi `truthTags`** som matcher en av `requiredTruthTags`
+- MÅ ha `tags` som overlapper med andre kritiske noder (for matching)
 - Bør ha `hiddenText` for UV-lys avslørning
 - Plasser spredt på brettet for å oppmuntre utforskning
 
+### Sannhets-tag design
+
+Hver `requiredTruthTag` representerer én del av "sannheten":
+
+```typescript
+// Case: Birds are drones
+requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"]
+
+// THE_DRONE - Beviset på at fuglen ER en drone
+// THE_TECH - Teknologien/patentene bak
+// THE_POWER_SOURCE - Hvor de lader (kraftlinjer)
+```
+
+**Tips:** Bruk `THE_` prefix for sannhets-tags for å skille dem fra vanlige tags.
+
 ### Red Herrings / Junk (70%)
 
-- Sett `isRedHerring: true` (ingen `isCritical`)
-- Gi tags som IKKE matcher kritiske noder
+- Sett `isRedHerring: true` (ingen `isCritical` eller `truthTags`)
+- Gi `tags` som IKKE matcher kritiske noder
 - Kan ha morsomme/absurde beskrivelser
 - Spilleren får poeng for å kaste disse
 
@@ -255,8 +343,11 @@ export const case_XXX: CaseData = {
   boardState: {
     sanity: 85,
     chaosLevel: 0,
-    maxConnectionsNeeded: 3  // Må matche antall isCritical noder
+    maxConnectionsNeeded: 3
   },
+
+  // ⚠️ VIKTIG: Definer sannhets-tags for win condition
+  requiredTruthTags: ["THE_SUBJECT", "THE_ACTION", "THE_TARGET"],
 
   nodes: [
     // === KRITISKE NODER (må kobles for å vinne) ===
@@ -266,11 +357,12 @@ export const case_XXX: CaseData = {
       title: "Main Evidence",
       contentUrl: null,
       description: "Something suspicious here...",
-      tags: ["TAG_A", "TAG_B"],
+      tags: ["TAG_A", "TAG_B"],         // For matching
       position: { x: 200, y: 150 },
       isRedHerring: false,
       hiddenText: "SECRET TEXT",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_SUBJECT"]        // ← Del av sannheten
     },
     {
       id: "ev_critical_2",
@@ -278,11 +370,12 @@ export const case_XXX: CaseData = {
       title: "Supporting Document",
       contentUrl: null,
       description: "Official papers that prove everything!",
-      tags: ["TAG_A", "TAG_C"],  // Deler TAG_A med ev_critical_1
+      tags: ["TAG_A", "TAG_C"],         // Deler TAG_A med ev_critical_1
       position: { x: 500, y: 200 },
       isRedHerring: false,
       hiddenText: "CLASSIFIED",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_ACTION"]         // ← Del av sannheten
     },
     {
       id: "ev_critical_3",
@@ -290,14 +383,15 @@ export const case_XXX: CaseData = {
       title: "Witness Note",
       contentUrl: null,
       description: "Someone saw something...",
-      tags: ["TAG_C", "TAG_D"],  // Deler TAG_C med ev_critical_2
+      tags: ["TAG_C", "TAG_D"],         // Deler TAG_C med ev_critical_2
       position: { x: 350, y: 400 },
       isRedHerring: false,
       hiddenText: "I SAW THEM",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_TARGET"]         // ← Del av sannheten
     },
 
-    // === RED HERRINGS (junk) ===
+    // === RED HERRINGS (junk) - Ingen truthTags! ===
     {
       id: "ev_junk_1",
       type: "photo",
@@ -307,6 +401,7 @@ export const case_XXX: CaseData = {
       tags: ["UNRELATED_1", "UNRELATED_2"],
       position: { x: 100, y: 300 },
       isRedHerring: true
+      // Ingen truthTags = bidrar ikke til seier
     },
     {
       id: "ev_junk_2",
@@ -337,17 +432,38 @@ export const case_XXX: CaseData = {
 
 Før du legger til et nytt case, verifiser:
 
+### Grunnleggende
 - [ ] `id` er unikt og følger formatet `case_XXX_tema`
-- [ ] `maxConnectionsNeeded` matcher antall `isCritical: true` noder
-- [ ] Alle kritiske noder kan kobles via delte tags
-- [ ] Ingen kritisk node er isolert (må dele minst én tag)
-- [ ] Red herrings har tags som IKKE matcher kritiske noder
+- [ ] `theTruth` gir mening som setning
 - [ ] `scribblePool` har minst 5 entries
 - [ ] Alle noder har unike `id`
 - [ ] Posisjoner er spredt (unngå overlapp)
-- [ ] `theTruth` gir mening som setning
 
-### Test kobling-logikk
+### Truth Tags (KRITISK!)
+- [ ] `requiredTruthTags` er definert på case-nivå
+- [ ] Hver kritisk node har `truthTags` som dekker minst én `requiredTruthTag`
+- [ ] Alle `requiredTruthTags` kan oppnås via kritiske noder
+- [ ] Kombinasjons-resultater har passende `truthTags` (arves automatisk fra foreldre)
+
+### Kobling-logikk
+- [ ] Alle kritiske noder kan kobles via delte `tags`
+- [ ] Ingen kritisk node er isolert (må dele minst én tag)
+- [ ] Red herrings har tags som IKKE matcher kritiske noder
+
+### Test - Truth Tags
+
+```
+Case: "Birds are drones"
+requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"]
+
+ev_pigeon_photo   → truthTags: ["THE_DRONE"]         ✓
+ev_schematic      → truthTags: ["THE_TECH"]          ✓
+ev_powerline      → truthTags: ["THE_POWER_SOURCE"]  ✓
+
+Alle 3 tags kan oppnås = VINNBART ✓
+```
+
+### Test - Kobling-logikk
 
 ```
 Kritisk node-graf for case_XXX:
@@ -358,7 +474,7 @@ ev_critical_1 ──[TAG_A]── ev_critical_2
                               │
                          ev_critical_3
 
-✓ Alle 3 kan nås via koblinger = VINNBART
+✓ Alle 3 kan nås via koblinger = KOBLBART
 ```
 
 ---

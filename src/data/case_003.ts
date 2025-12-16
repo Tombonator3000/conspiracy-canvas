@@ -17,6 +17,8 @@ export const case003: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 3
   },
+  // Semantic Truth Tags: Connect evidence proving THE_TRUTH_KEEPER + THE_CONSPIRACY + THE_METHOD
+  requiredTruthTags: ["THE_TRUTH_KEEPER", "THE_CONSPIRACY", "THE_METHOD"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -29,7 +31,8 @@ export const case003: CaseData = {
       position: { x: 150, y: 100 },
       isRedHerring: false,
       hiddenText: "6 WEEKS EXPIRED",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_TRUTH_KEEPER"]  // Someone who knows the truth
     },
     {
       id: "ev_memo",
@@ -41,7 +44,8 @@ export const case003: CaseData = {
       position: { x: 500, y: 120 },
       isRedHerring: false,
       hiddenText: "PROJECT CALCIUM FEAR",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_CONSPIRACY"]  // The conspiracy itself
     },
     {
       id: "ev_calendar",
@@ -53,7 +57,8 @@ export const case003: CaseData = {
       position: { x: 320, y: 380 },
       isRedHerring: false,
       hiddenText: "ALGORITHM: RANDOM()",
-      isCritical: true
+      isCritical: true,
+      truthTags: ["THE_METHOD"]  // How they do it
     },
     {
       id: "ev_cheese",
@@ -200,7 +205,8 @@ export const case003: CaseData = {
           position: { x: 350, y: 150 },
           isRedHerring: false,
           hiddenText: "ILLUMINATI GAINS",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_TRUTH_KEEPER", "THE_CONSPIRACY"]  // Links insider to conspiracy
         }
       ]
     },
@@ -244,7 +250,8 @@ export const case003: CaseData = {
           position: { x: 300, y: 350 },
           isRedHerring: false,
           hiddenText: "FDA APPROVED WEAKNESS",
-          isCritical: true
+          isCritical: true,
+          truthTags: ["THE_METHOD", "THE_CONSPIRACY"]  // Ultimate method proof
         }
       ]
     }
