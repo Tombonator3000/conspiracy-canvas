@@ -20,8 +20,7 @@ import { Hand, Cable, Undo2, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { EvidenceNodeComponent } from "./EvidenceNode";
-import { RedStringEdge } from "./RedStringEdge";
-import { BlueStringEdge } from "./BlueStringEdge";
+import { RedStringEdge, BlueStringEdge } from "./StringEdge";
 import { SanityMeter } from "./SanityMeter";
 import { ConnectionCounter } from "./ConnectionCounter";
 import { Scribble } from "./Scribble";
@@ -36,6 +35,22 @@ import { useDesktopDetection } from "@/hooks/useDesktopDetection";
 
 import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal, NodeScribble, Combination, EvidenceNode as EvidenceNodeType } from "@/types/game";
 import { TagMatchIndicator } from "./TagMatchIndicator";
+
+import {
+  HINT_SCRIBBLES,
+  FAILURE_SCRIBBLES,
+  TRASH_CRITICAL_SCRIBBLES,
+  TRASH_JUNK_SCRIBBLES,
+  COMBINE_UNLOCK_SCRIBBLES,
+  COMBINE_FAIL_SCRIBBLES,
+  NODE_PROXIMITY_THRESHOLD,
+  MAX_BOARD_SCRIBBLES,
+  MAX_NODE_SCRIBBLES,
+  calculateEvidencePenalty,
+  calculateComboBonus,
+  getRandomFromArray,
+} from "@/constants/game";
+import { isColliding, areNodesNearby, generateUniqueId } from "@/utils/helpers";
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -127,68 +142,6 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
   return { isValid: false };
 };
 
-// Calculate progressive penalty for evidence mistakes (50→100→150→200 max)
-const calculateEvidencePenalty = (mistakeCount: number): number => {
-  const basePenalty = 50;
-  const multiplier = Math.min(mistakeCount + 1, 4);  // Max 4x
-  return basePenalty * multiplier;
-};
-
-// Calculate combo bonus for consecutive correct connections
-const calculateComboBonus = (consecutiveCorrect: number): number => {
-  if (consecutiveCorrect >= 5) return 100;
-  if (consecutiveCorrect >= 3) return 50;
-  if (consecutiveCorrect >= 2) return 25;
-  return 0;
-};
-
-// Hint scribbles for revealing tags
-const hintScribbles = [
-  "I SEE A PATTERN...",
-  "WAIT... THIS TAG...",
-  "SOMETHING CONNECTS...",
-  "THE TRUTH REVEALS ITSELF!",
-  "A CLUE EMERGES!",
-];
-
-// Failure messages for wrong connections
-const failureScribbles = [
-  "NO! WRONG!",
-  "FOCUS!",
-  "THAT'S NOT IT!",
-  "THINK HARDER!",
-  "TOO OBVIOUS!",
-  "RED HERRING!",
-  "WAKE UP!",
-];
-
-// Trash scribbles for critical evidence (failure)
-const trashScribbles = [
-  "YOU THREW AWAY THE TRUTH!",
-  "THAT WAS IMPORTANT!",
-  "NO! NOT THAT ONE!",
-  "THE ANSWER WAS THERE!",
-];
-
-// Success scribbles for trashing junk
-const junkTrashScribbles = [
-  "GOOD! THAT WAS GARBAGE!",
-  "JUNK CLEARED!",
-  "RED HERRING GONE!",
-  "DECLUTTERING THE TRUTH!",
-  "NOISE REMOVED!",
-  "DISTRACTION DELETED!",
-];
-
-// Collision detection helper
-const isColliding = (rectA: DOMRect, rectB: DOMRect): boolean => {
-  return !(
-    rectA.right < rectB.left ||
-    rectA.left > rectB.right ||
-    rectA.bottom < rectB.top ||
-    rectA.top > rectB.bottom
-  );
-};
 
 // Find valid combination for two nodes
 const findCombination = (combinations: Combination[] | undefined, nodeA: string, nodeB: string): Combination | null => {
@@ -229,28 +182,6 @@ const getCombinable = (combinations: Combination[] | undefined, nodeId: string, 
   return { canCombine: false, isChainResult };
 };
 
-// Check if two specific nodes are nearby based on their positions
-const areNodesNearby = (posA: { x: number; y: number }, posB: { x: number; y: number }, threshold = 200): boolean => {
-  const dx = posA.x - posB.x;
-  const dy = posA.y - posB.y;
-  return Math.sqrt(dx * dx + dy * dy) < threshold;
-};
-
-// Combination unlock scribbles
-const combineUnlockScribbles = [
-  "IT ALL MAKES SENSE NOW!",
-  "THE PIECES FIT!",
-  "UNLOCKED!",
-  "NEW EVIDENCE REVEALED!",
-  "I KNEW IT!",
-];
-
-const combineFailScribbles = [
-  "THESE DON'T GO TOGETHER",
-  "WRONG COMBINATION",
-  "TRY SOMETHING ELSE",
-  "NO CONNECTION HERE",
-];
 
 // Cluster detection: Check if all critical nodes are in the same connected component
 const getConnectedCriticalNodes = (edges: Edge[], criticalNodeIds: string[]): Set<string> => {
@@ -729,14 +660,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       spawnFloatingScore(150, cursorPosition.x, cursorPosition.y, true);
 
       // Add success scribble
-      const randomScribble = junkTrashScribbles[Math.floor(Math.random() * junkTrashScribbles.length)];
+      const randomScribble = getRandomFromArray(TRASH_JUNK_SCRIBBLES);
       addScribble(randomScribble, 400, 300);
 
       // Reveal a hint as bonus for correct trash
       const hint = revealRandomHint();
       if (hint) {
         setTimeout(() => {
-          const hintScribble = hintScribbles[Math.floor(Math.random() * hintScribbles.length)];
+          const hintScribble = getRandomFromArray(HINT_SCRIBBLES);
           addScribble(`${hintScribble}\n"${hint.tag}" on ${hint.nodeTitle}`, 200, 450);
         }, 500);
       }
@@ -758,7 +689,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       spawnFloatingScore(-penalty, cursorPosition.x, cursorPosition.y, false);
 
       // Add failure scribble with penalty warning
-      const randomScribble = trashScribbles[Math.floor(Math.random() * trashScribbles.length)];
+      const randomScribble = getRandomFromArray(TRASH_CRITICAL_SCRIBBLES);
       const warningText = gameState.evidenceMistakes < 4
         ? `\n(Next mistake: -${calculateEvidencePenalty(gameState.evidenceMistakes + 1)})`
         : "";
@@ -901,7 +832,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         spawnCombinationNodes(combination.resultNodes, centerPos);
 
         // Add unlock scribble
-        const unlockText = combination.unlockText || combineUnlockScribbles[Math.floor(Math.random() * combineUnlockScribbles.length)];
+        const unlockText = combination.unlockText || getRandomFromArray(COMBINE_UNLOCK_SCRIBBLES);
         addScribble(unlockText, centerPos.x, centerPos.y - 50);
 
         // Bonus credibility for successful combine (use custom bonus if defined)
@@ -917,7 +848,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         shakeNode(draggedNodeId);
         shakeNode(combineTargetId);
         
-        const failText = combineFailScribbles[Math.floor(Math.random() * combineFailScribbles.length)];
+        const failText = getRandomFromArray(COMBINE_FAIL_SCRIBBLES);
         addScribble(failText, cursorPosition.x - 50, cursorPosition.y - 50);
       }
     }
@@ -1016,7 +947,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Add failure scribble with combo break notification
         const sourceNode = nodes.find((n) => n.id === connection.source);
         if (sourceNode) {
-          const failureText = failureScribbles[Math.floor(Math.random() * failureScribbles.length)];
+          const failureText = getRandomFromArray(FAILURE_SCRIBBLES);
           const comboBreakText = gameState.consecutiveCorrect >= 2 ? "\n💔 COMBO BROKEN!" : "";
           if (isDesktop) {
             addNodeScribble(connection.source!, failureText, "center", "stamp");

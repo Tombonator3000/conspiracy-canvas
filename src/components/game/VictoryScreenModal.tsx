@@ -4,6 +4,14 @@ import { ArrowRight, RotateCcw, FileText, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CaseData, CredibilityStats } from "@/types/game";
 import { useAudioContext } from "@/contexts/AudioContext";
+import {
+  getRandomSuccessComments,
+  generateHeadline,
+  generateVisitorCount,
+  RANK_TITLES,
+  type Comment,
+} from "@/utils/resultScreen";
+import { getStarRating } from "@/constants/game";
 
 interface VictoryScreenModalProps {
   caseData: CaseData;
@@ -16,58 +24,6 @@ interface VictoryScreenModalProps {
   onBackToMenu: () => void;
   hasNextCase?: boolean;
 }
-
-// Fake usernames for comments
-const fakeUsers = [
-  "TruthSeeker1997", "WakeUpSheeple", "AlienHunter420", "DeepStateWatcher",
-  "TinfoilTom", "ConspiracyCarl", "RedPillRick", "MatrixMaven",
-  "SkepticalSue", "AreaFiftyWun", "IlluminatiInsider", "FlatEarthFred"
-];
-
-// Success comments
-const successComments = [
-  "OMG this is EXACTLY what I've been saying for YEARS!!!",
-  "Finally someone with the courage to speak TRUTH",
-  "I KNEW IT. Sending this to everyone I know.",
-  "The mainstream media won't touch this. WAKE UP PEOPLE!",
-  "This explains EVERYTHING. You're a hero.",
-  "My third eye is now WIDE OPEN",
-  "Shared. Liked. Subscribed. Tattooed on my forehead.",
-  "The government doesn't want you to see this!!!",
-  "I always suspected this. Now I have PROOF.",
-  "This is the smoking gun we needed!"
-];
-
-// Rank titles based on star rating
-const RANK_TITLES: Record<number, string> = {
-  1: "SHEEP",
-  2: "CURIOUS",
-  3: "INVESTIGATOR",
-  4: "TRUTH SEEKER",
-  5: "ILLUMINATI CONFIRMED"
-};
-
-// Score thresholds for star ratings
-const getStarRating = (totalScore: number): number => {
-  if (totalScore >= 2500) return 5;
-  if (totalScore >= 2000) return 4;
-  if (totalScore >= 1500) return 3;
-  if (totalScore >= 1000) return 2;
-  return 1;
-};
-
-const getRandomComments = (count: number) => {
-  const shuffled = [...successComments].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count).map(comment => ({
-    user: fakeUsers[Math.floor(Math.random() * fakeUsers.length)],
-    text: comment,
-    likes: Math.floor(Math.random() * 999) + 1,
-  }));
-};
-
-const generateHeadline = (caseData: CaseData) => {
-  return `BREAKING: ${caseData.theTruth.subject} ${caseData.theTruth.action} ${caseData.theTruth.target}!!!`;
-};
 
 // Score line component for animated tallying
 interface ScoreLineProps {
@@ -189,7 +145,7 @@ export const VictoryScreenModal = ({
   const [showFinalScore, setShowFinalScore] = useState(false);
   const [showStars, setShowStars] = useState(false);
   const [showRank, setShowRank] = useState(false);
-  const [comments] = useState(() => getRandomComments(4));
+  const [comments] = useState<Comment[]>(() => getRandomSuccessComments(4));
 
   const { playSFX } = useAudioContext();
 
@@ -269,7 +225,7 @@ export const VictoryScreenModal = ({
                     &#9733;&#24427; TRUTH SEEKER GAZETTE &#24427;&#9733;
                   </span>
                   <div className="text-[8px] font-mono text-[#666] mt-1">
-                    [ VISITOR #{String(Math.floor(Math.random() * 900000) + 100000).replace(/\B(?=(\d{3})+(?!\d))/g, ",")} ]
+                    [ VISITOR #{generateVisitorCount()} ]
                   </div>
                 </div>
 
@@ -280,7 +236,7 @@ export const VictoryScreenModal = ({
                   animate={{ scale: 1 }}
                   style={{ textShadow: "0 0 20px rgba(0, 255, 255, 0.5)" }}
                 >
-                  {generateHeadline(caseData)}
+                  {generateHeadline(caseData, true)}
                 </motion.h1>
 
                 {/* Evidence collage */}

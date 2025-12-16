@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ThumbsUp, ThumbsDown, Share2, AlertTriangle, ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import type { CaseData, CredibilityStats } from "@/types/game";
+import {
+  getRandomComments,
+  generateHeadline,
+  generateVisitorCount,
+  type Comment,
+} from "@/utils/resultScreen";
 
 interface ResultScreenProps {
   caseData: CaseData;
@@ -15,56 +21,6 @@ interface ResultScreenProps {
   onBackToMenu: () => void;
 }
 
-// Fake usernames for comments
-const fakeUsers = [
-  "TruthSeeker1997", "WakeUpSheeple", "AlienHunter420", "DeepStateWatcher", 
-  "TinfoilTom", "ConspiracyCarl", "RedPillRick", "MatrixMaven",
-  "SkepticalSue", "AreaFiftyWun", "IlluminatiInsider", "FlatEarthFred"
-];
-
-// Success comments
-const successComments = [
-  "OMG this is EXACTLY what I've been saying for YEARS!!!",
-  "Finally someone with the courage to speak TRUTH 🙏",
-  "I KNEW IT. Sending this to everyone I know.",
-  "The mainstream media won't touch this. WAKE UP PEOPLE!",
-  "This explains EVERYTHING. You're a hero.",
-  "My third eye is now WIDE OPEN 👁️",
-  "Shared. Liked. Subscribed. Tattooed on my forehead.",
-  "The government doesn't want you to see this!!!",
-  "I always suspected this. Now I have PROOF.",
-  "This is the smoking gun we needed! 🔫💨"
-];
-
-// Fail comments
-const failComments = [
-  "What does this even mean? Unsubscribed.",
-  "This is why nobody takes us seriously...",
-  "Sir, this is a Wendy's.",
-  "Have you considered touching grass?",
-  "My cat could make a better theory and he's dead.",
-  "This is the worst thing I've read since my own manifesto.",
-  "Even the flat earthers think you're crazy.",
-  "Reported for crimes against logic.",
-];
-
-const getRandomComments = (isVictory: boolean, count: number) => {
-  const pool = isVictory ? successComments : failComments;
-  const shuffled = [...pool].sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, count).map(comment => ({
-    user: fakeUsers[Math.floor(Math.random() * fakeUsers.length)],
-    text: comment,
-    likes: Math.floor(Math.random() * (isVictory ? 999 : 5)),
-  }));
-};
-
-const generateHeadline = (caseData: CaseData, isVictory: boolean) => {
-  if (isVictory) {
-    return `BREAKING: ${caseData.theTruth.subject} ${caseData.theTruth.action} ${caseData.theTruth.target}!!!`;
-  }
-  return "INCOHERENT RAMBLINGS POSTED, INTERNET COLLECTIVELY SIGHS";
-};
-
 export const ResultScreen = ({
   caseData,
   isVictory,
@@ -76,7 +32,7 @@ export const ResultScreen = ({
   onBackToMenu
 }: ResultScreenProps) => {
   const [showStamp, setShowStamp] = useState(false);
-  const [comments, setComments] = useState<Array<{ user: string; text: string; likes: number }>>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
 
   // Calculate scores using new Credibility Engine
   const investigationScore = connectionsFound * 100; // Points from connections
@@ -242,7 +198,7 @@ export const ResultScreen = ({
             {/* Visitor counter */}
             <div className="text-center mb-4">
               <div className="inline-block bg-black text-[#00ff00] font-mono text-xs px-3 py-1">
-                VISITORS: {String(Math.floor(Math.random() * 900000) + 100000).replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
+                VISITORS: {generateVisitorCount()}
               </div>
             </div>
 
