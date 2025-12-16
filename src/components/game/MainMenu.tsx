@@ -103,13 +103,13 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
         <div 
           className="absolute flex items-center justify-center z-10"
           style={{
-            top: '22%',
+            top: '14%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '42%',
-            height: '36%',
-            minWidth: '320px',
-            maxWidth: '580px',
+            width: '28%',
+            height: '42%',
+            minWidth: '280px',
+            maxWidth: '420px',
           }}
         >
           {/* CRT Scanline Overlay */}
