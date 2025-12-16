@@ -1,7 +1,7 @@
 import { memo, useState } from "react";
 import { Handle, Position } from "@xyflow/react";
-import { motion } from "framer-motion";
-import type { EvidenceNode as EvidenceNodeType } from "@/types/game";
+import { motion, AnimatePresence } from "framer-motion";
+import type { EvidenceNode as EvidenceNodeType, NodeScribble } from "@/types/game";
 import { Camera, FileText, StickyNote, Eye, Zap, Bird, Cat, ShoppingBag, Cpu } from "lucide-react";
 
 interface EvidenceNodeData extends EvidenceNodeType {
@@ -11,6 +11,8 @@ interface EvidenceNodeData extends EvidenceNodeType {
   rotation?: number;
   isLinkMode?: boolean;
   revealedTags?: string[];
+  isDesktop?: boolean;
+  nodeScribbles?: NodeScribble[];
 }
 
 interface EvidenceNodeProps {
@@ -86,6 +88,62 @@ const getPinColor = (id: string): "red" | "yellow" | "blue" | "green" => {
   const colors: Array<"red" | "yellow" | "blue" | "green"> = ["red", "yellow", "blue", "green"];
   const hash = id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
   return colors[hash % colors.length];
+};
+
+// Scribble display component for node-parented scribbles
+const NodeScribbleDisplay = ({ scribbles }: { scribbles: NodeScribble[] }) => {
+  const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperties => {
+    switch (position) {
+      case "top":
+        return { top: "-24px", left: "50%", transform: "translateX(-50%)" };
+      case "bottom":
+        return { bottom: "-20px", left: "50%", transform: "translateX(-50%)" };
+      case "center":
+        return { top: "50%", left: "50%", transform: "translate(-50%, -50%)" };
+      case "diagonal":
+        return { top: "30%", left: "10%", transform: "rotate(-15deg)" };
+      default:
+        return { bottom: "10px", left: "50%", transform: "translateX(-50%)" };
+    }
+  };
+
+  const getStyleClass = (style: NodeScribble["style"]): string => {
+    switch (style) {
+      case "stamp":
+        return "text-[#c21c38] font-bold uppercase tracking-wider border-2 border-[#c21c38] px-2 py-0.5 bg-white/80";
+      case "circled":
+        return "text-[#c21c38] font-marker border-2 border-[#c21c38] rounded-full px-2 py-0.5";
+      case "handwritten":
+      default:
+        return "text-[#c21c38] font-marker";
+    }
+  };
+
+  return (
+    <AnimatePresence>
+      {scribbles.map((scribble) => (
+        <motion.div
+          key={scribble.id}
+          className={`absolute pointer-events-none select-none z-20 whitespace-nowrap text-xs sm:text-sm ${getStyleClass(scribble.style)}`}
+          style={{
+            ...getPositionStyle(scribble.position),
+            rotate: `${scribble.rotation}deg`,
+            textShadow: "1px 1px 0 rgba(255,255,255,0.8)",
+          }}
+          initial={{ scale: 0, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0, opacity: 0 }}
+          transition={{
+            type: "spring",
+            stiffness: 400,
+            damping: 15,
+          }}
+        >
+          {scribble.text}
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  );
 };
 
 const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
@@ -198,7 +256,7 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
 
 export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  
+
   const renderNodeContent = () => {
     switch (data.type) {
       case "photo":
@@ -214,15 +272,16 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
 
   // Use pre-calculated rotation from board, with shake animation override
   const baseRotation = data.rotation || 0;
-  
+  const isDesktop = data.isDesktop || false;
+
   return (
     <motion.div
       className="relative"
       style={{ rotate: `${baseRotation}deg` }}
       animate={{
         scale: isHovered ? 1.05 : 1,
-        rotate: data.isShaking 
-          ? [baseRotation, baseRotation - 3, baseRotation + 3, baseRotation - 3, baseRotation + 3, baseRotation] 
+        rotate: data.isShaking
+          ? [baseRotation, baseRotation - 3, baseRotation + 3, baseRotation - 3, baseRotation + 3, baseRotation]
           : baseRotation,
       }}
       transition={{
@@ -232,16 +291,38 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      {/* Target handle - visible on mobile */}
+      {/* Target handle - at top for incoming connections */}
       <Handle
         type="target"
         position={Position.Top}
         className="touch-handle touch-handle-top"
       />
-      
+
+      {/* Desktop: Source handle positioned on the push pin for intuitive drag-to-connect */}
+      {isDesktop && (
+        <Handle
+          type="source"
+          position={Position.Top}
+          id="pin-source"
+          className="desktop-pin-handle"
+          style={{
+            position: 'absolute',
+            top: '-8px',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            width: '28px',
+            height: '28px',
+            background: 'transparent',
+            border: 'none',
+            zIndex: 15,
+            cursor: 'crosshair',
+          }}
+        />
+      )}
+
       <motion.div
         animate={{
-          boxShadow: data.isPulsing 
+          boxShadow: data.isPulsing
             ? ["0 0 0 0 rgba(196, 30, 58, 0)", "0 0 20px 10px rgba(196, 30, 58, 0.3)", "0 0 0 0 rgba(196, 30, 58, 0)"]
             : "0 0 0 0 rgba(196, 30, 58, 0)",
         }}
@@ -249,16 +330,23 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
       >
         {renderNodeContent()}
       </motion.div>
-      
-      {/* Source handle - visible on mobile */}
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        className="touch-handle touch-handle-bottom"
-      />
 
-      {/* Full-node overlay handle for Link Mode - makes entire node a source */}
-      {data.isLinkMode && (
+      {/* Node-parented scribbles */}
+      {data.nodeScribbles && data.nodeScribbles.length > 0 && (
+        <NodeScribbleDisplay scribbles={data.nodeScribbles} />
+      )}
+
+      {/* Mobile: Source handle at bottom */}
+      {!isDesktop && (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          className="touch-handle touch-handle-bottom"
+        />
+      )}
+
+      {/* Full-node overlay handle for Link Mode (mobile only) - makes entire node a source */}
+      {data.isLinkMode && !isDesktop && (
         <Handle
           type="source"
           position={Position.Bottom}
