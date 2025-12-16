@@ -59,7 +59,7 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
     }, 15000 + Math.random() * 15000);
 
     return () => clearInterval(triggerInterval);
-  }, [sanity, isGameActive, activeEvent]);
+  }, [sanity, isGameActive, activeEvent, triggerEvent]);
 
   const triggerEvent = useCallback((type: EventType) => {
     if (type === "phone_call") {
