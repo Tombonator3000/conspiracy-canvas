@@ -25,7 +25,7 @@ export const case002: CaseData = {
       title: "The Survivor",
       contentUrl: lonelySock,
       description: "A lone sock. Its partner vanished without a trace. Last seen entering the drum.",
-      tags: ["COTTON", "LOST", "FABRIC"],
+      tags: ["COTTON", "LOST", "FABRIC", "MISSING"],
       position: { x: 120, y: 80 },
       isRedHerring: false,
       hiddenText: "TELEPORT RESIDUE",
