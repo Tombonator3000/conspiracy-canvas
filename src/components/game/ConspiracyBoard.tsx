@@ -14,7 +14,7 @@ import {
   ConnectionLineType,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { Hand, Cable } from "lucide-react";
+import { Hand, Cable, Undo2, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 import { EvidenceNodeComponent } from "./EvidenceNode";
@@ -29,7 +29,8 @@ import { UVLightToggle, UVOverlay } from "./UVLight";
 import { FloatingScoreText } from "./FloatingScoreText";
 import { useAudioContext } from "@/contexts/AudioContext";
 
-import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats } from "@/types/game";
+import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal } from "@/types/game";
+import { TagMatchIndicator } from "./TagMatchIndicator";
 
 const nodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -98,6 +99,30 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
 
   return { isValid: false };
 };
+
+// Calculate progressive penalty for evidence mistakes (100→200→300→400→500 max)
+const calculateEvidencePenalty = (mistakeCount: number): number => {
+  const basePenalty = 100;
+  const multiplier = Math.min(mistakeCount + 1, 5);  // Max 5x
+  return basePenalty * multiplier;
+};
+
+// Calculate combo bonus for consecutive correct connections
+const calculateComboBonus = (consecutiveCorrect: number): number => {
+  if (consecutiveCorrect >= 5) return 100;
+  if (consecutiveCorrect >= 3) return 50;
+  if (consecutiveCorrect >= 2) return 25;
+  return 0;
+};
+
+// Hint scribbles for revealing tags
+const hintScribbles = [
+  "I SEE A PATTERN...",
+  "WAIT... THIS TAG...",
+  "SOMETHING CONNECTS...",
+  "THE TRUTH REVEALS ITSELF!",
+  "A CLUE EMERGES!",
+];
 
 // Failure messages for wrong connections
 const failureScribbles = [
@@ -217,24 +242,54 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     credibility: 500,
     cleanupBonus: 0,
     trashedJunkCount: 0,
+    // Progressive penalty scaling
+    evidenceMistakes: 0,
+    // Combo system
+    consecutiveCorrect: 0,
+    comboBonus: 0,
+    // Undo system
+    undoAvailable: true,
+    trashedEvidenceCount: 0,
   });
+
+  // State for undo functionality
+  const [undoState, setUndoState] = useState<UndoState | null>(null);
+
+  // State for revealed hints (nodeId -> revealed tag indices)
+  const [revealedHints, setRevealedHints] = useState<Map<string, number[]>>(new Map());
+
+  // State for tag match indicator during connection
+  const [tagMatchInfo, setTagMatchInfo] = useState<{
+    visible: boolean;
+    matchCount: number;
+    maxTags: number;
+    position: { x: number; y: number };
+  }>({ visible: false, matchCount: 0, maxTags: 1, position: { x: 0, y: 0 } });
+
+  // Track connecting source node for tag visualization
+  const [connectingSourceId, setConnectingSourceId] = useState<string | null>(null);
 
   // Update audio stress layer when sanity changes
   useEffect(() => {
     updateSanity(gameState.sanity);
   }, [gameState.sanity, updateSanity]);
 
-  // Update node draggability and link mode when mode changes
+  // Update node draggability, link mode, and revealed hints when mode changes
   useEffect(() => {
     const isLinkMode = interactionMode === 'connect';
     setNodes((nds) =>
-      nds.map((node) => ({
-        ...node,
-        draggable: interactionMode === 'pan',
-        data: { ...node.data, isUVEnabled, isLinkMode },
-      }))
+      nds.map((node) => {
+        const nodeHints = revealedHints.get(node.id) || [];
+        const nodeData = caseData.nodes.find((n) => n.id === node.id);
+        const revealedTags = nodeHints.map((idx) => nodeData?.tags[idx]).filter(Boolean) as string[];
+        return {
+          ...node,
+          draggable: interactionMode === 'pan',
+          data: { ...node.data, isUVEnabled, isLinkMode, revealedTags },
+        };
+      })
     );
-  }, [interactionMode, isUVEnabled, setNodes]);
+  }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes]);
 
   // Calculate remaining junk on the board
   const getRemainingJunkCount = useCallback(() => {
@@ -275,6 +330,90 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       scribbles: [...prev.scribbles, newScribble],
     }));
   }, []);
+
+  // Reveal a random tag on a random node as a hint
+  const revealRandomHint = useCallback(() => {
+    // Get nodes with unrevealed tags (excluding fully revealed ones)
+    const nodesWithHiddenTags = nodes.filter((node) => {
+      const nodeData = caseData.nodes.find((n) => n.id === node.id);
+      if (!nodeData) return false;
+      const revealed = revealedHints.get(node.id) || [];
+      return revealed.length < nodeData.tags.length;
+    });
+
+    if (nodesWithHiddenTags.length === 0) return null;
+
+    // Pick a random node
+    const randomNode = nodesWithHiddenTags[Math.floor(Math.random() * nodesWithHiddenTags.length)];
+    const nodeData = caseData.nodes.find((n) => n.id === randomNode.id);
+    if (!nodeData) return null;
+
+    // Pick a random unrevealed tag
+    const revealed = revealedHints.get(randomNode.id) || [];
+    const unrevealedIndices = nodeData.tags
+      .map((_, idx) => idx)
+      .filter((idx) => !revealed.includes(idx));
+
+    if (unrevealedIndices.length === 0) return null;
+
+    const randomTagIndex = unrevealedIndices[Math.floor(Math.random() * unrevealedIndices.length)];
+    const revealedTag = nodeData.tags[randomTagIndex];
+
+    // Update revealed hints
+    setRevealedHints((prev) => {
+      const newMap = new Map(prev);
+      const existing = newMap.get(randomNode.id) || [];
+      newMap.set(randomNode.id, [...existing, randomTagIndex]);
+      return newMap;
+    });
+
+    return { nodeId: randomNode.id, tag: revealedTag, nodeTitle: nodeData.title };
+  }, [nodes, caseData.nodes, revealedHints]);
+
+  // Save current state for undo
+  const saveUndoState = useCallback(() => {
+    const { scribbles, ...gameStateWithoutScribbles } = gameState;
+    setUndoState({
+      nodes: nodes.map((n) => n.id),
+      edges: edges.map((e) => ({ source: e.source, target: e.target })),
+      gameState: gameStateWithoutScribbles,
+    });
+  }, [nodes, edges, gameState]);
+
+  // Perform undo action
+  const performUndo = useCallback(() => {
+    if (!undoState || !gameState.undoAvailable || gameState.sanity < 30) return;
+
+    playSFX("uv_toggle"); // Use a sound for undo
+
+    // Restore nodes
+    const restoredNodeIds = new Set(undoState.nodes);
+    setNodes(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled, interactionMode === 'connect')
+      .filter((n) => restoredNodeIds.has(n.id)));
+
+    // Restore edges
+    setEdges(undoState.edges.map((e) => ({
+      id: `edge-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      type: "redString",
+      data: { isValid: true },
+    })));
+
+    // Restore game state with sanity cost
+    setGameState((prev) => ({
+      ...prev,
+      ...undoState.gameState,
+      scribbles: prev.scribbles,
+      sanity: Math.max(0, prev.sanity - 30),
+      undoAvailable: false,
+    }));
+
+    // Add scribble
+    addScribble("TIME REWINDS... BUT AT WHAT COST?", 400, 300);
+
+    setUndoState(null);
+  }, [undoState, gameState.undoAvailable, gameState.sanity, caseData, interactionMode, isUVEnabled, playSFX, setNodes, setEdges, addScribble]);
 
   // Spawn floating score text at position
   const spawnFloatingScore = useCallback((value: number, x: number, y: number, isPositive: boolean) => {
@@ -319,10 +458,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     playSFX("uv_toggle");
   }, [playSFX]);
 
-  // Handle node drop to bin - Credibility Engine scoring
+  // Handle node drop to bin - Credibility Engine scoring with progressive penalties
   const handleNodeDropToBin = useCallback((nodeId: string) => {
     const nodeData = caseData.nodes.find((n) => n.id === nodeId);
     if (!nodeData) return;
+
+    // Save state before action for potential undo
+    saveUndoState();
 
     // Always play paper crumple first
     playSFX("paper_crumple");
@@ -333,12 +475,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     // Remove any edges connected to this node
     setEdges((eds) => eds.filter((e) => e.source !== nodeId && e.target !== nodeId));
 
-    // Determine if this is JUNK (red herring) or REAL EVIDENCE
-    const isJunk = nodeData.isRedHerring;
+    // Fix: Clear categorization - critical nodes are ALWAYS real evidence
+    const isJunk = nodeData.isRedHerring && !nodeData.isCritical;
     const isRealEvidence = !nodeData.isRedHerring || nodeData.isCritical;
 
-    if (isJunk && !nodeData.isCritical) {
-      // TRASHING JUNK - +150 Credibility
+    if (isJunk) {
+      // TRASHING JUNK - +150 Credibility + HINT REVEAL
       playSFX("paper_crumple");
 
       // Spawn floating score at cursor position
@@ -348,6 +490,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const randomScribble = junkTrashScribbles[Math.floor(Math.random() * junkTrashScribbles.length)];
       addScribble(randomScribble, 400, 300);
 
+      // Reveal a hint as bonus for correct trash
+      const hint = revealRandomHint();
+      if (hint) {
+        setTimeout(() => {
+          const hintScribble = hintScribbles[Math.floor(Math.random() * hintScribbles.length)];
+          addScribble(`${hintScribble}\n"${hint.tag}" on ${hint.nodeTitle}`, 200, 450);
+        }, 500);
+      }
+
       setGameState((prev) => ({
         ...prev,
         credibility: prev.credibility + 150,
@@ -355,18 +506,24 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         trashedJunkCount: prev.trashedJunkCount + 1,
       }));
     } else if (isRealEvidence) {
-      // TRASHING REAL EVIDENCE - -500 Credibility
+      // TRASHING REAL EVIDENCE - Progressive penalty (100→200→300→400→500)
       playSFX("connect_fail");
 
-      // Spawn floating score at cursor position
-      spawnFloatingScore(-500, cursorPosition.x, cursorPosition.y, false);
+      // Calculate progressive penalty
+      const penalty = calculateEvidencePenalty(gameState.evidenceMistakes);
 
-      // Add failure scribble
+      // Spawn floating score at cursor position
+      spawnFloatingScore(-penalty, cursorPosition.x, cursorPosition.y, false);
+
+      // Add failure scribble with penalty warning
       const randomScribble = trashScribbles[Math.floor(Math.random() * trashScribbles.length)];
-      addScribble(randomScribble, 400, 300);
+      const warningText = gameState.evidenceMistakes < 4
+        ? `\n(Next mistake: -${calculateEvidencePenalty(gameState.evidenceMistakes + 1)})`
+        : "";
+      addScribble(randomScribble + warningText, 400, 300);
 
       setGameState((prev) => {
-        const newCredibility = prev.credibility - 500;
+        const newCredibility = prev.credibility - penalty;
         const newSanity = Math.max(0, prev.sanity - 20);
         // Game over if credibility drops below 0
         const isCredibilityGameOver = newCredibility < 0;
@@ -375,11 +532,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           credibility: newCredibility,
           sanity: newSanity,
           chaosLevel: prev.chaosLevel + 1,
+          evidenceMistakes: prev.evidenceMistakes + 1,
+          trashedEvidenceCount: prev.trashedEvidenceCount + 1,
+          consecutiveCorrect: 0, // Reset combo on mistake
           isGameOver: newSanity <= 0 || isCredibilityGameOver,
         };
       });
     }
-  }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX, spawnFloatingScore, cursorPosition]);
+  }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX, spawnFloatingScore, cursorPosition, saveUndoState, revealRandomHint, gameState.evidenceMistakes]);
 
   // Track node dragging for bin highlight using getBoundingClientRect
   const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
@@ -466,24 +626,43 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const linkedEvidenceCount = connectedCritical.size;
         const isVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
 
-        // Update game state with cluster-based detection
+        // Calculate combo bonus for consecutive correct connections
+        const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;
+        const comboBonus = calculateComboBonus(newConsecutiveCorrect);
+
+        // Show combo bonus if earned
+        if (comboBonus > 0 && sourceNode && targetNode) {
+          const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+          const midY = (sourceNode.position.y + targetNode.position.y) / 2 - 50;
+          setTimeout(() => {
+            addScribble(`🔥 COMBO x${newConsecutiveCorrect}! +${comboBonus} CRED`, midX, midY);
+          }, 300);
+          // Spawn floating bonus score
+          spawnFloatingScore(comboBonus, cursorPosition.x + 50, cursorPosition.y, true);
+        }
+
+        // Update game state with cluster-based detection and combo
         setGameState((prev) => ({
           ...prev,
           validConnections: linkedEvidenceCount,
           isVictory,
+          consecutiveCorrect: newConsecutiveCorrect,
+          comboBonus: prev.comboBonus + comboBonus,
+          credibility: prev.credibility + comboBonus,
         }));
       } else {
         playSFX("connect_fail");
-        
+
         // Invalid connection - shake nodes and reduce sanity
         shakeNode(connection.source);
         shakeNode(connection.target);
 
-        // Add failure scribble
+        // Add failure scribble with combo break notification
         const sourceNode = nodes.find((n) => n.id === connection.source);
         if (sourceNode) {
           const failureText = failureScribbles[Math.floor(Math.random() * failureScribbles.length)];
-          addScribble(failureText, sourceNode.position.x, sourceNode.position.y);
+          const comboBreakText = gameState.consecutiveCorrect >= 2 ? "\n💔 COMBO BROKEN!" : "";
+          addScribble(failureText + comboBreakText, sourceNode.position.x, sourceNode.position.y);
         }
 
         setGameState((prev) => {
@@ -493,13 +672,64 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             ...prev,
             sanity: newSanity,
             chaosLevel: prev.chaosLevel + 1,
+            consecutiveCorrect: 0, // Reset combo on failure
             isGameOver,
           };
         });
       }
+
+      // Hide tag match indicator after connection attempt
+      setTagMatchInfo((prev) => ({ ...prev, visible: false }));
+      setConnectingSourceId(null);
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, setEdges, shakeNode, addScribble, playSFX, criticalNodeIds]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition]
   );
+
+  // Handle connection start - track source for tag visualization
+  const onConnectStart = useCallback((event: React.MouseEvent | React.TouchEvent, { nodeId }: { nodeId: string | null }) => {
+    if (nodeId) {
+      setConnectingSourceId(nodeId);
+    }
+  }, []);
+
+  // Handle connection end - hide tag match indicator
+  const onConnectEnd = useCallback(() => {
+    setTagMatchInfo((prev) => ({ ...prev, visible: false }));
+    setConnectingSourceId(null);
+  }, []);
+
+  // Calculate tag match info when hovering during connection
+  const calculateTagMatch = useCallback((sourceId: string, targetId: string) => {
+    const sourceNode = caseData.nodes.find((n) => n.id === sourceId);
+    const targetNode = caseData.nodes.find((n) => n.id === targetId);
+    if (!sourceNode || !targetNode) return { matchCount: 0, maxTags: 1 };
+
+    const matchingTags = sourceNode.tags.filter((tag) => targetNode.tags.includes(tag));
+    return {
+      matchCount: matchingTags.length,
+      maxTags: Math.min(sourceNode.tags.length, targetNode.tags.length),
+    };
+  }, [caseData.nodes]);
+
+  // Handle node mouse enter during connection to show tag match
+  const onNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
+    if (connectingSourceId && node.id !== connectingSourceId) {
+      const { matchCount, maxTags } = calculateTagMatch(connectingSourceId, node.id);
+      setTagMatchInfo({
+        visible: true,
+        matchCount,
+        maxTags,
+        position: { x: event.clientX + 20, y: event.clientY - 30 },
+      });
+    }
+  }, [connectingSourceId, calculateTagMatch]);
+
+  // Handle node mouse leave during connection
+  const onNodeMouseLeave = useCallback(() => {
+    if (connectingSourceId) {
+      setTagMatchInfo((prev) => ({ ...prev, visible: false }));
+    }
+  }, [connectingSourceId]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
@@ -552,6 +782,37 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             </Button>
           </div>
         </div>
+
+        {/* Undo Button */}
+        <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
+          <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-1 sm:mb-2">
+            Undo
+          </span>
+          <Button
+            variant={gameState.undoAvailable && undoState ? 'default' : 'outline'}
+            size="sm"
+            onClick={performUndo}
+            disabled={!gameState.undoAvailable || !undoState || gameState.sanity < 30}
+            className="w-full gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
+            title={!gameState.undoAvailable ? "Already used" : gameState.sanity < 30 ? "Need 30 sanity" : "Undo last action (-30 sanity)"}
+          >
+            <Undo2 className="w-3 h-3 sm:w-4 sm:h-4" />
+            <span className="hidden sm:inline">-30 HP</span>
+            {!gameState.undoAvailable && <span className="text-[8px] opacity-50">(used)</span>}
+          </Button>
+        </div>
+
+        {/* Combo indicator */}
+        {gameState.consecutiveCorrect >= 2 && (
+          <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-accent animate-pulse">
+            <span className="text-[8px] sm:text-[10px] font-typewriter text-accent uppercase tracking-wider block">
+              🔥 Combo x{gameState.consecutiveCorrect}
+            </span>
+            <span className="text-[10px] sm:text-xs font-mono text-muted-foreground">
+              +{calculateComboBonus(gameState.consecutiveCorrect + 1)} next
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Evidence Bin */}
@@ -568,6 +829,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       {/* Floating Score Text */}
       <FloatingScoreText scores={floatingScores} />
 
+      {/* Tag Match Indicator during connection */}
+      <TagMatchIndicator
+        matchCount={tagMatchInfo.matchCount}
+        maxTags={tagMatchInfo.maxTags}
+        isVisible={tagMatchInfo.visible}
+        position={tagMatchInfo.position}
+      />
+
       {/* React Flow Board */}
       <ReactFlow
         nodes={nodes}
@@ -575,8 +844,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onConnectStart={onConnectStart}
+        onConnectEnd={onConnectEnd}
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
+        onNodeMouseEnter={onNodeMouseEnter}
+        onNodeMouseLeave={onNodeMouseLeave}
         nodeTypes={nodeTypes as any}
         edgeTypes={edgeTypes as any}
         proOptions={proOptions}

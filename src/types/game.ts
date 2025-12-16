@@ -62,6 +62,25 @@ export interface GameState {
   credibility: number;
   cleanupBonus: number;
   trashedJunkCount: number;
+  // Progressive penalty scaling
+  evidenceMistakes: number;
+  // Combo system
+  consecutiveCorrect: number;
+  comboBonus: number;
+  // Undo system
+  undoAvailable: boolean;
+  trashedEvidenceCount: number;
+}
+
+export interface UndoState {
+  nodes: string[];  // IDs of nodes that were on board
+  edges: { source: string; target: string }[];
+  gameState: Omit<GameState, 'scribbles'>;
+}
+
+export interface HintReveal {
+  nodeId: string;
+  tagIndex: number;
 }
 
 export interface FloatingScore {
