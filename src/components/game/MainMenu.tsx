@@ -196,7 +196,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
               >
                 █
               </motion.span>
-              {" "}PRESS ENTER TO SELECT | THEY ARE WATCHING
+              {" "}PRESS ENTER TO BEGIN - X FOR SETTINGS
             </div>
           </div>
         </div>
