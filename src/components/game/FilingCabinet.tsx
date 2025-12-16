@@ -1,6 +1,8 @@
-import { motion } from "framer-motion";
-import { Lock, CheckCircle, Brain, Zap, Skull, FileQuestion } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Lock, CheckCircle } from "lucide-react";
 import type { CaseData } from "@/types/game";
+import { useAudioContext } from "@/contexts/AudioContext";
 
 interface FilingCabinetProps {
   cases: CaseData[];
@@ -10,23 +12,25 @@ interface FilingCabinetProps {
 }
 
 const difficultyConfig = {
-  TUTORIAL: { icon: Brain, color: "text-[#00ff00]", hats: 1 },
-  EASY: { icon: Zap, color: "text-accent", hats: 2 },
-  MEDIUM: { icon: FileQuestion, color: "text-primary", hats: 3 },
-  HARD: { icon: Skull, color: "text-destructive", hats: 4 },
+  TUTORIAL: { level: 1, label: "TUTORIAL" },
+  EASY: { level: 2, label: "EASY" },
+  MEDIUM: { level: 3, label: "MEDIUM" },
+  HARD: { level: 4, label: "HARD" },
+  EXTREME: { level: 5, label: "EXTREME" },
 };
 
-// Tinfoil hat SVG component
-const TinfoilHat = ({ filled }: { filled: boolean }) => (
-  <svg viewBox="0 0 24 24" className={`w-4 h-4 ${filled ? 'text-accent' : 'text-muted-foreground/30'}`}>
-    <path 
-      fill="currentColor" 
-      d="M12 2L4 14h4l-2 8h12l-2-8h4L12 2z"
-    />
-  </svg>
-);
+// Helper to get difficulty indicator
+const getDifficultyIndicator = (difficulty: string): string => {
+  const config = difficultyConfig[difficulty.toUpperCase() as keyof typeof difficultyConfig] || difficultyConfig.EASY;
+  return "[" + "■".repeat(config.level) + "□".repeat(5 - config.level) + "]";
+};
 
 export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: FilingCabinetProps) => {
+  const { playSFX, initialize, isInitialized } = useAudioContext();
+  const [isLoading, setIsLoading] = useState(true);
+  const [bootSequence, setBootSequence] = useState(0);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
   const isCaseUnlocked = (index: number) => {
     if (index === 0) return true;
     return completedCases.includes(cases[index - 1].id);
@@ -34,156 +38,303 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
 
   const isCaseCompleted = (caseId: string) => completedCases.includes(caseId);
 
+  // Boot sequence messages
+  const bootMessages = [
+    "> INITIALIZING CASE_FILE_BROWSER.EXE...",
+    "> SCANNING CLASSIFIED DIRECTORIES...",
+    "> VERIFYING SECURITY CLEARANCE...",
+    "> LOADING FILE MANIFEST...",
+    "> READY.",
+  ];
+
+  // Play boot sequence
+  useEffect(() => {
+    if (!isInitialized) {
+      initialize();
+    }
+
+    playSFX("hdd_seek");
+
+    const bootInterval = setInterval(() => {
+      setBootSequence((prev) => {
+        if (prev >= bootMessages.length - 1) {
+          clearInterval(bootInterval);
+          setTimeout(() => {
+            setIsLoading(false);
+            playSFX("button_click");
+          }, 400);
+          return prev;
+        }
+        playSFX("button_click");
+        return prev + 1;
+      });
+    }, 350);
+
+    return () => clearInterval(bootInterval);
+  }, [playSFX, initialize, isInitialized, bootMessages.length]);
+
+  const handleSelectCase = useCallback((caseData: CaseData, index: number) => {
+    if (!isCaseUnlocked(index)) {
+      playSFX("error");
+      return;
+    }
+    playSFX("button_click");
+    setSelectedIndex(index);
+    setTimeout(() => {
+      playSFX("access_granted");
+      onSelectCase(caseData);
+    }, 300);
+  }, [onSelectCase, playSFX, cases, completedCases]);
+
+  const handleBack = useCallback(() => {
+    playSFX("button_click");
+    onBack();
+  }, [onBack, playSFX]);
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#1a1510] to-[#0d0a08] flex flex-col items-center justify-center p-8">
-      {/* Back button */}
-      <motion.button
-        className="absolute top-6 left-6 font-mono text-[#00ff00] text-sm hover:bg-[#00ff00]/20 px-3 py-1 rounded"
-        onClick={onBack}
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        whileHover={{ x: -4 }}
-      >
-        ← RETURN TO DESK
-      </motion.button>
-
-      {/* Title */}
+    <div className="fixed inset-0 bg-black flex items-center justify-center p-4 z-50">
+      {/* CRT Monitor Frame */}
       <motion.div
-        className="text-center mb-8"
-        initial={{ y: -30, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
+        initial={{ scale: 0.9, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className="crt-monitor w-full max-w-4xl aspect-[4/3] p-1 relative"
       >
-        <h1 className="font-marker text-4xl text-[#00ff00] mb-2" style={{ textShadow: '0 0 20px rgba(0,255,0,0.5)' }}>
-          CASE FILES
-        </h1>
-        <p className="font-mono text-muted-foreground text-sm">
-          SELECT AN INVESTIGATION // {completedCases.length}/{cases.length} SOLVED
-        </p>
-      </motion.div>
+        {/* Monitor bezel */}
+        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-4">
+          {/* Power LED */}
+          <div className="absolute bottom-3 right-6 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isLoading ? 'hdd-activity' : 'bg-green-500'}`} />
+            <span className="text-[8px] text-gray-500 font-mono">PWR</span>
+          </div>
 
-      {/* Filing cabinet */}
-      <div className="relative w-full max-w-4xl">
-        {/* Cabinet frame */}
-        <div className="bg-gradient-to-b from-[#5a5040] to-[#3a3020] rounded-lg p-2 shadow-2xl">
-          <div className="bg-gradient-to-b from-[#4a4030] to-[#2a2010] rounded p-6">
-            
-            {/* Case files grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {cases.map((caseData, index) => {
-                const unlocked = isCaseUnlocked(index);
-                const completed = isCaseCompleted(caseData.id);
-                const difficulty = difficultyConfig[caseData.difficulty as keyof typeof difficultyConfig] || difficultyConfig.EASY;
+          {/* HDD Activity LED */}
+          <div className="absolute bottom-3 right-20 flex items-center gap-2">
+            <div className={`w-2 h-2 rounded-full ${isLoading ? 'hdd-activity' : 'bg-gray-700'}`} />
+            <span className="text-[8px] text-gray-500 font-mono">HDD</span>
+          </div>
 
-                return (
+          {/* Screen area */}
+          <div className="crt-monitor w-full h-full rounded relative overflow-hidden crt-flicker">
+            {/* CRT Effects */}
+            <div className="crt-scanlines" />
+            <div className="crt-glow" />
+
+            {/* Screen content */}
+            <div className="relative z-[1] w-full h-full p-4 md:p-6 flex flex-col">
+              <AnimatePresence mode="wait">
+                {isLoading ? (
+                  /* Boot Sequence */
                   <motion.div
-                    key={caseData.id}
-                    className="relative"
-                    initial={{ x: -50, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: index * 0.1 }}
+                    key="boot"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="crt-boot"
                   >
-                    {/* File folder */}
-                    <motion.button
-                      className={`w-full relative ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}`}
-                      onClick={() => unlocked && onSelectCase(caseData)}
-                      whileHover={unlocked ? { y: -8, rotateX: 5 } : {}}
-                      whileTap={unlocked ? { scale: 0.98 } : {}}
-                      disabled={!unlocked}
-                    >
-                      {/* Folder tab */}
-                      <div className={`
-                        absolute -top-3 left-4 px-4 py-1 rounded-t-lg font-mono text-xs
-                        ${unlocked 
-                          ? completed 
-                            ? 'bg-[#4a7a4a] text-[#00ff00]' 
-                            : 'bg-[#8a7a60] text-card-foreground'
-                          : 'bg-[#4a4a4a] text-muted-foreground'
-                        }
-                      `}>
-                        CASE #{String(index + 1).padStart(3, '0')}
+                    <div className="terminal-text text-sm md:text-base space-y-1">
+                      {bootMessages.slice(0, bootSequence + 1).map((msg, i) => (
+                        <motion.div
+                          key={i}
+                          initial={{ opacity: 0, x: -10 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.1 }}
+                        >
+                          {msg}
+                        </motion.div>
+                      ))}
+                      {bootSequence < bootMessages.length - 1 && (
+                        <span className="typing-cursor" />
+                      )}
+                    </div>
+                  </motion.div>
+                ) : (
+                  /* Main Content */
+                  <motion.div
+                    key="content"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.3 }}
+                    className="h-full flex flex-col"
+                  >
+                    {/* DOS Window Header */}
+                    <div className="dos-window flex-1 flex flex-col min-h-0">
+                      <div className="bg-[#00aa00] px-2 py-1 flex items-center justify-between shrink-0">
+                        <span className="pixel-font text-[8px] md:text-[10px] text-black">
+                          CASE_FILE_BROWSER.EXE
+                        </span>
+                        <div className="flex gap-1">
+                          <span className="text-black text-xs">─</span>
+                          <span className="text-black text-xs">□</span>
+                          <span className="text-black text-xs">×</span>
+                        </div>
                       </div>
 
-                      {/* Folder body */}
-                      <div className={`
-                        pt-6 pb-4 px-4 rounded-lg rounded-tl-none border-2 transition-all
-                        ${unlocked 
-                          ? completed
-                            ? 'bg-gradient-to-br from-[#3a5a3a] to-[#2a4a2a] border-[#4a7a4a]'
-                            : 'bg-gradient-to-br from-[#d4c4a0] to-[#b4a480] border-[#8a7a60]'
-                          : 'bg-gradient-to-br from-[#4a4a4a] to-[#3a3a3a] border-[#5a5a5a]'
-                        }
-                      `}>
-                        {/* Lock overlay for locked cases */}
-                        {!unlocked && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-lg rounded-tl-none">
-                            <div className="text-center">
-                              <Lock className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                              <span className="font-mono text-xs text-muted-foreground">CLASSIFIED</span>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* Completed stamp */}
-                        {completed && (
-                          <motion.div 
-                            className="absolute top-8 right-2 transform rotate-12"
-                            initial={{ scale: 0, rotate: -30 }}
-                            animate={{ scale: 1, rotate: 12 }}
+                      <div className="p-3 md:p-4 flex-1 flex flex-col min-h-0">
+                        {/* Header */}
+                        <div className="text-center mb-4 shrink-0">
+                          <motion.div
+                            className="terminal-text pixel-font text-xs md:text-sm classified-flash"
+                            style={{ color: '#ff3333', textShadow: '0 0 10px rgba(255, 0, 0, 0.8)' }}
                           >
-                            <div className="border-4 border-[#00ff00] text-[#00ff00] font-marker text-lg px-2 py-1 rounded opacity-80">
-                              SOLVED
+                            *** CASE FILES // SELECT INVESTIGATION ***
+                          </motion.div>
+                          <div className="terminal-text text-xs text-[#00aa00] mt-2">
+                            {'>'} STATUS: {completedCases.length}/{cases.length} CASES SOLVED
+                          </div>
+                        </div>
+
+                        {/* File listing - scrollable */}
+                        <div className="flex-1 overflow-y-auto min-h-0 border border-[#00ff00]/30 bg-black/30 rounded">
+                          <div className="p-2">
+                            {/* Table header */}
+                            <div className="terminal-text text-[10px] md:text-xs text-[#00aa00] border-b border-[#00aa00]/50 pb-1 mb-2 grid grid-cols-12 gap-1">
+                              <span className="col-span-2">FILE</span>
+                              <span className="col-span-4">CODENAME</span>
+                              <span className="col-span-2">CLEARANCE</span>
+                              <span className="col-span-2">EVIDENCE</span>
+                              <span className="col-span-2">STATUS</span>
+                            </div>
+
+                            {/* File entries */}
+                            {cases.map((caseData, index) => {
+                              const unlocked = isCaseUnlocked(index);
+                              const completed = isCaseCompleted(caseData.id);
+                              const isSelected = selectedIndex === index;
+
+                              return (
+                                <motion.button
+                                  key={caseData.id}
+                                  className={`
+                                    w-full text-left grid grid-cols-12 gap-1 py-2 px-1 rounded
+                                    transition-all duration-100
+                                    ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}
+                                    ${isSelected ? 'bg-[#00ff00] text-black' : ''}
+                                    ${unlocked && !isSelected ? 'hover:bg-[#00ff00]/20' : ''}
+                                  `}
+                                  onClick={() => handleSelectCase(caseData, index)}
+                                  disabled={!unlocked}
+                                  initial={{ opacity: 0, x: -20 }}
+                                  animate={{ opacity: 1, x: 0 }}
+                                  transition={{ delay: index * 0.05 }}
+                                  whileHover={unlocked ? { x: 4 } : {}}
+                                >
+                                  {/* File number */}
+                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : 'terminal-text'}`}>
+                                    {String(index + 1).padStart(3, '0')}.DAT
+                                  </span>
+
+                                  {/* Codename */}
+                                  <span className={`col-span-4 font-mono text-[10px] md:text-xs truncate ${isSelected ? 'text-black font-bold' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                    {unlocked ? caseData.title.toUpperCase() : "██████████████"}
+                                  </span>
+
+                                  {/* Clearance */}
+                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : unlocked ? 'text-[#ffff00]' : 'text-[#444400]'}`}
+                                    style={!isSelected && unlocked ? { textShadow: '0 0 5px rgba(255, 255, 0, 0.5)' } : {}}>
+                                    {unlocked ? getDifficultyIndicator(caseData.difficulty) : "[□□□□□]"}
+                                  </span>
+
+                                  {/* Evidence count */}
+                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                    {unlocked ? `${caseData.nodes.length} ITEMS` : "?? ITEMS"}
+                                  </span>
+
+                                  {/* Status */}
+                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs flex items-center gap-1`}>
+                                    {!unlocked ? (
+                                      <>
+                                        <Lock className="w-3 h-3 text-[#ff3333]" />
+                                        <span className={isSelected ? 'text-black' : 'text-[#ff3333]'} style={!isSelected ? { textShadow: '0 0 5px rgba(255, 0, 0, 0.5)' } : {}}>
+                                          LOCKED
+                                        </span>
+                                      </>
+                                    ) : completed ? (
+                                      <>
+                                        <CheckCircle className="w-3 h-3 text-[#00ff00]" />
+                                        <span className={isSelected ? 'text-black' : 'terminal-text'}>
+                                          SOLVED
+                                        </span>
+                                      </>
+                                    ) : (
+                                      <span className={isSelected ? 'text-black' : 'text-[#ffff00]'} style={!isSelected ? { textShadow: '0 0 5px rgba(255, 255, 0, 0.5)' } : {}}>
+                                        OPEN
+                                      </span>
+                                    )}
+                                  </span>
+                                </motion.button>
+                              );
+                            })}
+                          </div>
+                        </div>
+
+                        {/* Selected file info panel */}
+                        {selectedIndex !== null && isCaseUnlocked(selectedIndex) && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="mt-3 p-2 border border-[#00ff00]/50 bg-black/50 shrink-0"
+                          >
+                            <div className="terminal-text text-xs">
+                              {'>'} SELECTED: {cases[selectedIndex].title.toUpperCase()}
+                            </div>
+                            <div className="terminal-text text-[10px] text-[#00aa00] mt-1 line-clamp-2">
+                              {cases[selectedIndex].description}
+                            </div>
+                            <div className="terminal-text text-[10px] text-[#ffff00] mt-1">
+                              {'>'} OBJECTIVE: Establish {cases[selectedIndex].boardState.maxConnectionsNeeded} connection(s)
                             </div>
                           </motion.div>
                         )}
 
-                        {/* Content */}
-                        <div className={unlocked ? '' : 'opacity-40'}>
-                          {/* Difficulty hats */}
-                          <div className="flex gap-0.5 mb-2">
-                            {Array.from({ length: 4 }).map((_, i) => (
-                              <TinfoilHat key={i} filled={i < difficulty.hats} />
-                            ))}
-                          </div>
-
-                          {/* Title */}
-                          <h3 className={`font-marker text-lg mb-2 ${unlocked ? 'text-ink' : 'text-muted-foreground'}`}>
-                            {unlocked ? caseData.title : '█████████'}
-                          </h3>
-
-                          {/* Description */}
-                          <p className={`font-typewriter text-xs leading-relaxed mb-3 ${unlocked ? 'text-ink/70' : 'text-muted-foreground/50'}`}>
-                            {unlocked ? caseData.description.slice(0, 80) + '...' : '████████████████████'}
-                          </p>
-
-                          {/* Stats */}
-                          <div className={`flex justify-between font-mono text-[10px] ${unlocked ? 'text-ink/50' : 'text-muted-foreground/30'}`}>
-                            <span>{caseData.nodes.length} EVIDENCE</span>
-                            <span>{caseData.boardState.maxConnectionsNeeded} CONNECTIONS</span>
-                          </div>
+                        {/* Hint text */}
+                        <div className="mt-3 terminal-text text-[10px] text-[#006600] text-center shrink-0">
+                          COMPLETE CASES IN SEQUENCE TO UNLOCK CLASSIFIED FILES
                         </div>
                       </div>
-                    </motion.button>
+                    </div>
+
+                    {/* Action Buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 0.3 }}
+                      className="mt-4 flex flex-col sm:flex-row gap-3 justify-center shrink-0"
+                    >
+                      <button
+                        onClick={handleBack}
+                        className="dos-button text-sm md:text-base px-4 py-2"
+                        style={{
+                          color: '#ff6666',
+                          borderColor: '#ff6666',
+                          textShadow: '0 0 5px rgba(255, 100, 100, 0.8)',
+                        }}
+                      >
+                        [ RETURN TO DESK ]
+                      </button>
+                    </motion.div>
+
+                    {/* Footer */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      className="mt-3 text-center shrink-0"
+                    >
+                      <div className="terminal-text text-[10px] text-[#006600]">
+                        THE DEEPER YOU GO, THE STRANGER IT GETS
+                      </div>
+                      <div className="terminal-text text-[10px] text-[#006600]">
+                        © 1997 DEEP_STATE_OS v3.14
+                      </div>
+                    </motion.div>
                   </motion.div>
-                );
-              })}
+                )}
+              </AnimatePresence>
             </div>
           </div>
         </div>
-
-        {/* Cabinet handle */}
-        <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-3 h-20 bg-gradient-to-r from-[#8a8070] to-[#6a6050] rounded-r-lg shadow-lg" />
-      </div>
-
-      {/* Hint */}
-      <motion.p
-        className="font-mono text-xs text-muted-foreground mt-8 text-center"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1 }}
-      >
-        Complete cases to unlock more classified files.<br />
-        The deeper you go, the stranger it gets.
-      </motion.p>
+      </motion.div>
     </div>
   );
 };
