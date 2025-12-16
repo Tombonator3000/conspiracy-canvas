@@ -17,7 +17,9 @@ type ProceduralSFX =
   | "printer_loop"
   | "button_click"
   | "trash_junk_success"
-  | "trash_evidence_fail";
+  | "trash_evidence_fail"
+  | "hdd_seek"
+  | "access_granted";
 
 // Combined sound effect type
 export type SoundEffect = ProceduralSFX | SoundName | SFXAlias;
@@ -372,6 +374,92 @@ export const useAudio = () => {
         filter.connect(noiseGain);
         noiseGain.connect(ctx.destination);
         noise.start(now + 0.05);
+        break;
+      }
+
+      case "hdd_seek": {
+        // Hard drive seek sound - mechanical clicks and whirs (2 seconds)
+        // Create multiple click/seek sounds to simulate HDD head movement
+        for (let i = 0; i < 8; i++) {
+          const seekTime = now + i * 0.25 + Math.random() * 0.1;
+
+          // Click/thunk sound (head movement)
+          const click = ctx.createOscillator();
+          const clickGain = ctx.createGain();
+          click.type = "square";
+          click.frequency.value = 80 + Math.random() * 40;
+          clickGain.gain.setValueAtTime(0.15, seekTime);
+          clickGain.gain.exponentialRampToValueAtTime(0.01, seekTime + 0.03);
+          click.connect(clickGain);
+          clickGain.connect(ctx.destination);
+          click.start(seekTime);
+          click.stop(seekTime + 0.03);
+
+          // High-pitched whir (motor/platter sound)
+          const whir = ctx.createOscillator();
+          const whirGain = ctx.createGain();
+          whir.type = "sawtooth";
+          whir.frequency.value = 2000 + Math.random() * 500;
+          whirGain.gain.setValueAtTime(0.02, seekTime);
+          whirGain.gain.exponentialRampToValueAtTime(0.01, seekTime + 0.05);
+          whir.connect(whirGain);
+          whirGain.connect(ctx.destination);
+          whir.start(seekTime);
+          whir.stop(seekTime + 0.05);
+        }
+
+        // Background spindle noise
+        const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
+        const noiseData = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < noiseBuffer.length; i++) {
+          noiseData[i] = (Math.random() * 2 - 1) * 0.3;
+        }
+        const bgNoise = ctx.createBufferSource();
+        const bgFilter = ctx.createBiquadFilter();
+        const bgGain = ctx.createGain();
+        bgFilter.type = "bandpass";
+        bgFilter.frequency.value = 3000;
+        bgFilter.Q.value = 5;
+        bgNoise.buffer = noiseBuffer;
+        bgGain.gain.setValueAtTime(0.03, now);
+        bgGain.gain.setValueAtTime(0.03, now + 1.5);
+        bgGain.gain.exponentialRampToValueAtTime(0.001, now + 2);
+        bgNoise.connect(bgFilter);
+        bgFilter.connect(bgGain);
+        bgGain.connect(ctx.destination);
+        bgNoise.start(now);
+        bgNoise.stop(now + 2);
+        break;
+      }
+
+      case "access_granted": {
+        // Digital "Access Granted" beep sequence
+        const frequencies = [440, 554, 659]; // A4, C#5, E5 (A major chord arpeggio)
+
+        frequencies.forEach((freq, i) => {
+          const osc = ctx.createOscillator();
+          const gain = ctx.createGain();
+          osc.type = "square";
+          osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.15, now + i * 0.08);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.08 + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start(now + i * 0.08);
+          osc.stop(now + i * 0.08 + 0.15);
+        });
+
+        // Final confirmation beep
+        const confirmOsc = ctx.createOscillator();
+        const confirmGain = ctx.createGain();
+        confirmOsc.type = "sine";
+        confirmOsc.frequency.value = 880; // A5
+        confirmGain.gain.setValueAtTime(0.2, now + 0.3);
+        confirmGain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+        confirmOsc.connect(confirmGain);
+        confirmGain.connect(ctx.destination);
+        confirmOsc.start(now + 0.3);
+        confirmOsc.stop(now + 0.6);
         break;
       }
     }
