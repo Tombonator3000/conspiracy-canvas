@@ -49,7 +49,7 @@ export const case006: CaseData = {
       title: "The Glitch",
       contentUrl: eclipse,
       description: "Solar eclipse = the switch mechanism malfunctioning mid-rotation. CAUGHT IN THE ACT.",
-      tags: ["SKY", "FLIP", "ERROR"],
+      tags: ["SKY", "FLIP", "ERROR", "SPACE"],
       position: { x: 280, y: 200 },
       isRedHerring: false,
       hiddenText: "FLIP ERROR 404",

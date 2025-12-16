@@ -25,7 +25,7 @@ export const case003: CaseData = {
       title: "The Enlightened One",
       contentUrl: bodybuilderMilk,
       description: "Champion bodybuilder caught drinking chunky milk. His secret? IGNORING THE DATE.",
-      tags: ["MILK", "STRONG", "MUSCLE"],
+      tags: ["MILK", "STRONG", "MUSCLE", "DAIRY"],
       position: { x: 150, y: 100 },
       isRedHerring: false,
       hiddenText: "6 WEEKS EXPIRED",

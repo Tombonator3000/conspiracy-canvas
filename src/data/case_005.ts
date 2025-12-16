@@ -37,7 +37,7 @@ export const case005: CaseData = {
       title: "Acoustic Analysis",
       contentUrl: null,
       description: "Cat purring measured at exactly 5GHz. THE SAME AS YOUR ROUTER. Wake up.",
-      tags: ["SOUND", "FREQUENCY", "5G"],
+      tags: ["SOUND", "FREQUENCY", "5G", "CAT"],
       position: { x: 500, y: 80 },
       isRedHerring: false,
       hiddenText: "5.000 GHz EXACT",
