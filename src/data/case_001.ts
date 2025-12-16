@@ -17,8 +17,7 @@ export const case001: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 3
   },
-  // Semantic Truth Tags: Connect evidence proving THE_DRONE + THE_TECH + THE_POWER_SOURCE
-  requiredTruthTags: ["THE_DRONE", "THE_TECH", "THE_POWER_SOURCE"],
+  requiredTags: ["subject", "location", "proof"],
   nodes: [
     // ===== REAL EVIDENCE (30%) =====
     {
@@ -27,7 +26,7 @@ export const case001: CaseData = {
       title: "Suspicious Bird",
       contentUrl: pigeonSuspicious,
       description: "Photo taken at 3 AM. Subject has not blinked for 2 hours.",
-      tags: ["DRONE", "SURVEILLANCE", "EYES"],
+      tags: ["DRONE", "SURVEILLANCE", "EYES", "subject"],
       position: { x: 180, y: 140 },
       isRedHerring: false,
       hiddenText: "SERIAL #: BD-7742",
@@ -40,7 +39,7 @@ export const case001: CaseData = {
       title: "Leaked Patent #9921",
       contentUrl: null,
       description: "Blueprint for 'Autonomous Avian Data Collector'. CLASSIFIED.",
-      tags: ["DRONE", "GOVERNMENT", "BATTERY"],
+      tags: ["DRONE", "GOVERNMENT", "BATTERY", "proof"],
       position: { x: 520, y: 180 },
       isRedHerring: false,
       hiddenText: "PROJECT NEST EGG",
@@ -53,7 +52,7 @@ export const case001: CaseData = {
       title: "Power Line Anomaly",
       contentUrl: powerlinesBirds,
       description: "Energy spikes detected whenever flocks land here. COINCIDENCE?",
-      tags: ["BATTERY", "ELECTRICITY", "CITY"],
+      tags: ["BATTERY", "ELECTRICITY", "CITY", "location"],
       position: { x: 350, y: 420 },
       isRedHerring: false,
       hiddenText: "5V @ 2.1A",

@@ -16,7 +16,7 @@ export const case009: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 4
   },
-  requiredTruthTags: ["THE_KING", "THE_AGENCY", "THE_HIDEOUT", "THE_MISSION"],
+  requiredTags: ["THE_KING", "THE_AGENCY", "THE_HIDEOUT", "THE_MISSION"],
   nodes: [
     // ===== CRITICAL EVIDENCE =====
     {
