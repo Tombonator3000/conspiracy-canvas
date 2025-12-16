@@ -26,7 +26,7 @@ const getNodeIcon = (tags: string[]) => {
 };
 
 const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
-  const rotation = Math.random() * 6 - 3;
+  const rotation = data.rotation || (Math.random() * 6 - 3);
   
   return (
     <div 
@@ -34,7 +34,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
       <div className="pin" />
-      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden">
+      <div className="bg-ink/10 h-32 flex items-center justify-center mb-2 relative overflow-hidden rounded-sm">
         {data.contentUrl ? (
           <img 
             src={data.contentUrl} 
@@ -63,7 +63,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
           </div>
         )}
       </div>
-      <p className="text-xs font-mono text-ink text-center font-bold">{data.title}</p>
+      <p className="text-xs font-mono text-ink text-center font-bold tracking-tight">{data.title}</p>
       <p className="text-[10px] font-typewriter text-ink/70 text-center mt-1 leading-tight">
         {data.description}
       </p>
@@ -72,7 +72,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
 };
 
 const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
-  const rotation = Math.random() * 4 - 2;
+  const rotation = data.rotation || (Math.random() * 4 - 2);
   
   return (
     <div 
@@ -82,7 +82,7 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
       <div className="pin" />
       <div className="flex items-start gap-2 mb-2">
         <FileText className="w-5 h-5 text-primary flex-shrink-0" />
-        <h3 className="font-typewriter text-sm font-bold text-ink">{data.title}</h3>
+        <h3 className="font-typewriter text-sm font-bold text-ink tracking-tight">{data.title}</h3>
       </div>
       <div className="border-t border-ink/20 pt-2">
         <p className="text-xs font-mono text-ink/80 leading-relaxed">
@@ -104,11 +104,11 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
 };
 
 const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
-  const rotation = Math.random() * 8 - 4;
+  const rotation = data.rotation || (Math.random() * 8 - 4);
   
   return (
     <div 
-      className="evidence-sticky w-36 cursor-grab active:cursor-grabbing"
+      className="evidence-sticky w-36 cursor-grab active:cursor-grabbing relative"
       style={{ "--rotation": `${rotation}deg` } as React.CSSProperties}
     >
       <div className="flex items-start gap-1 mb-1">
