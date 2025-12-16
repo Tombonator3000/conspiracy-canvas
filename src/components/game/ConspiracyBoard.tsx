@@ -310,7 +310,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     };
   }, [isDesktop]);
   
-  const { playSFX, updateSanity } = useAudioContext();
+  const { playSFX, playSound, updateSanity, startAmbient, stopAmbient } = useAudioContext();
   
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled, interactionMode === 'connect'));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
@@ -360,6 +360,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     updateSanity(gameState.sanity);
   }, [gameState.sanity, updateSanity]);
 
+  // Start ambient audio when game begins, stop when component unmounts
+  useEffect(() => {
+    startAmbient();
+    return () => {
+      stopAmbient();
+    };
+  }, [startAmbient, stopAmbient]);
+
   // Update node draggability, link mode, and revealed hints when mode changes
   useEffect(() => {
     // On desktop, link mode is never used (source handle is on pin)
@@ -401,6 +409,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // Handle game end
   useEffect(() => {
     if (gameState.isVictory || gameState.isGameOver) {
+      // Stop ambient audio when game ends
+      stopAmbient();
       // Small delay for the user to see the final state
       const timer = setTimeout(() => {
         const credibilityStats: CredibilityStats = {
@@ -413,7 +423,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       }, 800);
       return () => clearTimeout(timer);
     }
-  }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, gameState.credibility, gameState.cleanupBonus, gameState.trashedJunkCount, getRemainingJunkCount, onGameEnd]);
+  }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, gameState.credibility, gameState.cleanupBonus, gameState.trashedJunkCount, getRemainingJunkCount, onGameEnd, stopAmbient]);
 
   // Remove floating scribble by id
   const removeScribble = useCallback((id: string) => {

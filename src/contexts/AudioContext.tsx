@@ -1,29 +1,25 @@
 import { createContext, useContext, ReactNode } from "react";
-import { useAudio } from "@/hooks/useAudio";
-
-type SoundEffect = 
-  | "connect_success" 
-  | "connect_fail" 
-  | "uv_toggle" 
-  | "paper_crumple" 
-  | "printer_start"
-  | "printer_loop"
-  | "button_click";
+import { useAudio, type SoundEffect } from "@/hooks/useAudio";
 
 interface AudioContextType {
   isInitialized: boolean;
   isMuted: boolean;
+  sanityLevel: number;
   initialize: () => void;
   playSFX: (effect: SoundEffect) => void;
+  playSound: (sound: SoundEffect) => void;
   updateSanity: (sanity: number) => void;
   toggleMute: () => void;
+  stopAmbient: () => void;
+  startAmbient: () => void;
+  setMasterVolume: (volume: number) => void;
 }
 
 const AudioContext = createContext<AudioContextType | null>(null);
 
 export const AudioProvider = ({ children }: { children: ReactNode }) => {
   const audio = useAudio();
-  
+
   return (
     <AudioContext.Provider value={audio}>
       {children}
@@ -38,3 +34,6 @@ export const useAudioContext = () => {
   }
   return context;
 };
+
+// Re-export SoundEffect type for convenience
+export type { SoundEffect };

@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "react";
+import { SOUNDS, SFX_ALIASES, type SoundName, type SFXAlias } from "@/utils/sounds";
 
 interface AudioState {
   isInitialized: boolean;
@@ -6,7 +7,8 @@ interface AudioState {
   sanityLevel: number;
 }
 
-type SoundEffect =
+// Legacy procedural sound effect types (for backwards compatibility)
+type ProceduralSFX =
   | "connect_success"
   | "connect_fail"
   | "uv_toggle"
@@ -17,57 +19,194 @@ type SoundEffect =
   | "trash_junk_success"
   | "trash_evidence_fail";
 
-// Using Web Audio API for sound generation (no external files needed)
+// Combined sound effect type
+export type SoundEffect = ProceduralSFX | SoundName | SFXAlias;
+
+interface AudioElements {
+  [key: string]: HTMLAudioElement;
+}
+
+interface GainNodes {
+  [key: string]: GainNode;
+}
+
+const SANITY_THRESHOLD = 50;
+const FADE_DURATION = 1000; // ms for ambient crossfade
+
 export const useAudio = () => {
   const [state, setState] = useState<AudioState>({
     isInitialized: false,
     isMuted: false,
     sanityLevel: 100,
   });
-  
+
+  // Web Audio API refs
   const audioContextRef = useRef<AudioContext | null>(null);
   const baseOscillatorRef = useRef<OscillatorNode | null>(null);
+
+  // Audio element refs for file-based sounds
+  const audioElementsRef = useRef<AudioElements>({});
+  const audioSourceNodesRef = useRef<{ [key: string]: MediaElementAudioSourceNode }>({});
+  const gainNodesRef = useRef<GainNodes>({});
+
+  // Ambient audio state
+  const ambientFadeRef = useRef<number | null>(null);
+  const currentSanityRef = useRef<number>(100);
+
+  // Preload audio files
+  const preloadAudio = useCallback((ctx: AudioContext) => {
+    Object.entries(SOUNDS).forEach(([name, config]) => {
+      const audio = new Audio(config.path);
+      audio.loop = config.loop;
+      audio.preload = 'auto';
+
+      // Create gain node for volume control
+      const source = ctx.createMediaElementSource(audio);
+      const gainNode = ctx.createGain();
+      gainNode.gain.value = config.defaultVolume;
+
+      source.connect(gainNode);
+      gainNode.connect(ctx.destination);
+
+      audioElementsRef.current[name] = audio;
+      audioSourceNodesRef.current[name] = source;
+      gainNodesRef.current[name] = gainNode;
+    });
+  }, []);
 
   // Initialize audio context after user interaction
   const initialize = useCallback(() => {
     if (state.isInitialized) return;
-    
+
     try {
-      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
       audioContextRef.current = ctx;
-      
-      // Base ambient layer - low hum
+
+      // Base ambient layer - low hum (procedural fallback)
       const baseOsc = ctx.createOscillator();
       const baseGain = ctx.createGain();
       baseOsc.type = "sine";
-      baseOsc.frequency.value = 60; // Low hum frequency
-      baseGain.gain.value = 0.02; // Very quiet
+      baseOsc.frequency.value = 60;
+      baseGain.gain.value = 0.02;
       baseOsc.connect(baseGain);
       baseGain.connect(ctx.destination);
       baseOsc.start();
       baseOscillatorRef.current = baseOsc;
-      
+
+      // Preload audio files
+      preloadAudio(ctx);
+
+      // Start room ambience
+      const roomAudio = audioElementsRef.current['ambience_room'];
+      if (roomAudio) {
+        roomAudio.play().catch(() => {
+          // Audio play may be blocked, will retry on user interaction
+        });
+      }
+
       setState(prev => ({ ...prev, isInitialized: true }));
     } catch (error) {
       console.warn("Audio initialization failed:", error);
     }
-  }, [state.isInitialized]);
+  }, [state.isInitialized, preloadAudio]);
 
-  // Update sanity state (no longer affects audio)
-  const updateSanity = useCallback((sanity: number) => {
-    setState(prev => ({ ...prev, sanityLevel: sanity }));
+  // Calculate stress volume based on sanity (0-50 range maps to 0-0.4 volume)
+  const calculateStressVolume = useCallback((sanity: number): number => {
+    if (sanity >= SANITY_THRESHOLD) return 0;
+    // Map sanity 0-50 to volume 0.4-0 (inverted: lower sanity = higher volume)
+    const normalizedSanity = sanity / SANITY_THRESHOLD;
+    return (1 - normalizedSanity) * 0.4;
   }, []);
 
-  // Play sound effects
-  const playSFX = useCallback((effect: SoundEffect) => {
+  // Fade ambient volume over time
+  const fadeAmbientVolume = useCallback((
+    gainNode: GainNode,
+    targetVolume: number,
+    duration: number = FADE_DURATION
+  ) => {
+    if (ambientFadeRef.current) {
+      cancelAnimationFrame(ambientFadeRef.current);
+    }
+
+    const startVolume = gainNode.gain.value;
+    const volumeDiff = targetVolume - startVolume;
+    const startTime = performance.now();
+
+    const animate = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Ease-out curve for smooth fade
+      const easeProgress = 1 - Math.pow(1 - progress, 3);
+      gainNode.gain.value = startVolume + (volumeDiff * easeProgress);
+
+      if (progress < 1) {
+        ambientFadeRef.current = requestAnimationFrame(animate);
+      }
+    };
+
+    ambientFadeRef.current = requestAnimationFrame(animate);
+  }, []);
+
+  // Update sanity and control ambient audio
+  const updateSanity = useCallback((sanity: number) => {
+    currentSanityRef.current = sanity;
+    setState(prev => ({ ...prev, sanityLevel: sanity }));
+
+    const stressGain = gainNodesRef.current['ambience_stress'];
+    const stressAudio = audioElementsRef.current['ambience_stress'];
+
+    if (!stressGain || !stressAudio) return;
+
+    const targetVolume = calculateStressVolume(sanity);
+
+    if (sanity < SANITY_THRESHOLD) {
+      // Start stress audio if not playing
+      if (stressAudio.paused) {
+        stressAudio.play().catch(() => {});
+      }
+      fadeAmbientVolume(stressGain, targetVolume);
+    } else {
+      // Fade out stress audio
+      fadeAmbientVolume(stressGain, 0, FADE_DURATION / 2);
+    }
+  }, [calculateStressVolume, fadeAmbientVolume]);
+
+  // Play file-based sound effect
+  const playFileSound = useCallback((soundName: SoundName) => {
+    const audio = audioElementsRef.current[soundName];
+    const gainNode = gainNodesRef.current[soundName];
+
+    if (!audio || state.isMuted) return;
+
+    // Resume audio context if suspended
+    if (audioContextRef.current?.state === 'suspended') {
+      audioContextRef.current.resume();
+    }
+
+    // For non-looping sounds, reset and play
+    if (!SOUNDS[soundName].loop) {
+      audio.currentTime = 0;
+      // Apply master volume from settings (will be integrated with SettingsContext)
+      if (gainNode) {
+        gainNode.gain.value = SOUNDS[soundName].defaultVolume;
+      }
+    }
+
+    audio.play().catch(err => {
+      console.warn(`Failed to play sound ${soundName}:`, err);
+    });
+  }, [state.isMuted]);
+
+  // Play procedural sound effect (legacy support)
+  const playProceduralSFX = useCallback((effect: ProceduralSFX) => {
     if (!audioContextRef.current || state.isMuted) return;
-    
+
     const ctx = audioContextRef.current;
     const now = ctx.currentTime;
-    
+
     switch (effect) {
       case "connect_success": {
-        // Satisfying "thud" + rising tone
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
@@ -81,9 +220,8 @@ export const useAudio = () => {
         osc.stop(now + 0.3);
         break;
       }
-      
+
       case "connect_fail": {
-        // Sharp "snap" + dissonant tone
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sawtooth";
@@ -97,9 +235,8 @@ export const useAudio = () => {
         osc.stop(now + 0.2);
         break;
       }
-      
+
       case "uv_toggle": {
-        // Click sound
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "square";
@@ -112,9 +249,8 @@ export const useAudio = () => {
         osc.stop(now + 0.05);
         break;
       }
-      
+
       case "paper_crumple": {
-        // White noise burst
         const bufferSize = ctx.sampleRate * 0.3;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
@@ -135,10 +271,9 @@ export const useAudio = () => {
         noise.start(now);
         break;
       }
-      
+
       case "printer_start":
       case "printer_loop": {
-        // Mechanical clicking
         for (let i = 0; i < 5; i++) {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -153,7 +288,7 @@ export const useAudio = () => {
         }
         break;
       }
-      
+
       case "button_click": {
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
@@ -169,8 +304,6 @@ export const useAudio = () => {
       }
 
       case "trash_junk_success": {
-        // Satisfying cash register "cha-ching" + rising ding
-        // First: Short click
         const click = ctx.createOscillator();
         const clickGain = ctx.createGain();
         click.type = "square";
@@ -182,11 +315,10 @@ export const useAudio = () => {
         click.start(now);
         click.stop(now + 0.03);
 
-        // Second: Rising ding (two-tone chime)
         const ding1 = ctx.createOscillator();
         const ding1Gain = ctx.createGain();
         ding1.type = "sine";
-        ding1.frequency.value = 880; // A5
+        ding1.frequency.value = 880;
         ding1Gain.gain.setValueAtTime(0.2, now + 0.05);
         ding1Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
         ding1.connect(ding1Gain);
@@ -197,7 +329,7 @@ export const useAudio = () => {
         const ding2 = ctx.createOscillator();
         const ding2Gain = ctx.createGain();
         ding2.type = "sine";
-        ding2.frequency.value = 1318; // E6 (higher harmony)
+        ding2.frequency.value = 1318;
         ding2Gain.gain.setValueAtTime(0.15, now + 0.1);
         ding2Gain.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
         ding2.connect(ding2Gain);
@@ -208,8 +340,6 @@ export const useAudio = () => {
       }
 
       case "trash_evidence_fail": {
-        // Harsh error/glitch sound - buzzer + static burst
-        // Buzzer tone
         const buzzer = ctx.createOscillator();
         const buzzerGain = ctx.createGain();
         buzzer.type = "sawtooth";
@@ -223,12 +353,10 @@ export const useAudio = () => {
         buzzer.start(now);
         buzzer.stop(now + 0.4);
 
-        // Digital glitch/static burst
         const bufferSize = ctx.sampleRate * 0.25;
         const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
         const data = buffer.getChannelData(0);
         for (let i = 0; i < bufferSize; i++) {
-          // Create harsher digital noise with bit-crushing effect
           data[i] = (Math.random() > 0.5 ? 1 : -1) * Math.random() * 0.8;
         }
         const noise = ctx.createBufferSource();
@@ -249,34 +377,119 @@ export const useAudio = () => {
     }
   }, [state.isMuted]);
 
+  // Unified play function - handles aliases, file sounds, and procedural sounds
+  const playSFX = useCallback((effect: SoundEffect) => {
+    if (state.isMuted) return;
+
+    // Check if it's an alias
+    const aliasedName = SFX_ALIASES[effect as SFXAlias];
+    if (aliasedName) {
+      playFileSound(aliasedName);
+      return;
+    }
+
+    // Check if it's a file-based sound
+    if (effect in SOUNDS) {
+      playFileSound(effect as SoundName);
+      return;
+    }
+
+    // Fall back to procedural sound
+    playProceduralSFX(effect as ProceduralSFX);
+  }, [state.isMuted, playFileSound, playProceduralSFX]);
+
+  // Convenience function matching the example API: playSound('success')
+  const playSound = useCallback((sound: SoundEffect) => {
+    playSFX(sound);
+  }, [playSFX]);
+
+  // Stop all ambient audio
+  const stopAmbient = useCallback(() => {
+    const roomAudio = audioElementsRef.current['ambience_room'];
+    const stressAudio = audioElementsRef.current['ambience_stress'];
+
+    if (roomAudio) {
+      roomAudio.pause();
+      roomAudio.currentTime = 0;
+    }
+    if (stressAudio) {
+      stressAudio.pause();
+      stressAudio.currentTime = 0;
+    }
+  }, []);
+
+  // Start ambient audio
+  const startAmbient = useCallback(() => {
+    const roomAudio = audioElementsRef.current['ambience_room'];
+    if (roomAudio && state.isInitialized && !state.isMuted) {
+      roomAudio.play().catch(() => {});
+    }
+    // Stress audio is controlled by sanity level
+    updateSanity(currentSanityRef.current);
+  }, [state.isInitialized, state.isMuted, updateSanity]);
+
   // Toggle mute
   const toggleMute = useCallback(() => {
     setState(prev => {
       const newMuted = !prev.isMuted;
-      
+
+      // Mute/unmute all ambient audio
+      Object.values(audioElementsRef.current).forEach(audio => {
+        if (audio.loop) {
+          if (newMuted) {
+            audio.pause();
+          } else if (prev.isInitialized) {
+            audio.play().catch(() => {});
+          }
+        }
+      });
+
+      // Mute base oscillator
       if (baseOscillatorRef.current) {
         const gain = baseOscillatorRef.current.context.createGain();
         gain.gain.value = newMuted ? 0 : 0.02;
       }
-      
+
       return { ...prev, isMuted: newMuted };
+    });
+  }, []);
+
+  // Set master volume (0-1)
+  const setMasterVolume = useCallback((volume: number) => {
+    Object.entries(gainNodesRef.current).forEach(([name, gainNode]) => {
+      const soundConfig = SOUNDS[name as SoundName];
+      if (soundConfig) {
+        gainNode.gain.value = soundConfig.defaultVolume * volume;
+      }
     });
   }, []);
 
   // Cleanup
   useEffect(() => {
     return () => {
+      if (ambientFadeRef.current) {
+        cancelAnimationFrame(ambientFadeRef.current);
+      }
       baseOscillatorRef.current?.stop();
       audioContextRef.current?.close();
+      Object.values(audioElementsRef.current).forEach(audio => {
+        audio.pause();
+        audio.src = '';
+      });
     };
   }, []);
 
   return {
     isInitialized: state.isInitialized,
     isMuted: state.isMuted,
+    sanityLevel: state.sanityLevel,
     initialize,
     playSFX,
+    playSound,
     updateSanity,
     toggleMute,
+    stopAmbient,
+    startAmbient,
+    setMasterVolume,
   };
 };
