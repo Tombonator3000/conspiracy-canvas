@@ -5,7 +5,7 @@ export const case008: CaseData = {
   id: "case_008_microwave",
   title: "Operation: Temporal Soup",
   description:
-    "Microwave ovens are TIME MACHINES. Every time you heat leftovers, you're creating temporal anomalies. Connect the SUBJECTS with red thread and the TIMELINE with blue thread to expose the truth!",
+    "Microwave ovens are TIME MACHINES. Every time you heat leftovers, you're creating temporal anomalies. Use RED thread for matching subjects, but BLUE thread is REQUIRED to connect timeline events! Use UV light for timeline hints!",
   difficulty: "MEDIUM",
   theTruth: {
     subject: "MICROWAVE COMPANIES",
@@ -34,7 +34,7 @@ export const case008: CaseData = {
       timelineTags: ["1947_ORIGIN", "TIMELINE_START"],
       position: { x: 80, y: 100 },
       isRedHerring: false,
-      hiddenText: "MAGNETRON = TIME CRYSTAL",
+      hiddenText: "TIMELINE: 1947 ORIGIN → CONNECT TO OTHER TIMELINE EVENTS (BLUE)",
       isCritical: true,
     },
     {
@@ -48,7 +48,7 @@ export const case008: CaseData = {
       timelineTags: ["TIME_ANOMALY", "EVIDENCE_2010"],
       position: { x: 450, y: 80 },
       isRedHerring: false,
-      hiddenText: "60 SECONDS = ???",
+      hiddenText: "TIMELINE: TIME ANOMALY DETECTED → BLUE THREAD TO OTHER ANOMALIES",
       isCritical: true,
     },
     {
@@ -62,7 +62,7 @@ export const case008: CaseData = {
       timelineTags: ["MECHANISM", "TIME_ANOMALY"],
       position: { x: 280, y: 280 },
       isRedHerring: false,
-      hiddenText: "CLOCKWISE = FORWARD",
+      hiddenText: "TIMELINE: MECHANISM → BLUE THREAD TO COLD SPOTS & ANOMALIES",
       isCritical: true,
     },
     {
@@ -76,7 +76,7 @@ export const case008: CaseData = {
       timelineTags: ["MECHANISM", "EVIDENCE_2010"],
       position: { x: 550, y: 300 },
       isRedHerring: false,
-      hiddenText: "FROZEN IN TIME",
+      hiddenText: "TIMELINE: 2010 EVIDENCE → BLUE THREAD TO CLOCK & POPCORN",
       isCritical: true,
     },
     {
@@ -90,7 +90,7 @@ export const case008: CaseData = {
       timelineTags: ["TIMELINE_START", "EVIDENCE_2010"],
       position: { x: 150, y: 420 },
       isRedHerring: false,
-      hiddenText: "WITNESSES EVERYWHERE",
+      hiddenText: "TIMELINE: ONGOING SINCE 1947 → BLUE THREAD TO PATENT & COLD SPOTS",
       isCritical: true,
     },
 
@@ -194,6 +194,8 @@ export const case008: CaseData = {
     "MAGNETRON = CHRONOTRON",
     "MINUTE MANIPULATION",
     "IT ALL CONNECTS!",
+    "USE BLUE FOR TIMELINE!",
+    "UV REVEALS THE TIMELINE!",
   ],
   combinations: [
     {
