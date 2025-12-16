@@ -431,7 +431,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }));
   }, []);
 
+  // Clear all floating scribbles
+  const clearAllScribbles = useCallback(() => {
+    setGameState((prev) => ({
+      ...prev,
+      scribbles: [],
+    }));
+  }, []);
+
   // Add scribble at position (legacy floating scribbles for mobile)
+  // Limits to max 2 scribbles to prevent piling up
   const addScribble = useCallback((text: string, x: number, y: number) => {
     const newScribble: ScribbleType = {
       id: `scribble-${Date.now()}`,
@@ -440,13 +449,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       y,
       rotation: Math.random() * 20 - 10,
     };
-    setGameState((prev) => ({
-      ...prev,
-      scribbles: [...prev.scribbles, newScribble],
-    }));
+    setGameState((prev) => {
+      // Keep only the most recent scribble, add the new one (max 2)
+      const recentScribbles = prev.scribbles.slice(-1);
+      return {
+        ...prev,
+        scribbles: [...recentScribbles, newScribble],
+      };
+    });
   }, []);
 
   // Add scribble parented to a specific node (auto-removes after 2s)
+  // Removes any existing scribbles on the same node first to prevent piling
   const addNodeScribble = useCallback((
     nodeId: string,
     text: string,
@@ -462,11 +476,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       position,
       style,
     };
-    setGameState((prev) => ({
-      ...prev,
-      nodeScribbles: [...prev.nodeScribbles, newScribble],
-    }));
-    
+    setGameState((prev) => {
+      // Remove any existing scribbles on this node to prevent piling
+      const otherNodeScribbles = prev.nodeScribbles.filter((s) => s.nodeId !== nodeId);
+      return {
+        ...prev,
+        nodeScribbles: [...otherNodeScribbles, newScribble],
+      };
+    });
+
     // Auto-remove after 2 seconds
     setTimeout(() => {
       removeNodeScribble(scribbleId);
