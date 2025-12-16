@@ -288,7 +288,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
     if (isJunk && !nodeData.isCritical) {
       // TRASHING JUNK - +150 Credibility
-      playSFX("trash_junk_success");
+      playSFX("paper_crumple");
 
       // Spawn floating score at cursor position
       spawnFloatingScore(150, cursorPosition.x, cursorPosition.y, true);
@@ -305,7 +305,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       }));
     } else if (isRealEvidence) {
       // TRASHING REAL EVIDENCE - -500 Credibility
-      playSFX("trash_evidence_fail");
+      playSFX("connect_fail");
 
       // Spawn floating score at cursor position
       spawnFloatingScore(-500, cursorPosition.x, cursorPosition.y, false);

@@ -82,42 +82,106 @@
     background-blend-mode: overlay;
   }
 
+  /* Paper texture overlay - The Secret Sauce */
+  .paper-texture {
+    position: relative;
+  }
+  
+  .paper-texture::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image: url("https://images.unsplash.com/photo-1586075010923-2dd4570fb338?q=80&w=600&auto=format&fit=crop");
+    background-size: cover;
+    background-blend-mode: multiply;
+    opacity: 0.15;
+    pointer-events: none;
+    border-radius: inherit;
+  }
+
   /* Evidence card styles */
   .evidence-card {
-    @apply bg-card rounded-sm shadow-lg;
+    @apply bg-card rounded-sm;
     transform: rotate(var(--rotation, 0deg));
     box-shadow: 
-      2px 2px 8px rgba(0, 0, 0, 0.4),
+      2px 4px 12px rgba(0, 0, 0, 0.35),
+      1px 2px 4px rgba(0, 0, 0, 0.2),
+      0 0 0 1px rgba(0, 0, 0, 0.08);
+    transition: box-shadow 0.2s ease, transform 0.2s ease;
+  }
+
+  .evidence-card:hover {
+    box-shadow: 
+      4px 8px 20px rgba(0, 0, 0, 0.4),
+      2px 4px 8px rgba(0, 0, 0, 0.25),
       0 0 0 1px rgba(0, 0, 0, 0.1);
   }
 
   .evidence-photo {
-    @apply evidence-card p-2;
+    @apply evidence-card paper-texture p-2;
     background: linear-gradient(
-      135deg,
+      145deg,
       hsl(var(--paper)) 0%,
-      hsl(var(--paper-aged)) 100%
+      hsl(var(--paper-aged)) 60%,
+      hsl(40 20% 80%) 100%
     );
+    border-radius: 2px 2px 2px 12px; /* One corner curled */
   }
 
   .evidence-document {
-    @apply evidence-card p-3;
+    @apply evidence-card paper-texture p-3;
     background: linear-gradient(
       180deg,
       hsl(var(--paper)) 0%,
-      hsl(var(--paper-aged)) 100%
+      hsl(var(--paper-aged)) 70%,
+      hsl(38 22% 82%) 100%
     );
     border-left: 3px solid hsl(var(--primary));
+    border-radius: 1px 3px 3px 1px;
+  }
+
+  /* Newspaper clipping with torn edges */
+  .evidence-clipping {
+    @apply evidence-card paper-texture p-3;
+    background: linear-gradient(
+      135deg,
+      hsl(45 25% 88%) 0%,
+      hsl(40 20% 82%) 50%,
+      hsl(35 18% 78%) 100%
+    );
+    clip-path: polygon(2% 0%, 98% 1%, 100% 98%, 85% 96%, 75% 100%, 60% 98%, 40% 100%, 25% 97%, 0% 100%);
+    filter: sepia(0.1);
   }
 
   .evidence-sticky {
+    @apply paper-texture rounded-none p-3;
     background: linear-gradient(
       135deg,
       hsl(var(--sticky-yellow)) 0%,
-      hsl(50 80% 65%) 100%
+      hsl(50 85% 70%) 40%,
+      hsl(48 75% 65%) 100%
     );
-    @apply rounded-none shadow-md p-3;
     transform: rotate(var(--rotation, -2deg));
+    box-shadow: 
+      1px 8px 16px rgba(0, 0, 0, 0.25),
+      0 2px 4px rgba(0, 0, 0, 0.15);
+    /* Peeling effect - top sticks, bottom lifts */
+    border-radius: 0 0 3px 3px;
+  }
+  
+  .evidence-sticky::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 6px;
+    background: linear-gradient(
+      to bottom,
+      hsl(50 70% 60%) 0%,
+      transparent 100%
+    );
+    opacity: 0.5;
   }
 
   /* Handwritten scribble text */
