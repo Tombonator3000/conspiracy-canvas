@@ -40,6 +40,17 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
   const [message, setMessage] = useState("");
   const [callerName, setCallerName] = useState("");
 
+  const triggerEvent = useCallback((type: EventType) => {
+    if (type === "phone_call") {
+      setCallerName(CALLER_NAMES[Math.floor(Math.random() * CALLER_NAMES.length)]);
+      setCountdown(5);
+      playSFX("connect_fail"); // Use as ringtone substitute
+    } else if (type === "chat_bubble") {
+      setMessage(SCARY_MESSAGES[Math.floor(Math.random() * SCARY_MESSAGES.length)]);
+    }
+    setActiveEvent(type);
+  }, [playSFX]);
+
   // Trigger paranoia events based on sanity and timer
   useEffect(() => {
     if (!isGameActive || sanity > 40) return;
@@ -60,17 +71,6 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
 
     return () => clearInterval(triggerInterval);
   }, [sanity, isGameActive, activeEvent, triggerEvent]);
-
-  const triggerEvent = useCallback((type: EventType) => {
-    if (type === "phone_call") {
-      setCallerName(CALLER_NAMES[Math.floor(Math.random() * CALLER_NAMES.length)]);
-      setCountdown(5);
-      playSFX("connect_fail"); // Use as ringtone substitute
-    } else if (type === "chat_bubble") {
-      setMessage(SCARY_MESSAGES[Math.floor(Math.random() * SCARY_MESSAGES.length)]);
-    }
-    setActiveEvent(type);
-  }, [playSFX]);
 
   // Phone call countdown
   useEffect(() => {
