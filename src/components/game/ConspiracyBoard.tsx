@@ -30,7 +30,7 @@ import { FloatingScoreText } from "./FloatingScoreText";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useDesktopDetection } from "@/hooks/useDesktopDetection";
 
-import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal, NodeScribble } from "@/types/game";
+import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal, NodeScribble, Combination, EvidenceNode as EvidenceNodeType } from "@/types/game";
 import { TagMatchIndicator } from "./TagMatchIndicator";
 
 const nodeTypes = {
@@ -165,14 +165,38 @@ const junkTrashScribbles = [
 ];
 
 // Collision detection helper
-const isColliding = (nodeRect: DOMRect, binRect: DOMRect): boolean => {
+const isColliding = (rectA: DOMRect, rectB: DOMRect): boolean => {
   return !(
-    nodeRect.right < binRect.left ||
-    nodeRect.left > binRect.right ||
-    nodeRect.bottom < binRect.top ||
-    nodeRect.top > binRect.bottom
+    rectA.right < rectB.left ||
+    rectA.left > rectB.right ||
+    rectA.bottom < rectB.top ||
+    rectA.top > rectB.bottom
   );
 };
+
+// Find valid combination for two nodes
+const findCombination = (combinations: Combination[] | undefined, nodeA: string, nodeB: string): Combination | null => {
+  if (!combinations) return null;
+  return combinations.find(
+    (c) => (c.itemA === nodeA && c.itemB === nodeB) || (c.itemA === nodeB && c.itemB === nodeA)
+  ) || null;
+};
+
+// Combination unlock scribbles
+const combineUnlockScribbles = [
+  "IT ALL MAKES SENSE NOW!",
+  "THE PIECES FIT!",
+  "UNLOCKED!",
+  "NEW EVIDENCE REVEALED!",
+  "I KNEW IT!",
+];
+
+const combineFailScribbles = [
+  "THESE DON'T GO TOGETHER",
+  "WRONG COMBINATION",
+  "TRY SOMETHING ELSE",
+  "NO CONNECTION HERE",
+];
 
 // Cluster detection: Check if all critical nodes are in the same connected component
 const getConnectedCriticalNodes = (edges: Edge[], criticalNodeIds: string[]): Set<string> => {
@@ -238,6 +262,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [floatingScores, setFloatingScores] = useState<FloatingScore[]>([]);
+  const [combineTargetId, setCombineTargetId] = useState<string | null>(null);
+  const [spawningNodes, setSpawningNodes] = useState<Set<string>>(new Set());
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   // Ref for the evidence bin for collision detection
@@ -338,6 +364,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       })
     );
   }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes, isDesktop, gameState.nodeScribbles]);
+
+  // Update combine target highlighting
+  useEffect(() => {
+    setNodes((nds) =>
+      nds.map((node) => ({
+        ...node,
+        data: { ...node.data, isCombineTarget: node.id === combineTargetId },
+      }))
+    );
+  }, [combineTargetId, setNodes]);
 
   // Calculate remaining junk on the board
   const getRemainingJunkCount = useCallback(() => {
@@ -610,14 +646,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [caseData.nodes, setNodes, setEdges, addScribble, playSFX, spawnFloatingScore, cursorPosition, saveUndoState, revealRandomHint, gameState.evidenceMistakes]);
 
-  // Track node dragging for bin highlight using getBoundingClientRect
+  // Track node dragging for bin highlight and node-on-node collision
   const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
     setDraggedNodeId(node.id);
-
-    if (!binRef.current) return;
-
-    // Get the bin's bounding rectangle
-    const binRect = binRef.current.getBoundingClientRect();
 
     // Get client coordinates from mouse or touch event
     let clientX: number, clientY: number;
@@ -637,17 +668,126 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     // Create a small rect around the cursor/touch point for collision
     const cursorRect = new DOMRect(clientX - 20, clientY - 20, 40, 40);
 
-    const colliding = isColliding(cursorRect, binRect);
-    setBinHighlighted(colliding);
+    // Check bin collision
+    if (binRef.current) {
+      const binRect = binRef.current.getBoundingClientRect();
+      const collidingWithBin = isColliding(cursorRect, binRect);
+      setBinHighlighted(collidingWithBin);
+    }
+
+    // Check collision with other nodes for combine mechanic
+    const nodeElements = document.querySelectorAll('[data-id]');
+    let foundTarget: string | null = null;
+    nodeElements.forEach((el) => {
+      const targetId = el.getAttribute('data-id');
+      if (targetId && targetId !== node.id) {
+        const targetRect = el.getBoundingClientRect();
+        if (isColliding(cursorRect, targetRect)) {
+          foundTarget = targetId;
+        }
+      }
+    });
+    setCombineTargetId(foundTarget);
   }, []);
 
+  // Spawn new nodes from combination with burst animation
+  const spawnCombinationNodes = useCallback((resultNodes: EvidenceNodeType[], centerPosition: { x: number; y: number }) => {
+    const newFlowNodes: Node[] = resultNodes.map((node, index) => {
+      const angle = (index / resultNodes.length) * 2 * Math.PI;
+      const radius = 80 + Math.random() * 40;
+      const offsetX = Math.cos(angle) * radius;
+      const offsetY = Math.sin(angle) * radius;
+      const rotation = Math.random() * 30 - 15;
+      const zIndex = Math.floor(Math.random() * 100);
+
+      return {
+        id: node.id,
+        type: "evidence",
+        position: { 
+          x: centerPosition.x + offsetX, 
+          y: centerPosition.y + offsetY 
+        },
+        data: { ...node, isUVEnabled, rotation, isLinkMode: interactionMode === 'connect', isSpawning: true },
+        draggable: interactionMode === 'pan',
+        zIndex,
+      };
+    });
+
+    // Add nodes with spawning animation flag
+    setNodes((nds) => [...nds, ...newFlowNodes]);
+    setSpawningNodes(new Set(resultNodes.map((n) => n.id)));
+
+    // Clear spawning animation after delay
+    setTimeout(() => {
+      setSpawningNodes(new Set());
+      setNodes((nds) => nds.map((n) => 
+        resultNodes.some((rn) => rn.id === n.id) 
+          ? { ...n, data: { ...n.data, isSpawning: false } }
+          : n
+      ));
+    }, 600);
+  }, [isUVEnabled, interactionMode, setNodes]);
+
   const handleNodeDragStop = useCallback((event: React.MouseEvent | React.TouchEvent, node: Node) => {
+    // Priority 1: Bin drop
     if (binHighlighted && draggedNodeId) {
       handleNodeDropToBin(draggedNodeId);
+      setBinHighlighted(false);
+      setDraggedNodeId(null);
+      setCombineTargetId(null);
+      return;
     }
+
+    // Priority 2: Combine with another node
+    if (combineTargetId && draggedNodeId && draggedNodeId !== combineTargetId) {
+      const combination = findCombination(caseData.combinations, draggedNodeId, combineTargetId);
+      
+      if (combination) {
+        // Valid combination!
+        playSFX("connect_success");
+        
+        // Get position for spawning (between the two nodes)
+        const targetNode = nodes.find((n) => n.id === combineTargetId);
+        const sourceNode = nodes.find((n) => n.id === draggedNodeId);
+        const centerPos = targetNode && sourceNode
+          ? { x: (targetNode.position.x + sourceNode.position.x) / 2, y: (targetNode.position.y + sourceNode.position.y) / 2 }
+          : { x: 400, y: 300 };
+
+        // Remove the two combined nodes
+        setNodes((nds) => nds.filter((n) => n.id !== draggedNodeId && n.id !== combineTargetId));
+        setEdges((eds) => eds.filter((e) => 
+          e.source !== draggedNodeId && e.target !== draggedNodeId &&
+          e.source !== combineTargetId && e.target !== combineTargetId
+        ));
+
+        // Spawn new nodes
+        spawnCombinationNodes(combination.resultNodes, centerPos);
+
+        // Add unlock scribble
+        const unlockText = combination.unlockText || combineUnlockScribbles[Math.floor(Math.random() * combineUnlockScribbles.length)];
+        addScribble(unlockText, centerPos.x, centerPos.y - 50);
+
+        // Bonus credibility for successful combine
+        spawnFloatingScore(200, cursorPosition.x, cursorPosition.y, true);
+        setGameState((prev) => ({
+          ...prev,
+          credibility: prev.credibility + 200,
+        }));
+      } else {
+        // Invalid combination - shake both nodes
+        playSFX("connect_fail");
+        shakeNode(draggedNodeId);
+        shakeNode(combineTargetId);
+        
+        const failText = combineFailScribbles[Math.floor(Math.random() * combineFailScribbles.length)];
+        addScribble(failText, cursorPosition.x - 50, cursorPosition.y - 50);
+      }
+    }
+
     setBinHighlighted(false);
     setDraggedNodeId(null);
-  }, [binHighlighted, draggedNodeId, handleNodeDropToBin]);
+    setCombineTargetId(null);
+  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, nodes, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition]);
 
   const onConnect = useCallback(
     (connection: Connection) => {

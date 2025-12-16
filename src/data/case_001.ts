@@ -193,5 +193,38 @@ export const case001: CaseData = {
     "FOLLOW THE WIRES",
     "I KNEW IT!",
     "THE PATTERN IS CLEAR"
+  ],
+  combinations: [
+    {
+      itemA: "ev_drone_manual",
+      itemB: "ev_bird_book",
+      unlockText: "THE MANUALS REVEAL THE TRUTH!",
+      resultNodes: [
+        {
+          id: "ev_combined_blueprint",
+          type: "document",
+          title: "Cross-Referenced Plans",
+          contentUrl: null,
+          description: "Page 47 of drone manual matches Chapter 3 of bird guide! They're building them to LOOK like birds!",
+          tags: ["DRONE", "BATTERY", "SURVEILLANCE"],
+          position: { x: 350, y: 100 },
+          isRedHerring: false,
+          hiddenText: "AVIAN UNIT SPECS v2.3",
+          isCritical: true
+        },
+        {
+          id: "ev_hidden_memo",
+          type: "sticky_note",
+          title: "Scribbled Note",
+          contentUrl: null,
+          description: "Found between pages: 'Replace all units by 2025'",
+          tags: ["GOVERNMENT", "DRONE"],
+          position: { x: 450, y: 150 },
+          isRedHerring: false,
+          hiddenText: "PROJECT MOCKINGBIRD",
+          isCritical: false
+        }
+      ]
+    }
   ]
 };

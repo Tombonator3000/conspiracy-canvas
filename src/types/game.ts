@@ -49,6 +49,14 @@ export interface BoardState {
   maxConnectionsNeeded: number;
 }
 
+// Combination definition for "use item on item" mechanic
+export interface Combination {
+  itemA: string;  // Node ID of first item
+  itemB: string;  // Node ID of second item
+  resultNodes: EvidenceNode[];  // New nodes that spawn when combined
+  unlockText: string;  // Scribble text shown on success
+}
+
 export interface CaseData {
   id: string;
   title: string;
@@ -58,6 +66,7 @@ export interface CaseData {
   boardState: BoardState;
   nodes: EvidenceNode[];
   scribblePool: string[];
+  combinations?: Combination[];  // Optional combinations for adventure-style puzzles
 }
 
 export interface GameState {
