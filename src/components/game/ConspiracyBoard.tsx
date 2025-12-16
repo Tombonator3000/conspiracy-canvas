@@ -1112,6 +1112,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <ConnectionCounter
           current={gameState.validConnections}
           max={criticalNodeIds.length}
+          isVictory={gameState.isVictory}
         />
         
         {/* UV Light Toggle */}

@@ -4,10 +4,13 @@ import { Link, Target } from "lucide-react";
 interface ConnectionCounterProps {
   current: number;
   max: number;
+  isVictory?: boolean;
 }
 
-export const ConnectionCounter = ({ current, max }: ConnectionCounterProps) => {
-  const isComplete = current >= max;
+export const ConnectionCounter = ({ current, max, isVictory = false }: ConnectionCounterProps) => {
+  // Use actual victory state instead of just count comparison
+  // This ensures visual matches actual game state (all critical nodes in SAME cluster)
+  const isComplete = isVictory;
 
   return (
     <div className="flex items-center gap-2 sm:gap-3 bg-secondary/80 backdrop-blur-sm px-2 sm:px-4 py-1.5 sm:py-2 rounded-lg border border-border">
