@@ -118,14 +118,21 @@ export const findAllConnectedClusters = (
 };
 
 /**
+ * Normalize a tag for case-insensitive comparison
+ * Converts to lowercase and trims whitespace
+ */
+const normalizeTag = (tag: string): string => tag.toLowerCase().trim();
+
+/**
  * Collect all unique truth tags from nodes in a cluster
  *
  * This function handles combined nodes correctly because combined nodes
  * inherit truthTags from their parent nodes during the combination process.
+ * Tags are normalized to lowercase for case-insensitive comparison.
  *
  * @param clusterNodeIds - Set of node IDs in the cluster
  * @param allNodes - Array of all nodes with their data
- * @returns Set of all unique truth tags found in the cluster
+ * @returns Set of all unique truth tags found in the cluster (normalized to lowercase)
  */
 export const collectTruthTagsFromCluster = (
   clusterNodeIds: Set<string>,
@@ -136,7 +143,8 @@ export const collectTruthTagsFromCluster = (
   clusterNodeIds.forEach((nodeId) => {
     const node = allNodes.find((n) => n.id === nodeId);
     if (node?.truthTags) {
-      node.truthTags.forEach((tag) => collectedTags.add(tag));
+      // Normalize tags to lowercase for case-insensitive comparison
+      node.truthTags.forEach((tag) => collectedTags.add(normalizeTag(tag)));
     }
   });
 
@@ -145,8 +153,9 @@ export const collectTruthTagsFromCluster = (
 
 /**
  * Check if a set of collected tags satisfies the required truth tags
+ * Uses case-insensitive comparison for matching.
  *
- * @param collectedTags - Set of tags collected from a cluster
+ * @param collectedTags - Set of tags collected from a cluster (should already be normalized)
  * @param requiredTags - Array of tags that must ALL be present
  * @returns true if all required tags are present
  */
@@ -154,21 +163,24 @@ export const hasAllRequiredTags = (
   collectedTags: Set<string>,
   requiredTags: string[]
 ): boolean => {
-  return requiredTags.every((tag) => collectedTags.has(tag));
+  // Normalize required tags for case-insensitive comparison
+  return requiredTags.every((tag) => collectedTags.has(normalizeTag(tag)));
 };
 
 /**
  * Find which tags are missing from a collection
+ * Uses case-insensitive comparison for matching.
  *
- * @param collectedTags - Set of tags collected from a cluster
+ * @param collectedTags - Set of tags collected from a cluster (should already be normalized)
  * @param requiredTags - Array of tags that should be present
- * @returns Array of missing tags
+ * @returns Array of missing tags (original case preserved)
  */
 export const findMissingTags = (
   collectedTags: Set<string>,
   requiredTags: string[]
 ): string[] => {
-  return requiredTags.filter((tag) => !collectedTags.has(tag));
+  // Normalize required tags for case-insensitive comparison
+  return requiredTags.filter((tag) => !collectedTags.has(normalizeTag(tag)));
 };
 
 /**

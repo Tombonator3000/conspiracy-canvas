@@ -862,20 +862,39 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
         // CRITICAL: Inherit truthTags from parent nodes to result nodes
         // This ensures the semantic meaning is preserved even after merging
+        // We check both the React Flow node data AND the original caseData as fallback
         const sourceData = sourceNode?.data as EvidenceNodeType | undefined;
         const targetData = targetNode?.data as EvidenceNodeType | undefined;
-        const parentTruthTags = new Set<string>();
-        sourceData?.truthTags?.forEach((tag) => parentTruthTags.add(tag));
-        targetData?.truthTags?.forEach((tag) => parentTruthTags.add(tag));
 
-        // Create result nodes with inherited truthTags
-        const resultNodesWithInheritedTags = combination.resultNodes.map((node) => ({
-          ...node,
-          truthTags: [
+        // Also look up original caseData nodes as fallback for truthTags
+        const sourceOriginal = caseData.nodes.find((n) => n.id === draggedNodeId);
+        const targetOriginal = caseData.nodes.find((n) => n.id === combineTargetId);
+
+        // Collect all truthTags from both parents (from node data OR original caseData)
+        const parentTruthTags = new Set<string>();
+
+        // Get truthTags from source node (prefer node.data, fallback to caseData)
+        const sourceTruthTags = sourceData?.truthTags || sourceOriginal?.truthTags || [];
+        sourceTruthTags.forEach((tag) => parentTruthTags.add(tag));
+
+        // Get truthTags from target node (prefer node.data, fallback to caseData)
+        const targetTruthTags = targetData?.truthTags || targetOriginal?.truthTags || [];
+        targetTruthTags.forEach((tag) => parentTruthTags.add(tag));
+
+        // Create result nodes with inherited truthTags merged with their own
+        const resultNodesWithInheritedTags = combination.resultNodes.map((node) => {
+          // Merge: result node's own truthTags + all parent truthTags
+          const mergedTags = [
             ...(node.truthTags || []),
             ...Array.from(parentTruthTags),
-          ].filter((tag, idx, arr) => arr.indexOf(tag) === idx), // Remove duplicates
-        }));
+          ];
+          // Remove duplicates using Set
+          const uniqueTags = [...new Set(mergedTags)];
+          return {
+            ...node,
+            truthTags: uniqueTags,
+          };
+        });
 
         // Calculate remaining nodes and edges after combination
         const remainingNodes = nodes.filter((n) => n.id !== draggedNodeId && n.id !== combineTargetId);
@@ -940,7 +959,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setBinHighlighted(false);
     setDraggedNodeId(null);
     setCombineTargetId(null);
-  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTags, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
+  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTags, caseData.nodes, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
