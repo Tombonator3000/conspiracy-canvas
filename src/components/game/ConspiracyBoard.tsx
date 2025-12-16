@@ -28,8 +28,9 @@ import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { FloatingScoreText } from "./FloatingScoreText";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useDesktopDetection } from "@/hooks/useDesktopDetection";
 
-import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal } from "@/types/game";
+import type { CaseData, GameState, Scribble as ScribbleType, ConnectionResult, FloatingScore, CredibilityStats, UndoState, HintReveal, NodeScribble } from "@/types/game";
 import { TagMatchIndicator } from "./TagMatchIndicator";
 
 const nodeTypes = {
@@ -52,19 +53,29 @@ interface ConspiracyBoardProps {
 }
 
 // Convert case data to React Flow nodes with random rotation and z-index for chaos
-const createInitialNodes = (caseData: CaseData, isDraggable: boolean, isUVEnabled: boolean, isLinkMode: boolean): Node[] => {
+const createInitialNodes = (
+  caseData: CaseData,
+  isDraggable: boolean,
+  isUVEnabled: boolean,
+  isLinkMode: boolean,
+  isDesktop: boolean = false,
+  nodeScribbles: NodeScribble[] = []
+): Node[] => {
   return caseData.nodes.map((node, index) => {
     // Random rotation between -15 and 15 degrees for that messy board feel
     const rotation = Math.random() * 30 - 15;
     // Random z-index so nodes overlap realistically
     const zIndex = Math.floor(Math.random() * 100);
+    // Get scribbles for this node
+    const scribbles = nodeScribbles.filter((s) => s.nodeId === node.id);
 
     return {
       id: node.id,
       type: "evidence",
       position: node.position,
-      data: { ...node, isUVEnabled, rotation, isLinkMode },
-      draggable: isDraggable,
+      data: { ...node, isUVEnabled, rotation, isLinkMode, isDesktop, nodeScribbles: scribbles },
+      // On desktop, nodes are always draggable (drag from paper content)
+      draggable: isDesktop ? true : isDraggable,
       zIndex,
     };
   });
@@ -214,16 +225,49 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     [caseData.nodes]
   );
 
+  // Desktop detection for Pro Controls
+  const isDesktop = useDesktopDetection();
+
+  // Spacebar state for desktop panning
+  const [isSpacebarHeld, setIsSpacebarHeld] = useState(false);
+
   // Mobile mode: 'pan' allows moving around, 'connect' locks nodes for easier connecting
+  // On desktop, this is effectively always 'pan' since dragging is from paper, linking is from pin
   const [interactionMode, setInteractionMode] = useState<'pan' | 'connect'>('pan');
   const [isUVEnabled, setIsUVEnabled] = useState(false);
   const [binHighlighted, setBinHighlighted] = useState(false);
   const [draggedNodeId, setDraggedNodeId] = useState<string | null>(null);
   const [floatingScores, setFloatingScores] = useState<FloatingScore[]>([]);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-  
+
   // Ref for the evidence bin for collision detection
   const binRef = useRef<HTMLDivElement>(null);
+
+  // Spacebar key handlers for desktop panning
+  useEffect(() => {
+    if (!isDesktop) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !e.repeat) {
+        e.preventDefault();
+        setIsSpacebarHeld(true);
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === "Space") {
+        setIsSpacebarHeld(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [isDesktop]);
   
   const { playSFX, updateSanity } = useAudioContext();
   
@@ -236,6 +280,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     validConnections: 0,
     maxConnections: caseData.boardState.maxConnectionsNeeded,
     scribbles: [],
+    nodeScribbles: [],
     isGameOver: false,
     isVictory: false,
     // Credibility Engine - starts at 500
@@ -276,20 +321,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Update node draggability, link mode, and revealed hints when mode changes
   useEffect(() => {
-    const isLinkMode = interactionMode === 'connect';
+    // On desktop, link mode is never used (source handle is on pin)
+    const isLinkMode = isDesktop ? false : interactionMode === 'connect';
     setNodes((nds) =>
       nds.map((node) => {
         const nodeHints = revealedHints.get(node.id) || [];
         const nodeData = caseData.nodes.find((n) => n.id === node.id);
         const revealedTags = nodeHints.map((idx) => nodeData?.tags[idx]).filter(Boolean) as string[];
+        const scribbles = gameState.nodeScribbles.filter((s) => s.nodeId === node.id);
         return {
           ...node,
-          draggable: interactionMode === 'pan',
-          data: { ...node.data, isUVEnabled, isLinkMode, revealedTags },
+          // On desktop, always draggable. On mobile, only in pan mode.
+          draggable: isDesktop ? true : interactionMode === 'pan',
+          data: { ...node.data, isUVEnabled, isLinkMode, revealedTags, isDesktop, nodeScribbles: scribbles },
         };
       })
     );
-  }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes]);
+  }, [interactionMode, isUVEnabled, setNodes, revealedHints, caseData.nodes, isDesktop, gameState.nodeScribbles]);
 
   // Calculate remaining junk on the board
   const getRemainingJunkCount = useCallback(() => {
@@ -316,7 +364,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, gameState.credibility, gameState.cleanupBonus, gameState.trashedJunkCount, getRemainingJunkCount, onGameEnd]);
 
-  // Add scribble at position
+  // Add scribble at position (legacy floating scribbles for mobile)
   const addScribble = useCallback((text: string, x: number, y: number) => {
     const newScribble: ScribbleType = {
       id: `scribble-${Date.now()}`,
@@ -328,6 +376,27 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setGameState((prev) => ({
       ...prev,
       scribbles: [...prev.scribbles, newScribble],
+    }));
+  }, []);
+
+  // Add scribble parented to a specific node
+  const addNodeScribble = useCallback((
+    nodeId: string,
+    text: string,
+    position: NodeScribble["position"] = "bottom",
+    style: NodeScribble["style"] = "handwritten"
+  ) => {
+    const newScribble: NodeScribble = {
+      id: `node-scribble-${Date.now()}-${Math.random()}`,
+      nodeId,
+      text,
+      rotation: Math.random() * 16 - 8,
+      position,
+      style,
+    };
+    setGameState((prev) => ({
+      ...prev,
+      nodeScribbles: [...prev.nodeScribbles, newScribble],
     }));
   }, []);
 
@@ -612,13 +681,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const updatedEdges = addEdge(newEdge, edges);
         setEdges(updatedEdges);
 
-        // Get position for scribble (midpoint)
+        // Add scribble - parented to target node on desktop, floating on mobile
         const sourceNode = nodes.find((n) => n.id === connection.source);
         const targetNode = nodes.find((n) => n.id === connection.target);
         if (sourceNode && targetNode && result.scribbleText) {
-          const midX = (sourceNode.position.x + targetNode.position.x) / 2;
-          const midY = (sourceNode.position.y + targetNode.position.y) / 2;
-          addScribble(result.scribbleText, midX, midY);
+          if (isDesktop) {
+            // Parent scribble to target node
+            addNodeScribble(connection.target, result.scribbleText, "diagonal", "stamp");
+          } else {
+            const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+            const midY = (sourceNode.position.y + targetNode.position.y) / 2;
+            addScribble(result.scribbleText, midX, midY);
+          }
         }
 
         // Use cluster detection for win condition
@@ -632,10 +706,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
         // Show combo bonus if earned
         if (comboBonus > 0 && sourceNode && targetNode) {
-          const midX = (sourceNode.position.x + targetNode.position.x) / 2;
-          const midY = (sourceNode.position.y + targetNode.position.y) / 2 - 50;
           setTimeout(() => {
-            addScribble(`🔥 COMBO x${newConsecutiveCorrect}! +${comboBonus} CRED`, midX, midY);
+            if (isDesktop) {
+              addNodeScribble(connection.source!, `🔥 COMBO x${newConsecutiveCorrect}!`, "top", "handwritten");
+            } else {
+              const midX = (sourceNode.position.x + targetNode.position.x) / 2;
+              const midY = (sourceNode.position.y + targetNode.position.y) / 2 - 50;
+              addScribble(`🔥 COMBO x${newConsecutiveCorrect}! +${comboBonus} CRED`, midX, midY);
+            }
           }, 300);
           // Spawn floating bonus score
           spawnFloatingScore(comboBonus, cursorPosition.x + 50, cursorPosition.y, true);
@@ -662,7 +740,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         if (sourceNode) {
           const failureText = failureScribbles[Math.floor(Math.random() * failureScribbles.length)];
           const comboBreakText = gameState.consecutiveCorrect >= 2 ? "\n💔 COMBO BROKEN!" : "";
-          addScribble(failureText + comboBreakText, sourceNode.position.x, sourceNode.position.y);
+          if (isDesktop) {
+            addNodeScribble(connection.source!, failureText, "center", "stamp");
+            if (comboBreakText) {
+              addNodeScribble(connection.target!, "💔 COMBO BROKEN!", "bottom", "handwritten");
+            }
+          } else {
+            addScribble(failureText + comboBreakText, sourceNode.position.x, sourceNode.position.y);
+          }
         }
 
         setGameState((prev) => {
@@ -682,7 +767,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setTagMatchInfo((prev) => ({ ...prev, visible: false }));
       setConnectingSourceId(null);
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition]
+    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop]
   );
 
   // Handle connection start - track source for tag visualization
@@ -756,32 +841,34 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         {/* UV Light Toggle */}
         <UVLightToggle isEnabled={isUVEnabled} onToggle={handleUVToggle} />
         
-        {/* Mobile Mode Toggle */}
-        <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
-          <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-1 sm:mb-2">
-            Mode
-          </span>
-          <div className="flex gap-1">
-            <Button
-              variant={interactionMode === 'pan' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setInteractionMode('pan')}
-              className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
-            >
-              <Hand className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Move</span>
-            </Button>
-            <Button
-              variant={interactionMode === 'connect' ? 'default' : 'outline'}
-              size="sm"
-              onClick={() => setInteractionMode('connect')}
-              className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
-            >
-              <Cable className="w-3 h-3 sm:w-4 sm:h-4" />
-              <span className="hidden sm:inline">Link</span>
-            </Button>
+        {/* Mobile Mode Toggle - Hidden on desktop (Pro Controls use pin for linking, paper for dragging) */}
+        {!isDesktop && (
+          <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
+            <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-1 sm:mb-2">
+              Mode
+            </span>
+            <div className="flex gap-1">
+              <Button
+                variant={interactionMode === 'pan' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setInteractionMode('pan')}
+                className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
+              >
+                <Hand className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Move</span>
+              </Button>
+              <Button
+                variant={interactionMode === 'connect' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setInteractionMode('connect')}
+                className="flex-1 gap-0.5 sm:gap-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto"
+              >
+                <Cable className="w-3 h-3 sm:w-4 sm:h-4" />
+                <span className="hidden sm:inline">Link</span>
+              </Button>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Undo Button */}
         <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
@@ -854,24 +941,32 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         edgeTypes={edgeTypes as any}
         proOptions={proOptions}
         fitView
-        fitViewOptions={{ padding: 0.3, minZoom: 0.1, maxZoom: 2 }}
-        className="!bg-transparent"
-        // Extended zoom limits
-        minZoom={0.1}
-        maxZoom={3}
-        // Mobile touch optimizations
+        fitViewOptions={{ padding: 0.3, minZoom: 0.2, maxZoom: 2 }}
+        className={`!bg-transparent ${isSpacebarHeld ? 'cursor-grab' : ''}`}
+        // Zoom limits for better overview and detail inspection
+        minZoom={0.2}
+        maxZoom={2}
+        // Connection line style
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
-        panOnScroll={true}
-        // Pan mode: drag nodes, scroll to pan. Connect mode: tap handles to connect
-        panOnDrag={interactionMode === 'pan' ? [0, 1, 2] : [1, 2]}
+        // Desktop: scroll to zoom, spacebar+click or middle mouse to pan
+        // Mobile: pinch to zoom, scroll to pan
+        panOnScroll={!isDesktop}
+        // Desktop: pan with middle mouse (1) or spacebar+left click (0 when spacebar held)
+        // Mobile: pan mode allows left drag, connect mode only middle/right
+        panOnDrag={isDesktop
+          ? (isSpacebarHeld ? [0, 1, 2] : [1, 2])  // Middle mouse or spacebar+click
+          : (interactionMode === 'pan' ? [0, 1, 2] : [1, 2])
+        }
         // CRITICAL: Always allow connecting via handle drag
         connectOnClick={true}
         zoomOnPinch={true}
-        zoomOnScroll={true}
+        // Desktop: scroll wheel zooms. Mobile: scroll pans
+        zoomOnScroll={isDesktop}
         selectNodesOnDrag={false}
         elementsSelectable={false}
-        nodesDraggable={interactionMode === 'pan'}
+        // Desktop: always draggable. Mobile: only in pan mode
+        nodesDraggable={isDesktop ? true : interactionMode === 'pan'}
         // Ensure edges are not updatable to prevent conflicts
         edgesFocusable={false}
         edgesReconnectable={false}

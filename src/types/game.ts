@@ -26,6 +26,16 @@ export interface Scribble {
   rotation: number;
 }
 
+// Scribble attached to a specific node (parented)
+export interface NodeScribble {
+  id: string;
+  nodeId: string;
+  text: string;
+  rotation: number;
+  position: "top" | "bottom" | "center" | "diagonal";
+  style: "stamp" | "handwritten" | "circled";
+}
+
 export interface TheTruth {
   subject: string;
   action: string;
@@ -56,6 +66,7 @@ export interface GameState {
   validConnections: number;
   maxConnections: number;
   scribbles: Scribble[];
+  nodeScribbles: NodeScribble[];
   isGameOver: boolean;
   isVictory: boolean;
   // Credibility Engine

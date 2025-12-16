@@ -327,4 +327,52 @@
   .react-flow__edge-path {
     stroke-linecap: round;
   }
+
+  /* Desktop pin handle - sits exactly on the push pin */
+  .desktop-pin-handle {
+    width: 28px !important;
+    height: 28px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    cursor: crosshair !important;
+  }
+
+  .desktop-pin-handle::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border-radius: 50%;
+    transition: all 0.15s ease;
+  }
+
+  .desktop-pin-handle:hover::after,
+  .desktop-pin-handle:active::after {
+    background: hsl(var(--string-glow) / 0.3);
+    box-shadow: 0 0 12px 6px hsl(var(--string-glow) / 0.5);
+  }
+
+  .desktop-pin-handle:hover,
+  .desktop-pin-handle:active {
+    transform: translateX(-50%) scale(1.1) !important;
+  }
+
+  /* Ensure text legibility when zoomed out */
+  .evidence-photo,
+  .evidence-document,
+  .evidence-sticky {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Prevent text from becoming too small when zoomed out */
+  .react-flow__viewport {
+    font-size: 1rem;
+  }
 }
