@@ -205,5 +205,94 @@ export const case006: CaseData = {
     "WEREWOLVES KNOW THE TRUTH",
     "ONE ORBS TWO FACES",
     "DAYLIGHT SAVINGS = FLIP MAINTENANCE"
+  ],
+  combinations: [
+    {
+      itemA: "ev_lightbulb",
+      itemB: "ev_eclipse",
+      unlockText: "ECLIPSE = FLIP MALFUNCTION!",
+      hint: "WHEN DOES IT GLITCH?",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_flip_diagram",
+          type: "document",
+          title: "Flip Mechanism Diagram",
+          contentUrl: null,
+          description: "Schematic showing sun/moon as two sides of same disc. Eclipse = rotation stuck at 50%.",
+          tags: ["FLIP", "SPACE", "ERROR"],
+          position: { x: 350, y: 150 },
+          isRedHerring: false,
+          hiddenText: "MOTOR: FAILING",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_budget",
+      itemB: "ev_craters",
+      unlockText: "THE VENTS ARE FOR HEAT DISSIPATION!",
+      hint: "WHY DOES IT NEED HOLES?",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_cooling_system",
+          type: "document",
+          title: "Thermal Management Report",
+          contentUrl: null,
+          description: "Budget line: 'Crater maintenance - $2.3B annually'. They're maintaining the COOLING SYSTEM!",
+          tags: ["VENT", "MONEY", "SPACE"],
+          position: { x: 450, y: 250 },
+          isRedHerring: false,
+          hiddenText: "TEMP: 5778K",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_cooling_system",
+      itemB: "ev_phases",
+      unlockText: "PHASES = DIMMER SWITCH CALIBRATION!",
+      hint: "WHY THE BRIGHTNESS CHANGES?",
+      difficulty: "hard",
+      bonusCredibility: 400,
+      resultNodes: [
+        {
+          id: "ev_dimmer_controls",
+          type: "document",
+          title: "Celestial Control Panel",
+          contentUrl: null,
+          description: "Leaked NASA control room photo. Panel shows: BRIGHTNESS (0-100%), FLIP SPEED, CRATER VENT STATUS.",
+          tags: ["FLIP", "LIGHT", "SPACE"],
+          position: { x: 380, y: 350 },
+          isRedHerring: false,
+          hiddenText: "OPERATOR: ARMSTRONG",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_dimmer_controls",
+      itemB: "ev_werewolf_book",
+      unlockText: "WEREWOLVES ARE THE OPERATORS!",
+      hint: "WHO CONTROLS THE MOON?",
+      difficulty: "hard",
+      bonusCredibility: 500,
+      resultNodes: [
+        {
+          id: "ev_final_truth",
+          type: "document",
+          title: "The Final Truth",
+          contentUrl: null,
+          description: "Werewolves aren't affected BY the moon. They OPERATE it. Full moon = their shift. They've been hiding in plain sight!",
+          tags: ["FLIP", "SPACE", "OFF"],
+          position: { x: 300, y: 420 },
+          isRedHerring: false,
+          hiddenText: "HOWL = PASSWORD",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };

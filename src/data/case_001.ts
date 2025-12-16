@@ -199,6 +199,9 @@ export const case001: CaseData = {
       itemA: "ev_drone_manual",
       itemB: "ev_bird_book",
       unlockText: "THE MANUALS REVEAL THE TRUTH!",
+      hint: "COMPARE THE DIAGRAMS",
+      difficulty: "easy",
+      isChainResult: true,
       resultNodes: [
         {
           id: "ev_combined_blueprint",
@@ -223,6 +226,49 @@ export const case001: CaseData = {
           isRedHerring: false,
           hiddenText: "PROJECT MOCKINGBIRD",
           isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_combined_blueprint",
+      itemB: "ev_powerline",
+      unlockText: "THE CHARGING STATION LOCATIONS MATCH!",
+      hint: "WHERE DO THEY RECHARGE?",
+      difficulty: "medium",
+      bonusCredibility: 300,
+      resultNodes: [
+        {
+          id: "ev_charging_network",
+          type: "document",
+          title: "National Charging Grid",
+          contentUrl: null,
+          description: "Map overlay: Every power line = bird drone charging station. The entire grid is a REFUELING NETWORK!",
+          tags: ["BATTERY", "ELECTRICITY", "GOVERNMENT"],
+          position: { x: 400, y: 250 },
+          isRedHerring: false,
+          hiddenText: "5V USB-BEAK",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_pigeon_photo",
+      itemB: "ev_schematic",
+      unlockText: "THE EYES ARE CAMERAS!",
+      hint: "LOOK AT THE EYES",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_camera_specs",
+          type: "document",
+          title: "Ocular Specifications",
+          contentUrl: null,
+          description: "Bird eye specs: 4K resolution, night vision, facial recognition. Standard pigeon eyes? IMPOSSIBLE.",
+          tags: ["SURVEILLANCE", "EYES", "DRONE"],
+          position: { x: 280, y: 320 },
+          isRedHerring: false,
+          hiddenText: "FIRMWARE: HAWK.EYE",
+          isCritical: true
         }
       ]
     }

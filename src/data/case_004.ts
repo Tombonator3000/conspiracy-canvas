@@ -193,5 +193,72 @@ export const case004: CaseData = {
     "CTRL+ALT+RAIN",
     "NIMBUS STORAGE",
     "CUMULO-DATA"
+  ],
+  combinations: [
+    {
+      itemA: "ev_cloud_disk",
+      itemB: "ev_rain_article",
+      unlockText: "THE UPLOAD SCHEDULE MATCHES RAINFALL!",
+      hint: "CHECK UPLOAD TIMES",
+      difficulty: "easy",
+      resultNodes: [
+        {
+          id: "ev_correlation_chart",
+          type: "document",
+          title: "Upload-Rain Correlation",
+          contentUrl: null,
+          description: "iPhone launches: 100% rainfall. Android updates: 87% rainfall. Windows updates: THUNDERSTORMS.",
+          tags: ["RAIN", "DATA", "UPLOAD"],
+          position: { x: 280, y: 180 },
+          isRedHerring: false,
+          hiddenText: "R² = 0.9999",
+          isCritical: true
+        }
+      ]
+    },
+    {
+      itemA: "ev_server_smoke",
+      itemB: "ev_dropbox",
+      unlockText: "DROPBOX MEANS DROP. FROM. SKY!",
+      hint: "WHAT GOES UP...",
+      difficulty: "medium",
+      isChainResult: true,
+      resultNodes: [
+        {
+          id: "ev_water_cycle",
+          type: "document",
+          title: "The Data Cycle",
+          contentUrl: null,
+          description: "Evaporation (upload) → Condensation (storage) → Precipitation (download). IT'S THE WATER CYCLE!",
+          tags: ["CLOUD", "STORAGE", "RAIN"],
+          position: { x: 450, y: 280 },
+          isRedHerring: false,
+          hiddenText: "H2O = DATA",
+          isCritical: false
+        }
+      ]
+    },
+    {
+      itemA: "ev_water_cycle",
+      itemB: "ev_icloud_terms",
+      unlockText: "PAGE 847 ADMITS EVERYTHING!",
+      hint: "READ THE FINE PRINT",
+      difficulty: "hard",
+      bonusCredibility: 350,
+      resultNodes: [
+        {
+          id: "ev_admission",
+          type: "document",
+          title: "Legal Admission",
+          contentUrl: null,
+          description: "Clause 847.3: 'User acknowledges data may be stored in atmospheric conditions including but not limited to: cumulus, stratus, and nimbus formations.'",
+          tags: ["CLOUD", "DATA", "SKY"],
+          position: { x: 380, y: 380 },
+          isRedHerring: false,
+          hiddenText: "LEGALLY BINDING RAIN",
+          isCritical: true
+        }
+      ]
+    }
   ]
 };
