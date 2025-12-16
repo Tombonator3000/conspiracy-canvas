@@ -105,9 +105,10 @@ const createInitialNodes = (
 // See getConnectionLineStyle useMemo inside ConspiracyBoard component
 
 // Validate connection based on shared tags and thread type
-const validateConnection = (caseData: CaseData, sourceId: string, targetId: string, threadType: 'red' | 'blue' = 'red'): ConnectionResult => {
-  const sourceNode = caseData.nodes.find((n) => n.id === sourceId);
-  const targetNode = caseData.nodes.find((n) => n.id === targetId);
+// Uses allNodes (active nodes from state) to support spawned nodes from combinations
+const validateConnection = (allNodes: EvidenceNodeType[], scribblePool: string[], sourceId: string, targetId: string, threadType: 'red' | 'blue' = 'red'): ConnectionResult => {
+  const sourceNode = allNodes.find((n) => n.id === sourceId);
+  const targetNode = allNodes.find((n) => n.id === targetId);
 
   if (!sourceNode || !targetNode) {
     return { isValid: false };
@@ -118,7 +119,7 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
     const sourceTags = sourceNode.timelineTags || [];
     const targetTags = targetNode.timelineTags || [];
     const matchingTag = sourceTags.find((tag) => targetTags.includes(tag));
-    
+
     if (matchingTag) {
       return { isValid: true, matchingTag, scribbleText: "TIMELINE CONFIRMED!" };
     }
@@ -129,8 +130,8 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
   const matchingTag = sourceNode.tags.find((tag) => targetNode.tags.includes(tag));
 
   if (matchingTag) {
-    const scribbleText = caseData.scribblePool[
-      Math.floor(Math.random() * caseData.scribblePool.length)
+    const scribbleText = scribblePool[
+      Math.floor(Math.random() * scribblePool.length)
     ];
     return { isValid: true, matchingTag, scribbleText };
   }
@@ -224,11 +225,6 @@ const checkAllCriticalConnected = (edges: Edge[], criticalNodeIds: string[]): bo
 };
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
-  // Get all critical node IDs for cluster detection
-  const criticalNodeIds = useMemo(
-    () => caseData.nodes.filter((n) => n.isCritical).map((n) => n.id),
-    [caseData.nodes]
-  );
 
   // Desktop detection for Pro Controls
   const isDesktop = useDesktopDetection();
@@ -288,6 +284,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled, interactionMode === 'connect'));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
+
+  // Extract evidence data from active nodes (includes spawned nodes from combinations)
+  const allEvidenceNodes = useMemo(
+    () => nodes.map((n) => n.data as EvidenceNodeType),
+    [nodes]
+  );
+
+  // Get all critical node IDs from active nodes for cluster detection (includes spawned critical nodes)
+  const criticalNodeIds = useMemo(
+    () => allEvidenceNodes.filter((n) => n.isCritical).map((n) => n.id),
+    [allEvidenceNodes]
+  );
   
   const [gameState, setGameState] = useState<GameState>({
     sanity: caseData.boardState.sanity,
@@ -876,7 +884,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       );
       if (existingEdge) return;
 
-      const result = validateConnection(caseData, connection.source, connection.target, threadType);
+      const result = validateConnection(allEvidenceNodes, caseData.scribblePool, connection.source, connection.target, threadType);
 
       if (result.isValid) {
         playSFX("connect_success");
@@ -981,7 +989,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setTagMatchInfo((prev) => ({ ...prev, visible: false }));
       setConnectingSourceId(null);
     },
-    [edges, nodes, caseData, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop, threadType]
+    [edges, nodes, caseData, allEvidenceNodes, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop, threadType]
   );
 
   // Handle connection start - track source for tag visualization
@@ -999,8 +1007,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Calculate tag match info when hovering during connection
   const calculateTagMatch = useCallback((sourceId: string, targetId: string) => {
-    const sourceNode = caseData.nodes.find((n) => n.id === sourceId);
-    const targetNode = caseData.nodes.find((n) => n.id === targetId);
+    const sourceNode = allEvidenceNodes.find((n) => n.id === sourceId);
+    const targetNode = allEvidenceNodes.find((n) => n.id === targetId);
     if (!sourceNode || !targetNode) return { matchCount: 0, maxTags: 1 };
 
     const matchingTags = sourceNode.tags.filter((tag) => targetNode.tags.includes(tag));
@@ -1008,7 +1016,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       matchCount: matchingTags.length,
       maxTags: Math.min(sourceNode.tags.length, targetNode.tags.length),
     };
-  }, [caseData.nodes]);
+  }, [allEvidenceNodes]);
 
   // Handle node mouse enter during connection to show tag match
   const onNodeMouseEnter = useCallback((event: React.MouseEvent, node: Node) => {
