@@ -27,8 +27,6 @@ export const useAudio = () => {
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const baseOscillatorRef = useRef<OscillatorNode | null>(null);
-  const stressOscillatorRef = useRef<OscillatorNode | null>(null);
-  const stressGainRef = useRef<GainNode | null>(null);
 
   // Initialize audio context after user interaction
   const initialize = useCallback(() => {
@@ -49,38 +47,16 @@ export const useAudio = () => {
       baseOsc.start();
       baseOscillatorRef.current = baseOsc;
       
-      // Stress layer - high pitched, volume controlled by sanity
-      const stressOsc = ctx.createOscillator();
-      const stressGain = ctx.createGain();
-      stressOsc.type = "sine";
-      stressOsc.frequency.value = 800; // High pitched
-      stressGain.gain.value = 0; // Start silent
-      stressOsc.connect(stressGain);
-      stressGain.connect(ctx.destination);
-      stressOsc.start();
-      stressOscillatorRef.current = stressOsc;
-      stressGainRef.current = stressGain;
-      
       setState(prev => ({ ...prev, isInitialized: true }));
     } catch (error) {
       console.warn("Audio initialization failed:", error);
     }
   }, [state.isInitialized]);
 
-  // Update stress layer based on sanity
+  // Update sanity state (no longer affects audio)
   const updateSanity = useCallback((sanity: number) => {
     setState(prev => ({ ...prev, sanityLevel: sanity }));
-    
-    if (stressGainRef.current && !state.isMuted) {
-      // Volume increases as sanity decreases
-      const volume = Math.max(0, (100 - sanity) / 100) * 0.05;
-      stressGainRef.current.gain.setTargetAtTime(
-        volume,
-        audioContextRef.current?.currentTime || 0,
-        0.5
-      );
-    }
-  }, [state.isMuted]);
+  }, []);
 
   // Play sound effects
   const playSFX = useCallback((effect: SoundEffect) => {
@@ -283,10 +259,6 @@ export const useAudio = () => {
         gain.gain.value = newMuted ? 0 : 0.02;
       }
       
-      if (stressGainRef.current) {
-        stressGainRef.current.gain.value = newMuted ? 0 : Math.max(0, (100 - prev.sanityLevel) / 100) * 0.05;
-      }
-      
       return { ...prev, isMuted: newMuted };
     });
   }, []);
@@ -295,7 +267,6 @@ export const useAudio = () => {
   useEffect(() => {
     return () => {
       baseOscillatorRef.current?.stop();
-      stressOscillatorRef.current?.stop();
       audioContextRef.current?.close();
     };
   }, []);
