@@ -1,14 +1,24 @@
 import { motion } from "framer-motion";
+import { useEffect } from "react";
 import type { Scribble as ScribbleType } from "@/types/game";
 
 interface ScribbleProps {
   scribble: ScribbleType;
+  onRemove?: (id: string) => void;
 }
 
-export const Scribble = ({ scribble }: ScribbleProps) => {
+export const Scribble = ({ scribble, onRemove }: ScribbleProps) => {
+  // Auto-remove scribble after 2 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      onRemove?.(scribble.id);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [scribble.id, onRemove]);
+
   return (
     <motion.div
-      className="absolute pointer-events-none select-none z-50"
+      className="absolute pointer-events-none select-none z-50 scribble-feedback"
       style={{
         left: scribble.x,
         top: scribble.y,
@@ -20,6 +30,7 @@ export const Scribble = ({ scribble }: ScribbleProps) => {
         rotate: scribble.rotation, 
         opacity: 1 
       }}
+      exit={{ opacity: 0, scale: 0.5, y: -20 }}
       transition={{
         type: "spring",
         stiffness: 400,

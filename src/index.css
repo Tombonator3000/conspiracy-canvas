@@ -231,6 +231,27 @@
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.1);
   }
 
+  /* Scribble feedback - ephemeral text that fades out */
+  .scribble-feedback {
+    animation: scribble-fade 2s ease-out forwards;
+    pointer-events: none;
+  }
+
+  @keyframes scribble-fade {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    70% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.9) translateY(-10px);
+    }
+  }
+
   .typewriter {
     font-family: 'Special Elite', 'Courier Prime', monospace;
   }

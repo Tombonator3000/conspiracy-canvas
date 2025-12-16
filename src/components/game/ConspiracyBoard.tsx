@@ -415,6 +415,22 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [gameState.isVictory, gameState.isGameOver, gameState.sanity, gameState.validConnections, gameState.credibility, gameState.cleanupBonus, gameState.trashedJunkCount, getRemainingJunkCount, onGameEnd]);
 
+  // Remove floating scribble by id
+  const removeScribble = useCallback((id: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      scribbles: prev.scribbles.filter((s) => s.id !== id),
+    }));
+  }, []);
+
+  // Remove node scribble by id
+  const removeNodeScribble = useCallback((id: string) => {
+    setGameState((prev) => ({
+      ...prev,
+      nodeScribbles: prev.nodeScribbles.filter((s) => s.id !== id),
+    }));
+  }, []);
+
   // Add scribble at position (legacy floating scribbles for mobile)
   const addScribble = useCallback((text: string, x: number, y: number) => {
     const newScribble: ScribbleType = {
@@ -430,15 +446,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }));
   }, []);
 
-  // Add scribble parented to a specific node
+  // Add scribble parented to a specific node (auto-removes after 2s)
   const addNodeScribble = useCallback((
     nodeId: string,
     text: string,
     position: NodeScribble["position"] = "bottom",
     style: NodeScribble["style"] = "handwritten"
   ) => {
+    const scribbleId = `node-scribble-${Date.now()}-${Math.random()}`;
     const newScribble: NodeScribble = {
-      id: `node-scribble-${Date.now()}-${Math.random()}`,
+      id: scribbleId,
       nodeId,
       text,
       rotation: Math.random() * 16 - 8,
@@ -449,7 +466,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       ...prev,
       nodeScribbles: [...prev.nodeScribbles, newScribble],
     }));
-  }, []);
+    
+    // Auto-remove after 2 seconds
+    setTimeout(() => {
+      removeNodeScribble(scribbleId);
+    }, 2000);
+  }, [removeNodeScribble]);
 
   // Reveal a random tag on a random node as a hint
   const revealRandomHint = useCallback(() => {
@@ -1091,9 +1113,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         isHighlighted={binHighlighted} 
       />
 
-      {/* Scribbles */}
+      {/* Scribbles - with auto-removal */}
       {gameState.scribbles.map((scribble) => (
-        <Scribble key={scribble.id} scribble={scribble} />
+        <Scribble key={scribble.id} scribble={scribble} onRemove={removeScribble} />
       ))}
 
       {/* Floating Score Text */}
