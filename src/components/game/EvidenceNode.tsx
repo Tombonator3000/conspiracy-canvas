@@ -110,9 +110,9 @@ const getPinColor = (id: string): "red" | "yellow" | "blue" | "green" => {
   return colors[hash % colors.length];
 };
 
-// Scribble display component for node-parented scribbles
+// Scribble display component for node-parented scribbles - with auto-fade
 const NodeScribbleDisplay = ({ scribbles }: { scribbles: NodeScribble[] }) => {
-const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperties => {
+  const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperties => {
     // Scribbles are now parented INSIDE the node, positioned with absolute
     switch (position) {
       case "top":
@@ -145,7 +145,7 @@ const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperti
       {scribbles.map((scribble) => (
         <motion.div
           key={scribble.id}
-          className={`absolute pointer-events-none select-none z-20 whitespace-nowrap text-xs sm:text-sm ${getStyleClass(scribble.style)}`}
+          className={`absolute pointer-events-none select-none z-20 whitespace-nowrap text-xs sm:text-sm scribble-feedback ${getStyleClass(scribble.style)}`}
           style={{
             ...getPositionStyle(scribble.position),
             rotate: `${scribble.rotation}deg`,
@@ -153,7 +153,7 @@ const getPositionStyle = (position: NodeScribble["position"]): React.CSSProperti
           }}
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0, opacity: 0 }}
+          exit={{ scale: 0, opacity: 0, y: -10 }}
           transition={{
             type: "spring",
             stiffness: 400,
