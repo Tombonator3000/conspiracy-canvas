@@ -6,6 +6,10 @@ import { case005 } from "./case_005";
 import { case006 } from "./case_006";
 import { case007 } from "./case_007";
 import { case008 } from "./case_008";
+import { case009 } from "./case_009";
+import { case010 } from "./case_010";
+import { case011 } from "./case_011";
+import { case012 } from "./case_012";
 import type { CaseData } from "@/types/game";
 
 export const allCases: CaseData[] = [
@@ -17,6 +21,10 @@ export const allCases: CaseData[] = [
   case006,
   case007,
   case008,
+  case009,
+  case010,
+  case011,
+  case012,
 ];
 
 export const getCaseById = (id: string): CaseData | undefined => {
@@ -27,4 +35,4 @@ export const getCasesByDifficulty = (difficulty: string): CaseData[] => {
   return allCases.filter((c) => c.difficulty === difficulty);
 };
 
-export { case001, case002, case003, case004, case005, case006, case007, case008 };
+export { case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012 };
