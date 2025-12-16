@@ -585,12 +585,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     })));
 
     // Restore game state with sanity cost
+    const newSanity = Math.max(0, gameState.sanity - 20);
     setGameState((prev) => ({
       ...prev,
       ...undoState.gameState,
       scribbles: prev.scribbles,
-      sanity: Math.max(0, prev.sanity - 20),
+      sanity: newSanity,
       undoAvailable: false,
+      isGameOver: newSanity <= 0,
     }));
 
     // Add scribble
