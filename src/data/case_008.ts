@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { microwaveGlow, popcornTime, rotatingPlate } from "@/assets/evidence";
 
 export const case008: CaseData = {
   id: "case_008_microwave",
@@ -26,7 +27,7 @@ export const case008: CaseData = {
       id: "ev_patent_1947",
       type: "document",
       title: "Original Microwave Patent",
-      contentUrl: null,
+      contentUrl: microwaveGlow,
       description:
         "Filed in 1947. The patent clearly states 'temporal food acceleration device'. They hid it in plain sight!",
       tags: ["MICROWAVE", "PATENT", "TECHNOLOGY"],
@@ -40,7 +41,7 @@ export const case008: CaseData = {
       id: "ev_popcorn_anomaly",
       type: "photo",
       title: "Popcorn Timing Discrepancy",
-      contentUrl: null,
+      contentUrl: popcornTime,
       description:
         "Popcorn bag says 2 minutes. Clock says 3 minutes passed. WHERE DID THE EXTRA MINUTE GO?",
       tags: ["POPCORN", "TIME", "FOOD"],
@@ -54,7 +55,7 @@ export const case008: CaseData = {
       id: "ev_rotating_plate",
       type: "sticky_note",
       title: "The Rotating Plate",
-      contentUrl: null,
+      contentUrl: rotatingPlate,
       description:
         "WHY does food need to ROTATE? Answer: To distribute temporal energy evenly. A VORTEX.",
       tags: ["MICROWAVE", "ROTATION", "VORTEX"],

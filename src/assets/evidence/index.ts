@@ -30,3 +30,8 @@ export { default as telescope } from './telescope.jpg';
 export { default as iphone1912 } from './iphone_1912.jpg';
 export { default as fakeIceberg } from './fake_iceberg.jpg';
 export { default as titanicMovie } from './titanic_movie.jpg';
+
+// Case 008 - Microwave
+export { default as microwaveGlow } from './microwave_glow.jpg';
+export { default as popcornTime } from './popcorn_time.jpg';
+export { default as rotatingPlate } from './rotating_plate.jpg';
