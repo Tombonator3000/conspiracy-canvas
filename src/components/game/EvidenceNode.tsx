@@ -10,6 +10,7 @@ interface EvidenceNodeData extends EvidenceNodeType {
   isUVEnabled?: boolean;
   rotation?: number;
   isLinkMode?: boolean;
+  revealedTags?: string[];
 }
 
 interface EvidenceNodeProps {
@@ -90,15 +91,22 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
           {data.description}
         </p>
       </div>
-      <div className="mt-2 flex gap-1">
-        {data.tags.slice(0, 2).map((tag) => (
-          <span 
-            key={tag} 
-            className="text-[8px] bg-ink/10 px-1 py-0.5 rounded font-mono text-ink/50"
-          >
-            [REDACTED]
-          </span>
-        ))}
+      <div className="mt-2 flex flex-wrap gap-1">
+        {data.tags.slice(0, 3).map((tag) => {
+          const isRevealed = data.revealedTags?.includes(tag);
+          return (
+            <span
+              key={tag}
+              className={`text-[8px] px-1 py-0.5 rounded font-mono ${
+                isRevealed
+                  ? "bg-green-500/30 text-green-700 border border-green-500/50"
+                  : "bg-ink/10 text-ink/50"
+              }`}
+            >
+              {isRevealed ? tag : "[REDACTED]"}
+            </span>
+          );
+        })}
       </div>
     </div>
   );
