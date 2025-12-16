@@ -51,6 +51,7 @@ import {
   getRandomFromArray,
 } from "@/constants/game";
 import { isColliding, areNodesNearby, generateUniqueId } from "@/utils/helpers";
+import { checkWinCondition, checkWinConditionDetailed, WinValidationEdge } from "@/utils/winValidation";
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -224,90 +225,9 @@ const checkAllCriticalConnected = (edges: Edge[], criticalNodeIds: string[]): bo
   return criticalNodeIds.every((id) => connectedCritical.has(id));
 };
 
-// NEW: Tag-Based Semantic Truth Verification
-// Get the largest connected cluster of nodes
-const getLargestConnectedCluster = (edges: Edge[], allNodeIds: string[]): Set<string> => {
-  if (allNodeIds.length === 0) return new Set();
-
-  // Build adjacency list from edges
-  const adjacency: Map<string, Set<string>> = new Map();
-  edges.forEach((edge) => {
-    if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
-    if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
-    adjacency.get(edge.source)!.add(edge.target);
-    adjacency.get(edge.target)!.add(edge.source);
-  });
-
-  // Find all connected components using BFS
-  const visited = new Set<string>();
-  let largestCluster = new Set<string>();
-
-  for (const nodeId of allNodeIds) {
-    if (visited.has(nodeId) || !adjacency.has(nodeId)) continue;
-
-    // BFS to find this component
-    const cluster = new Set<string>();
-    const queue = [nodeId];
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-      if (visited.has(current)) continue;
-
-      visited.add(current);
-      cluster.add(current);
-
-      const neighbors = adjacency.get(current);
-      if (neighbors) {
-        neighbors.forEach((neighbor) => {
-          if (!visited.has(neighbor)) {
-            queue.push(neighbor);
-          }
-        });
-      }
-    }
-
-    // Keep track of the largest cluster
-    if (cluster.size > largestCluster.size) {
-      largestCluster = cluster;
-    }
-  }
-
-  return largestCluster;
-};
-
-// Collect all relevant tags (standard + truthTags) from nodes in a cluster
-const collectTruthTagsFromCluster = (clusterNodeIds: Set<string>, allNodes: EvidenceNodeType[]): Set<string> => {
-  const collectedTags = new Set<string>();
-
-  clusterNodeIds.forEach((nodeId) => {
-    const node = allNodes.find((n) => n.id === nodeId);
-    node?.tags.forEach((tag) => collectedTags.add(tag));
-    node?.truthTags?.forEach((tag) => collectedTags.add(tag));
-  });
-
-  return collectedTags;
-};
-
-// Check if the largest connected cluster contains all required truth tags
-const checkTruthTagsWinCondition = (
-  edges: Edge[],
-  allNodes: EvidenceNodeType[],
-  requiredTags: string[] | undefined
-): boolean => {
-  // If no requiredTags defined, fall back to legacy critical node check
-  if (!requiredTags || requiredTags.length === 0) {
-    return false; // Will use legacy check
-  }
-
-  const allNodeIds = allNodes.map((n) => n.id);
-  const largestCluster = getLargestConnectedCluster(edges, allNodeIds);
-
-  if (largestCluster.size === 0) return false;
-
-  const collectedTags = collectTruthTagsFromCluster(largestCluster, allNodes);
-
-  // Check if all required tags are present in the cluster
-  return requiredTags.every((tag) => collectedTags.has(tag));
+// Helper to convert React Flow edges to WinValidationEdge format
+const toWinValidationEdges = (edges: Edge[]): WinValidationEdge[] => {
+  return edges.map((e) => ({ source: e.source, target: e.target }));
 };
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
@@ -858,7 +778,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }, []);
 
   // Check win condition after state changes (combinations, etc.)
-  // This collects all truthTags from ALL nodes on the board
+  // Uses the imported checkWinCondition from winValidation.ts
   const checkWinConditionAfterCombination = useCallback((
     currentEdges: Edge[],
     currentNodes: EvidenceNodeType[],
@@ -868,58 +788,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       return false;
     }
 
-    // First, try the standard cluster-based check
-    const clusterWin = checkTruthTagsWinCondition(currentEdges, currentNodes, requiredTags);
-    if (clusterWin) return true;
-
-    // If cluster check fails, check if ALL required truthTags exist across ANY connected nodes
-    // This handles the case where combinations create nodes with all needed tags
-    // but they might be in a smaller cluster or even isolated
-    const allNodeIds = currentNodes.map((n) => n.id);
-
-    // Get all clusters (not just the largest)
-    const adjacency: Map<string, Set<string>> = new Map();
-    currentEdges.forEach((edge) => {
-      if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
-      if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
-      adjacency.get(edge.source)!.add(edge.target);
-      adjacency.get(edge.target)!.add(edge.source);
-    });
-
-    // Check each cluster for having all required tags
-    const visited = new Set<string>();
-    for (const nodeId of allNodeIds) {
-      if (visited.has(nodeId) || !adjacency.has(nodeId)) continue;
-
-      // BFS to find this cluster
-      const cluster = new Set<string>();
-      const queue = [nodeId];
-
-      while (queue.length > 0) {
-        const current = queue.shift()!;
-        if (visited.has(current)) continue;
-
-        visited.add(current);
-        cluster.add(current);
-
-        const neighbors = adjacency.get(current);
-        if (neighbors) {
-          neighbors.forEach((neighbor) => {
-            if (!visited.has(neighbor)) {
-              queue.push(neighbor);
-            }
-          });
-        }
-      }
-
-      // Check if this cluster has all required tags
-      const clusterTags = collectTruthTagsFromCluster(cluster, currentNodes);
-      if (requiredTags.every((tag) => clusterTags.has(tag))) {
-        return true;
-      }
-    }
-
-    return false;
+    // Use the new semantic tag-based win condition check
+    // This checks ALL connected clusters (not just the largest) for having all required tags
+    return checkWinCondition(
+      currentNodes,
+      toWinValidationEdges(currentEdges),
+      requiredTags
+    );
   }, []);
 
   // Spawn new nodes from combination with burst animation
@@ -1119,7 +994,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Falls back to legacy critical node check if no requiredTags defined
         const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
         const linkedEvidenceCount = connectedCritical.size;
-        const tagBasedVictory = checkTruthTagsWinCondition(updatedEdges, allEvidenceNodes, caseData.requiredTags);
+
+        // Use the new checkWinCondition from winValidation.ts for tag-based victory
+        const tagBasedVictory = checkWinCondition(
+          allEvidenceNodes,
+          toWinValidationEdges(updatedEdges),
+          caseData.requiredTags || []
+        );
         const legacyVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
         // Tag-based takes priority if requiredTags is defined, otherwise use legacy
         const isVictory = caseData.requiredTags?.length ? tagBasedVictory : legacyVictory;
