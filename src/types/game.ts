@@ -16,6 +16,9 @@ export interface EvidenceNode {
   isRedHerring: boolean;
   hiddenText?: string; // UV light reveals this hidden message
   isCritical?: boolean; // If true, discarding this reduces credibility
+  timelineTags?: string[]; // Tags for blue thread (timeline) connections
+  timestamp?: number; // For chronological ordering in timeline connections
+  hasRedactedContent?: boolean; // If true, shows scratch-to-reveal minigame
 }
 
 export interface Scribble {

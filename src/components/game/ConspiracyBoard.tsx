@@ -19,6 +19,7 @@ import { Button } from "@/components/ui/button";
 
 import { EvidenceNodeComponent } from "./EvidenceNode";
 import { RedStringEdge } from "./RedStringEdge";
+import { BlueStringEdge } from "./BlueStringEdge";
 import { SanityMeter } from "./SanityMeter";
 import { ConnectionCounter } from "./ConnectionCounter";
 import { Scribble } from "./Scribble";
@@ -27,6 +28,7 @@ import { CaseHeader } from "./CaseHeader";
 import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { FloatingScoreText } from "./FloatingScoreText";
+import { ParanoiaEvents } from "./ParanoiaEvents";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useDesktopDetection } from "@/hooks/useDesktopDetection";
 
@@ -39,6 +41,7 @@ const nodeTypes = {
 
 const edgeTypes = {
   redString: RedStringEdge,
+  blueString: BlueStringEdge,
 };
 
 interface ConspiracyBoardProps {
@@ -88,8 +91,8 @@ const connectionLineStyle = {
   strokeLinecap: 'round' as const,
 };
 
-// Validate connection based on shared tags
-const validateConnection = (caseData: CaseData, sourceId: string, targetId: string): ConnectionResult => {
+// Validate connection based on shared tags and thread type
+const validateConnection = (caseData: CaseData, sourceId: string, targetId: string, threadType: 'red' | 'blue' = 'red'): ConnectionResult => {
   const sourceNode = caseData.nodes.find((n) => n.id === sourceId);
   const targetNode = caseData.nodes.find((n) => n.id === targetId);
 
@@ -97,11 +100,22 @@ const validateConnection = (caseData: CaseData, sourceId: string, targetId: stri
     return { isValid: false };
   }
 
-  // Find matching tags
+  if (threadType === 'blue') {
+    // Blue thread: timeline connections - check timelineTags or timestamp order
+    const sourceTags = sourceNode.timelineTags || [];
+    const targetTags = targetNode.timelineTags || [];
+    const matchingTag = sourceTags.find((tag) => targetTags.includes(tag));
+    
+    if (matchingTag) {
+      return { isValid: true, matchingTag, scribbleText: "TIMELINE CONFIRMED!" };
+    }
+    return { isValid: false };
+  }
+
+  // Red thread: relation connections
   const matchingTag = sourceNode.tags.find((tag) => targetNode.tags.includes(tag));
 
   if (matchingTag) {
-    // Get a random scribble
     const scribbleText = caseData.scribblePool[
       Math.floor(Math.random() * caseData.scribblePool.length)
     ];
@@ -264,6 +278,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [floatingScores, setFloatingScores] = useState<FloatingScore[]>([]);
   const [combineTargetId, setCombineTargetId] = useState<string | null>(null);
   const [spawningNodes, setSpawningNodes] = useState<Set<string>>(new Set());
+  const [threadType, setThreadType] = useState<'red' | 'blue'>('red');
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
 
   // Ref for the evidence bin for collision detection
@@ -802,16 +817,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       );
       if (existingEdge) return;
 
-      const result = validateConnection(caseData, connection.source, connection.target);
+      const result = validateConnection(caseData, connection.source, connection.target, threadType);
 
       if (result.isValid) {
         playSFX("connect_success");
 
-        // Valid connection - add red string
+        // Valid connection - add appropriate thread color
         const newEdge: Edge = {
           ...connection,
-          id: `edge-${connection.source}-${connection.target}`,
-          type: "redString",
+          id: `edge-${connection.source}-${connection.target}-${threadType}`,
+          type: threadType === 'blue' ? "blueString" : "redString",
           data: { isValid: true },
           source: connection.source,
           target: connection.target,
@@ -1040,6 +1055,34 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             </span>
           </div>
         )}
+
+        {/* Thread Type Toggle */}
+        <div className="bg-secondary/80 backdrop-blur-sm px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg border border-border">
+          <span className="text-[8px] sm:text-[10px] font-typewriter text-muted-foreground uppercase tracking-wider block mb-1 sm:mb-2">
+            Thread
+          </span>
+          <div className="flex gap-1">
+            <Button
+              variant={threadType === 'red' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setThreadType('red')}
+              className={`flex-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto ${threadType === 'red' ? 'bg-destructive hover:bg-destructive/90' : ''}`}
+            >
+              🔴
+            </Button>
+            <Button
+              variant={threadType === 'blue' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setThreadType('blue')}
+              className={`flex-1 text-[10px] sm:text-xs px-1.5 sm:px-2 py-1 h-auto ${threadType === 'blue' ? 'bg-blue-600 hover:bg-blue-700' : ''}`}
+            >
+              🔵
+            </Button>
+          </div>
+          <span className="text-[8px] text-muted-foreground block mt-1">
+            {threadType === 'red' ? 'Relations' : 'Timeline'}
+          </span>
+        </div>
       </div>
 
       {/* Evidence Bin */}
@@ -1128,6 +1171,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={gameState.sanity} />
+
+      {/* Paranoia Events */}
+      <ParanoiaEvents
+        sanity={gameState.sanity}
+        isGameActive={!gameState.isGameOver && !gameState.isVictory}
+        onSanityChange={(delta) => setGameState((prev) => ({
+          ...prev,
+          sanity: Math.max(0, Math.min(100, prev.sanity + delta)),
+          isGameOver: prev.sanity + delta <= 0,
+        }))}
+        playSFX={playSFX}
+      />
     </div>
   );
 };
