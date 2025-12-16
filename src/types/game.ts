@@ -58,6 +58,25 @@ export interface GameState {
   scribbles: Scribble[];
   isGameOver: boolean;
   isVictory: boolean;
+  // Credibility Engine
+  credibility: number;
+  cleanupBonus: number;
+  trashedJunkCount: number;
+}
+
+export interface FloatingScore {
+  id: string;
+  value: number;
+  x: number;
+  y: number;
+  isPositive: boolean;
+}
+
+export interface CredibilityStats {
+  credibility: number;
+  cleanupBonus: number;
+  trashedJunkCount: number;
+  junkRemaining: number;
 }
 
 export interface ConnectionResult {
