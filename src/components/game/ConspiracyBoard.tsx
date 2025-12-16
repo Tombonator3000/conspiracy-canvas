@@ -858,6 +858,71 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setCombineTargetId(foundTarget);
   }, []);
 
+  // Check win condition after state changes (combinations, etc.)
+  // This collects all truthTags from ALL nodes on the board
+  const checkWinConditionAfterCombination = useCallback((
+    currentEdges: Edge[],
+    currentNodes: EvidenceNodeType[],
+    requiredTruthTags: string[] | undefined
+  ): boolean => {
+    if (!requiredTruthTags || requiredTruthTags.length === 0) {
+      return false;
+    }
+
+    // First, try the standard cluster-based check
+    const clusterWin = checkTruthTagsWinCondition(currentEdges, currentNodes, requiredTruthTags);
+    if (clusterWin) return true;
+
+    // If cluster check fails, check if ALL required truthTags exist across ANY connected nodes
+    // This handles the case where combinations create nodes with all needed tags
+    // but they might be in a smaller cluster or even isolated
+    const allNodeIds = currentNodes.map((n) => n.id);
+
+    // Get all clusters (not just the largest)
+    const adjacency: Map<string, Set<string>> = new Map();
+    currentEdges.forEach((edge) => {
+      if (!adjacency.has(edge.source)) adjacency.set(edge.source, new Set());
+      if (!adjacency.has(edge.target)) adjacency.set(edge.target, new Set());
+      adjacency.get(edge.source)!.add(edge.target);
+      adjacency.get(edge.target)!.add(edge.source);
+    });
+
+    // Check each cluster for having all required tags
+    const visited = new Set<string>();
+    for (const nodeId of allNodeIds) {
+      if (visited.has(nodeId) || !adjacency.has(nodeId)) continue;
+
+      // BFS to find this cluster
+      const cluster = new Set<string>();
+      const queue = [nodeId];
+
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        if (visited.has(current)) continue;
+
+        visited.add(current);
+        cluster.add(current);
+
+        const neighbors = adjacency.get(current);
+        if (neighbors) {
+          neighbors.forEach((neighbor) => {
+            if (!visited.has(neighbor)) {
+              queue.push(neighbor);
+            }
+          });
+        }
+      }
+
+      // Check if this cluster has all required tags
+      const clusterTags = collectTruthTagsFromCluster(cluster, currentNodes);
+      if (requiredTruthTags.every((tag) => clusterTags.has(tag))) {
+        return true;
+      }
+    }
+
+    return false;
+  }, []);
+
   // Spawn new nodes from combination with burst animation
   const spawnCombinationNodes = useCallback((resultNodes: EvidenceNodeType[], centerPosition: { x: number; y: number }) => {
     const newFlowNodes: Node[] = resultNodes.map((node, index) => {
@@ -871,9 +936,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       return {
         id: node.id,
         type: "evidence",
-        position: { 
-          x: centerPosition.x + offsetX, 
-          y: centerPosition.y + offsetY 
+        position: {
+          x: centerPosition.x + offsetX,
+          y: centerPosition.y + offsetY
         },
         data: { ...node, isUVEnabled, rotation, isLinkMode: interactionMode === 'connect', isSpawning: true },
         draggable: interactionMode === 'pan',
@@ -888,8 +953,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     // Clear spawning animation after delay
     setTimeout(() => {
       setSpawningNodes(new Set());
-      setNodes((nds) => nds.map((n) => 
-        resultNodes.some((rn) => rn.id === n.id) 
+      setNodes((nds) => nds.map((n) =>
+        resultNodes.some((rn) => rn.id === n.id)
           ? { ...n, data: { ...n.data, isSpawning: false } }
           : n
       ));
@@ -938,6 +1003,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ].filter((tag, idx, arr) => arr.indexOf(tag) === idx), // Remove duplicates
         }));
 
+        // Calculate remaining nodes and edges after combination
+        const remainingNodes = nodes.filter((n) => n.id !== draggedNodeId && n.id !== combineTargetId);
+        const remainingEdges = edges.filter((e) =>
+          e.source !== draggedNodeId && e.target !== draggedNodeId &&
+          e.source !== combineTargetId && e.target !== combineTargetId
+        );
+
         // Remove the two combined nodes
         setNodes((nds) => nds.filter((n) => n.id !== draggedNodeId && n.id !== combineTargetId));
         setEdges((eds) => eds.filter((e) =>
@@ -955,9 +1027,30 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Bonus credibility for successful combine (use custom bonus if defined)
         const credBonus = combination.bonusCredibility ?? 200;
         spawnFloatingScore(credBonus, cursorPosition.x, cursorPosition.y, true);
+
+        // Calculate all nodes after combination (remaining + new spawned nodes)
+        const allNodesAfterCombination: EvidenceNodeType[] = [
+          ...remainingNodes.map((n) => n.data as EvidenceNodeType),
+          ...resultNodesWithInheritedTags,
+        ];
+
+        // Check win condition after combination
+        // We need to check if the new state contains all required truthTags in any cluster
+        const isVictoryAfterCombine = checkWinConditionAfterCombination(
+          remainingEdges,
+          allNodesAfterCombination,
+          caseData.requiredTruthTags
+        );
+
+        // Update connected critical count for display
+        const newCriticalIds = allNodesAfterCombination.filter((n) => n.isCritical).map((n) => n.id);
+        const connectedCriticalAfterCombine = getConnectedCriticalNodes(remainingEdges, newCriticalIds);
+
         setGameState((prev) => ({
           ...prev,
           credibility: prev.credibility + credBonus,
+          validConnections: connectedCriticalAfterCombine.size,
+          isVictory: isVictoryAfterCombine,
         }));
       } else {
         // Invalid combination - shake both nodes
@@ -973,7 +1066,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setBinHighlighted(false);
     setDraggedNodeId(null);
     setCombineTargetId(null);
-  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, nodes, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition]);
+  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTruthTags, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
