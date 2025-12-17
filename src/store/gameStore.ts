@@ -22,6 +22,12 @@ const SUCCESS_COMBINE_TEXTS = [
   "THE TRUTH EMERGES!", "REVELATION!"
 ];
 
+const FAILED_COMBINE_TEXTS = [
+  "DOESN'T FIT...", "NO CONNECTION", "WRONG PIECES", "NOT RELATED",
+  "DOESN'T COMBINE", "TRY SOMETHING ELSE", "THAT'S NOT IT",
+  "NO MATCH HERE", "KEEP LOOKING..."
+];
+
 const PARANOIA_TEXTS = [
   "THEY KNOW", "RUN", "BEHIND YOU", "WATCHING", "TOO LATE",
   "TRUST NO ONE", "THEY'RE LISTENING", "IT'S ALL CONNECTED",
@@ -402,6 +408,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   checkCombine: (sourceId, targetId, availableCombinations) => {
     const state = get();
+    const { addScribble, triggerShake } = get();
 
     // 1. Find the nodes in current state
     const sourceNode = state.nodes.find(n => n.id === sourceId);
@@ -413,6 +420,27 @@ export const useGameStore = create<GameState>((set, get) => ({
       (c.itemA === sourceId && c.itemB === targetId) ||
       (c.itemA === targetId && c.itemB === sourceId)
     );
+
+    if (!validCombo) {
+      // INVALID COMBINATION - Show feedback
+      console.log(`❌ No valid combination: ${sourceId} + ${targetId}`);
+
+      // Calculate center position for scribble
+      const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
+      const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+
+      // Shake both nodes
+      triggerShake(sourceId);
+      triggerShake(targetId);
+
+      // Show error scribble
+      const errorText = FAILED_COMBINE_TEXTS[Math.floor(Math.random() * FAILED_COMBINE_TEXTS.length)];
+      addScribble(errorText, centerX, centerY - 30, 'error');
+
+      // Play error action
+      set({ lastAction: { type: 'COMBINE_FAIL', id: Date.now() } });
+      return;
+    }
 
     if (validCombo) {
       console.log(`🧪 COMBINE SUCCESS: ${sourceId} + ${targetId}`);
@@ -507,9 +535,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       const trashedNode = state.nodes.find(n => n.id === id);
       const trashedEdges = state.edges.filter(e => e.source === id || e.target === id);
 
+      if (!trashedNode) {
+        console.log(`⚠️ trashNode: Node ${id} not found in state`);
+        return {};
+      }
+
+      console.log(`🗑️ trashNode: Removing node ${id} from ${state.nodes.length} nodes`);
+
       // 1. Remove Node
       const newNodes = state.nodes.filter(n => n.id !== id);
       const newEdges = state.edges.filter(e => e.source !== id && e.target !== id);
+
+      console.log(`🗑️ trashNode: ${state.nodes.length} -> ${newNodes.length} nodes`);
 
       // 2. Calculate Penalty/Reward
       let newSanity = state.sanity;
@@ -710,6 +747,23 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Trash animation actions
   startTrashAnimation: (nodeId, isJunk) => {
+    const state = get();
+
+    // Prevent double-trashing
+    if (state.trashingNodes.some(t => t.nodeId === nodeId)) {
+      console.log(`⚠️ Node ${nodeId} is already being trashed`);
+      return;
+    }
+
+    // Check if node exists
+    const nodeToTrash = state.nodes.find(n => n.id === nodeId);
+    if (!nodeToTrash) {
+      console.log(`⚠️ Node ${nodeId} not found for trashing`);
+      return;
+    }
+
+    console.log(`🗑️ Starting trash animation for ${nodeId}`);
+
     // Mark node as trashing (for animation)
     set(state => ({
       trashingNodes: [
@@ -726,6 +780,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Store isJunk for when animation completes
     const completeTrash = () => {
+      console.log(`🗑️ Completing trash animation for ${nodeId}`);
       get().completeTrashAnimation(nodeId);
       get().trashNode(nodeId, isJunk);
     };
