@@ -292,9 +292,29 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   // Extract evidence data from active nodes (includes spawned nodes from combinations)
+  // CRITICAL FIX: Ensure truthTags is always present by falling back to caseData.nodes
+  // This fixes the issue where truthTags gets lost from node.data during state updates
   const allEvidenceNodes = useMemo(
-    () => nodes.map((n) => n.data as EvidenceNodeType),
-    [nodes]
+    () => {
+      return nodes.map((n) => {
+        const nodeData = n.data as EvidenceNodeType;
+
+        // If truthTags is missing from node.data, try to get it from original caseData
+        if (!nodeData.truthTags) {
+          const originalNode = caseData.nodes.find((cn) => cn.id === n.id);
+          if (originalNode?.truthTags) {
+            // Return node with truthTags from caseData as fallback
+            return {
+              ...nodeData,
+              truthTags: originalNode.truthTags,
+            };
+          }
+        }
+
+        return nodeData;
+      });
+    },
+    [nodes, caseData.nodes]
   );
 
   // Get all critical node IDs from active nodes for cluster detection (includes spawned critical nodes)
@@ -378,14 +398,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setNodes((nds) =>
       nds.map((node) => {
         const nodeHints = revealedHints.get(node.id) || [];
-        const nodeData = caseData.nodes.find((n) => n.id === node.id);
-        const revealedTags = nodeHints.map((idx) => nodeData?.tags[idx]).filter(Boolean) as string[];
+        const originalNodeData = caseData.nodes.find((n) => n.id === node.id);
+        const revealedTags = nodeHints.map((idx) => originalNodeData?.tags[idx]).filter(Boolean) as string[];
         const scribbles = gameState.nodeScribbles.filter((s) => s.nodeId === node.id);
 
         // Get combination-related data
         const combinationHint = getCombinationHint(caseData.combinations, node.id);
         const { canCombine, isChainResult } = getCombinable(caseData.combinations, node.id, currentNodeIds);
         const isNearbyCombinable = nearbyPairs.has(node.id);
+
+        // CRITICAL: Ensure truthTags is preserved from either node.data or original caseData
+        const existingData = node.data as EvidenceNodeType;
+        const truthTags = existingData.truthTags || originalNodeData?.truthTags;
 
         return {
           ...node,
@@ -402,6 +426,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             combinationHint,
             isNearbyCombinable: isNearbyCombinable && canCombine,
             isChainCombinable: isChainResult && canCombine,
+            // CRITICAL: Explicitly preserve truthTags
+            truthTags,
           },
         };
       })
@@ -437,8 +463,6 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
     // Must have at least some edges to win
     if (edges.length === 0) return;
-
-    console.log('🔄 Win condition useEffect triggered (edges/nodes changed)');
 
     // Perform the win condition check with the current state
     const isVictory = checkWinCondition(
