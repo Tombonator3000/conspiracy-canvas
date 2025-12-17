@@ -721,4 +721,71 @@
     background-color: hsl(40, 20%, 90%);
     box-shadow: 0 0 2px rgba(0,0,0,0.1);
   }
+
+  /* === VICTORY GLOW EFFECT === */
+  /* Applied when the player wins - all strings glow green */
+  .victory-glow .react-flow__edge-path {
+    stroke: #00ff41 !important; /* Hacker green */
+    filter: drop-shadow(0 0 5px #00ff41) drop-shadow(0 0 10px #00ff41);
+    transition: all 1s ease;
+  }
+
+  .victory-glow .react-flow__edge {
+    animation: victory-pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes victory-pulse {
+    0%, 100% {
+      filter: drop-shadow(0 0 5px #00ff41);
+    }
+    50% {
+      filter: drop-shadow(0 0 15px #00ff41) drop-shadow(0 0 25px #00ff41);
+    }
+  }
+
+  /* === GLITCH TEXT EFFECT === */
+  /* For hallucination nodes at low sanity */
+  .glitch-text {
+    animation: glitch-shake 0.3s ease-in-out infinite;
+    color: #ff0000 !important;
+    text-shadow:
+      2px 0 #00ff00,
+      -2px 0 #0000ff,
+      0 0 10px rgba(255, 0, 0, 0.8);
+  }
+
+  @keyframes glitch-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px) skewX(1deg); }
+    50% { transform: translateX(2px) skewY(-1deg); }
+    75% { transform: translateX(-1px) skewX(-1deg); }
+  }
+
+  /* Encrypted node indicator (requiresUV) */
+  .encrypted-node {
+    position: relative;
+  }
+
+  .encrypted-node::after {
+    content: "🔒";
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 16px;
+    animation: lock-pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes lock-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(1.1); }
+  }
+
+  /* Revealed node under UV light */
+  .uv-revealed {
+    box-shadow:
+      0 0 10px rgba(127, 255, 0, 0.5),
+      0 0 20px rgba(127, 255, 0, 0.3),
+      inset 0 0 5px rgba(127, 255, 0, 0.2) !important;
+    border: 1px solid rgba(127, 255, 0, 0.5) !important;
+  }
 }

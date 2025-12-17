@@ -27,6 +27,10 @@ export interface EvidenceNode {
   timestamp?: number; // For chronological ordering in timeline connections
   hasRedactedContent?: boolean; // If true, shows scratch-to-reveal minigame
   truthTags?: string[]; // Semantic truth tags for win condition (e.g., ['CULPRIT', 'MOTIVE'])
+  // Timeline & UV features
+  date?: string; // ISO date string for blue thread chronological ordering (e.g., '1997-03-15')
+  requiresUV?: boolean; // If true, node must be inspected with UV light before connecting
+  isRevealed?: boolean; // Set to true when UV light reveals the hidden content
 }
 
 export interface Scribble {
