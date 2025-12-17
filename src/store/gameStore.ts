@@ -3,6 +3,14 @@ import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/re
 import { EvidenceNode, Combination } from '@/types/game';
 import { allCases } from '@/data/cases';
 
+interface Scribble {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  rotation: number;
+}
+
 interface GameState {
   // DATA
   nodes: Node[];
@@ -25,6 +33,11 @@ interface GameState {
   // AUDIO/VISUAL SIGNAL (transient - for UI effects)
   lastAction: { type: string; id: number } | null;
 
+  // UV LIGHT & SHAKE STATE
+  isUVEnabled: boolean;
+  shakingNodeIds: string[];
+  scribbles: Scribble[];
+
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -44,6 +57,12 @@ interface GameState {
   trashNode: (id: string, isJunk: boolean) => void;
   modifySanity: (delta: number) => void;
   resetLevel: () => void;
+
+  // UV & SHAKE ACTIONS
+  toggleUV: () => void;
+  triggerShake: (id: string) => void;
+  addScribble: (text: string, x: number, y: number) => void;
+  removeScribble: (id: string) => void;
 
   // Internal helper
   validateWin: () => void;
@@ -91,6 +110,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Audio/Visual Signal
   lastAction: null,
 
+  // UV Light & Shake State
+  isUVEnabled: false,
+  shakingNodeIds: [],
+  scribbles: [],
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
@@ -100,7 +124,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     junkBinned: 0,
     mistakes: 0,
     sanity: 100,
-    lastAction: null
+    lastAction: null,
+    isUVEnabled: false,
+    shakingNodeIds: [],
+    scribbles: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -129,6 +156,9 @@ export const useGameStore = create<GameState>((set, get) => ({
       startTime: Date.now(),
       requiredTags: level.requiredTags || [],
       lastAction: null,
+      isUVEnabled: false,
+      shakingNodeIds: [],
+      scribbles: [],
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -155,31 +185,63 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { threadColor } = get();
+    const { nodes, threadColor, triggerShake, addScribble } = get();
 
-    // Determine edge style based on thread color
-    const isBlue = threadColor === 'blue';
-    const colorHex = isBlue ? '#3b82f6' : '#e11d48'; // Blue-500 vs Rose-600
+    // 1. Validate Connection Logic (Simple Tag Match)
+    const source = nodes.find(n => n.id === params.source);
+    const target = nodes.find(n => n.id === params.target);
 
-    // 1. Immediate visual feedback
-    const newEdge = {
-      ...params,
-      id: `e-${params.source}-${params.target}`,
-      type: isBlue ? 'blueString' : 'redString',
-      style: { stroke: colorHex, strokeWidth: 3 },
-      data: { type: threadColor }
-    } as Edge;
+    // Check if they share ANY tags (Primitive check)
+    const sourceTags = (source?.data as { truthTags?: string[] })?.truthTags || [];
+    const targetTags = (target?.data as { truthTags?: string[] })?.truthTags || [];
+    const hasMatch = sourceTags.some((t: string) => targetTags.includes(t));
 
-    set(state => ({
-      edges: [...state.edges, newEdge],
-      lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
-    }));
+    // 2. Handle Outcome
+    if (hasMatch) {
+      // SUCCESS - Determine edge style based on thread color
+      const isBlue = threadColor === 'blue';
+      const colorHex = isBlue ? '#3b82f6' : '#e11d48'; // Blue-500 vs Rose-600
 
-    // 2. Log connection
-    console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
+      const newEdge = {
+        ...params,
+        id: `e-${params.source}-${params.target}`,
+        type: isBlue ? 'blueString' : 'redString',
+        style: { stroke: colorHex, strokeWidth: 3 },
+        data: { type: threadColor }
+      } as Edge;
 
-    // 3. Check for win condition
-    get().validateWin();
+      set(state => ({
+        edges: [...state.edges, newEdge],
+        score: state.score + 50,
+        lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
+      }));
+
+      // Log connection
+      console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
+
+      // Check for win condition
+      get().validateWin();
+    } else {
+      // FAILURE (Penalize)
+      set(state => ({
+        sanity: Math.max(0, state.sanity - 10),
+        mistakes: state.mistakes + 1,
+        lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+      }));
+
+      // Visual feedback - shake the nodes
+      if (params.source) triggerShake(params.source);
+      if (params.target) triggerShake(params.target);
+
+      // Add scribble near source node
+      addScribble(
+        "NO MATCH!",
+        (source?.position.x || 0) + 50,
+        (source?.position.y || 0) - 50
+      );
+
+      console.log(`❌ Connection failed: ${params.source} <-> ${params.target} (no matching tags)`);
+    }
   },
 
   onNodeDragStop: (id, position) => {
@@ -321,8 +383,47 @@ export const useGameStore = create<GameState>((set, get) => ({
       junkBinned: 0,
       mistakes: 0,
       startTime: Date.now(),
-      lastAction: null
+      lastAction: null,
+      isUVEnabled: false,
+      shakingNodeIds: [],
+      scribbles: []
     });
+  },
+
+  // UV & SHAKE ACTIONS
+  toggleUV: () => set(state => ({ isUVEnabled: !state.isUVEnabled })),
+
+  triggerShake: (id) => {
+    set(state => ({ shakingNodeIds: [...state.shakingNodeIds, id] }));
+    // Auto-remove shake after 500ms
+    setTimeout(() => {
+      set(state => ({
+        shakingNodeIds: state.shakingNodeIds.filter(nId => nId !== id)
+      }));
+    }, 500);
+  },
+
+  addScribble: (text, x, y) => {
+    const newScribble: Scribble = {
+      id: `scribble-${Date.now()}`,
+      text,
+      x,
+      y,
+      rotation: Math.random() * 20 - 10
+    };
+    set(state => ({ scribbles: [...state.scribbles, newScribble] }));
+    // Auto-remove scribble after 2 seconds
+    setTimeout(() => {
+      set(state => ({
+        scribbles: state.scribbles.filter(s => s.id !== newScribble.id)
+      }));
+    }, 2000);
+  },
+
+  removeScribble: (id) => {
+    set(state => ({
+      scribbles: state.scribbles.filter(s => s.id !== id)
+    }));
   },
 
   validateWin: () => {

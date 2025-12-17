@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useEffect, useState, useRef } from "react";
+import { AnimatePresence } from "framer-motion";
 import {
   ReactFlow,
   Background,
@@ -18,6 +19,7 @@ import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
+import { Scribble } from "./Scribble";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
@@ -56,6 +58,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     mistakes,
     threadColor,
     lastAction,
+    isUVEnabled,
+    shakingNodeIds,
+    scribbles,
     setNodes,
     setEdges,
     setRequiredTags,
@@ -66,6 +71,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     checkCombine,
     trashNode,
     modifySanity,
+    toggleUV,
   } = useGameStore();
 
   // Audio context for sound effects
@@ -232,6 +238,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [isNodeOverBin, nodes, trashNode, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
+  // Map nodes with shake and UV state for visual effects
+  const visibleNodes = useMemo(() => nodes.map(node => ({
+    ...node,
+    data: {
+      ...node.data,
+      isUVEnabled,
+      isShaking: shakingNodeIds.includes(node.id)
+    }
+  })), [nodes, isUVEnabled, shakingNodeIds]);
+
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
   return (
@@ -270,12 +286,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         </div>
       </div>
 
+      {/* UV Light Toggle */}
+      <div className="absolute top-44 right-4 z-50">
+        <UVLightToggle isEnabled={isUVEnabled} onToggle={toggleUV} />
+      </div>
+
       {/* Evidence Bin */}
       <EvidenceBin ref={binRef} isHighlighted={isBinHighlighted} />
 
       {/* React Flow Board - THE DUMB RENDERER */}
       <ReactFlow
-        nodes={nodes}
+        nodes={visibleNodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onConnect={onConnect}
@@ -314,8 +335,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         />
       </ReactFlow>
 
-      {/* UV Light Overlay (visual only) */}
-      <UVOverlay isEnabled={false} />
+      {/* UV Light Overlay */}
+      <UVOverlay isEnabled={isUVEnabled} />
+
+      {/* Scribbles Layer */}
+      <AnimatePresence>
+        {scribbles.map(scribble => (
+          <Scribble key={scribble.id} scribble={scribble} />
+        ))}
+      </AnimatePresence>
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={sanity} />
