@@ -82,6 +82,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setEdges,
     setRequiredTags,
     setThreadColor,
+    onNodesChange,
     onConnect,
     onNodeDragStop,
     checkCombine,
@@ -296,6 +297,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        onNodesChange={onNodesChange}
         onConnect={onConnect}
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}

@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { Node, Edge, Connection } from '@xyflow/react';
+import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination } from '@/types/game';
 
 interface GameState {
@@ -28,6 +28,7 @@ interface GameState {
   setThreadColor: (color: 'red' | 'blue') => void;
 
   // LOGIC ACTIONS (Synchronous & Immediate)
+  onNodesChange: (changes: NodeChange[]) => void;
   onConnect: (connection: Connection) => void;
   onNodeDragStop: (id: string, position: {x: number, y: number}) => void;
   checkCombine: (sourceId: string, targetId: string, availableCombinations: Combination[]) => void;
@@ -71,6 +72,10 @@ export const useGameStore = create<GameState>((set, get) => ({
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
   setThreadColor: (color) => set({ threadColor: color }),
+
+  onNodesChange: (changes) => {
+    set({ nodes: applyNodeChanges(changes, get().nodes) });
+  },
 
   onConnect: (params) => {
     const { threadColor } = get();
