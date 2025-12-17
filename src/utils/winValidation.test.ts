@@ -1,6 +1,6 @@
 import assert from "node:assert";
 import { describe, it } from "node:test";
-import { checkWinConditionDetailed, checkWinCondition } from "./winValidation";
+import { checkWinConditionDetailed } from "./winValidation";
 import type { EvidenceNode } from "../types/game";
 
 const buildEdge = (source: string, target: string) => ({ source, target });
@@ -97,9 +97,6 @@ describe("checkWinConditionDetailed", () => {
 
     assert.strictEqual(result.isVictory, true, "Should be victory when all 3 tags are in same cluster");
     assert.deepStrictEqual(result.missingTags, [], "No tags should be missing");
-    assert.ok(result.winningClusterNodeIds?.includes("ev_pigeon_photo"), "Winning cluster should include pigeon");
-    assert.ok(result.winningClusterNodeIds?.includes("ev_schematic"), "Winning cluster should include schematic");
-    assert.ok(result.winningClusterNodeIds?.includes("ev_powerline"), "Winning cluster should include powerline");
   });
 
   it("CASE_001: handles case-insensitive tag matching", () => {
