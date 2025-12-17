@@ -213,10 +213,11 @@ export const checkWinCondition = (
   requiredTags: string[]
 ): boolean => {
   // VERBOSE DEBUG: Start of win condition check
-  console.log('=== WIN CONDITION CHECK ===');
-  console.log('Required Tags:', requiredTags);
+  console.log('=== WIN CONDITION CHECK (checkWinCondition) ===');
+  console.log('Required Tags:', JSON.stringify(requiredTags));
   console.log('Total Nodes:', nodes.length);
   console.log('Total Edges:', edges.length);
+  console.log('All Nodes with truthTags:', nodes.map(n => ({ id: n.id, truthTags: n.truthTags })));
 
   // No required tags = no semantic win condition defined
   if (!requiredTags || requiredTags.length === 0) {
@@ -233,7 +234,8 @@ export const checkWinCondition = (
   const allNodeIds = nodes.map((n) => n.id);
   const clusters = findAllConnectedClusters(edges, allNodeIds);
 
-  console.log('Clusters Found:', clusters.length);
+  console.log('Current Clusters Found:', clusters.length);
+  console.log('Edge list:', edges.map(e => `${e.source} -> ${e.target}`));
 
   // No connected clusters = can't win (need at least connections)
   if (clusters.length === 0) {
@@ -241,30 +243,37 @@ export const checkWinCondition = (
     return false;
   }
 
+  // Normalize required tags once for comparison
+  const normalizedRequired = requiredTags.map(normalizeTag);
+  console.log('Normalized Required Tags:', normalizedRequired);
+
   // Check each cluster to see if any has all required tags
   for (let i = 0; i < clusters.length; i++) {
     const cluster = clusters[i];
     const collectedTags = collectTruthTagsFromCluster(cluster, nodes);
 
-    console.log(`--- Cluster ${i + 1} ---`);
+    console.log(`--- Cluster ${i + 1} Tags ---`);
     console.log('  Nodes in cluster:', Array.from(cluster));
-    console.log('  Collected truthTags:', Array.from(collectedTags));
+    console.log('  Collected truthTags (normalized):', Array.from(collectedTags));
 
     // Show which nodes contributed which tags
     cluster.forEach((nodeId) => {
       const node = nodes.find((n) => n.id === nodeId);
-      console.log(`    Node "${nodeId}" truthTags:`, node?.truthTags || '(none)');
+      console.log(`    Node "${nodeId}" truthTags:`, node?.truthTags || '(NONE - THIS IS A PROBLEM!)');
     });
 
-    // Check for match using case-insensitive subset check
-    const normalizedRequired = requiredTags.map(normalizeTag);
-    const missingTags = normalizedRequired.filter((tag) => !collectedTags.has(tag));
+    // SUBSET CHECK: Check if all required tags are present (case-insensitive)
+    // This allows extra tags in the cluster - only checks that required ones exist
+    const missingTags = normalizedRequired.filter((reqTag) => !collectedTags.has(reqTag));
+
+    console.log('  Required Tags:', normalizedRequired);
+    console.log('  Match Result:', missingTags.length === 0 ? 'ALL MATCHED!' : `Missing: ${missingTags.join(', ')}`);
 
     if (missingTags.length === 0) {
       console.log('✅ VICTORY! All required tags found in cluster!');
+      console.log('✅ Winning cluster nodes:', Array.from(cluster));
+      console.log('✅ Collected tags:', Array.from(collectedTags));
       return true;
-    } else {
-      console.log('  Missing tags:', missingTags);
     }
   }
 
@@ -287,30 +296,57 @@ export const checkWinConditionDetailed = (
   edges: WinValidationEdge[],
   requiredTags: string[]
 ): WinConditionResult => {
+  // VERBOSE DEBUG
+  console.log('=== WIN CONDITION DETAILED CHECK ===');
+  console.log('Required Tags:', JSON.stringify(requiredTags));
+  console.log('Nodes passed in:', nodes.length);
+  console.log('Edges passed in:', edges.length);
+
+  // Log all nodes with their truthTags for debugging
+  console.log('Node truthTags breakdown:');
+  nodes.forEach((n) => {
+    console.log(`  - ${n.id}: truthTags = ${JSON.stringify(n.truthTags)}`);
+  });
+
   // No required tags = no semantic win condition defined
   if (!requiredTags || requiredTags.length === 0) {
+    console.log('❌ No required tags defined');
     return { isVictory: false, missingTags: [] };
   }
 
   // No nodes on board = can't win
   if (nodes.length === 0) {
+    console.log('❌ No nodes on board');
     return { isVictory: false, missingTags: [...requiredTags] };
   }
 
   const allNodeIds = nodes.map((n) => n.id);
   const clusters = findAllConnectedClusters(edges, allNodeIds);
 
+  console.log('Clusters found:', clusters.length);
+
   // Track the best cluster (one with most required tags)
   let bestCluster: Set<string> | null = null;
   let bestTags: Set<string> = new Set();
   let fewestMissing: string[] = [...requiredTags];
 
+  // Normalize required tags for comparison
+  const normalizedRequired = requiredTags.map(normalizeTag);
+
   // Check each cluster
-  for (const cluster of clusters) {
+  for (let i = 0; i < clusters.length; i++) {
+    const cluster = clusters[i];
     const collectedTags = collectTruthTagsFromCluster(cluster, nodes);
 
-    // Check for victory
-    if (hasAllRequiredTags(collectedTags, requiredTags)) {
+    console.log(`--- Cluster ${i + 1} ---`);
+    console.log('  Nodes:', Array.from(cluster));
+    console.log('  Collected tags:', Array.from(collectedTags));
+
+    // SUBSET CHECK: Check if all required tags are present
+    const hasAll = normalizedRequired.every((reqTag) => collectedTags.has(reqTag));
+
+    if (hasAll) {
+      console.log('✅ VICTORY DETECTED! Cluster has all required tags!');
       return {
         isVictory: true,
         winningClusterNodeIds: Array.from(cluster),
@@ -320,13 +356,18 @@ export const checkWinConditionDetailed = (
     }
 
     // Track best partial match for feedback
-    const missing = findMissingTags(collectedTags, requiredTags);
+    const missing = normalizedRequired.filter((tag) => !collectedTags.has(tag));
+    console.log('  Missing tags:', missing);
+
     if (missing.length < fewestMissing.length) {
       fewestMissing = missing;
       bestCluster = cluster;
       bestTags = collectedTags;
     }
   }
+
+  console.log('❌ No winning cluster found');
+  console.log('Best cluster missing:', fewestMissing);
 
   // No winning cluster found - return info about best attempt
   return {

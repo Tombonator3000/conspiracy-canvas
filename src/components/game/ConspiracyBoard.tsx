@@ -296,17 +296,20 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // This fixes the issue where truthTags gets lost from node.data during state updates
   const allEvidenceNodes = useMemo(
     () => {
-      return nodes.map((n) => {
+      console.log('=== REBUILDING allEvidenceNodes ===');
+      const result = nodes.map((n) => {
         const nodeData = n.data as unknown as EvidenceNodeType;
 
         // Check if truthTags is missing OR empty array (both need fallback)
         // Note: ![] is false in JS, so we must check length explicitly
-        const hasTruthTags = nodeData.truthTags && nodeData.truthTags.length > 0;
+        let truthTags = nodeData.truthTags;
+        const hasTruthTags = truthTags && truthTags.length > 0;
 
         if (!hasTruthTags) {
           // First try: Look up from original caseData.nodes
           const originalNode = caseData.nodes.find((cn) => cn.id === n.id);
           if (originalNode?.truthTags && originalNode.truthTags.length > 0) {
+            console.log(`  Node ${n.id}: Using truthTags from caseData.nodes: ${JSON.stringify(originalNode.truthTags)}`);
             return {
               ...nodeData,
               truthTags: originalNode.truthTags,
@@ -318,6 +321,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             for (const combo of caseData.combinations) {
               const resultNode = combo.resultNodes.find((rn) => rn.id === n.id);
               if (resultNode?.truthTags && resultNode.truthTags.length > 0) {
+                console.log(`  Node ${n.id}: Using truthTags from combination: ${JSON.stringify(resultNode.truthTags)}`);
                 return {
                   ...nodeData,
                   truthTags: resultNode.truthTags,
@@ -325,10 +329,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
               }
             }
           }
+
+          console.log(`  Node ${n.id}: NO truthTags found! (this node won't contribute to win condition)`);
+        } else {
+          console.log(`  Node ${n.id}: Has truthTags in data: ${JSON.stringify(truthTags)}`);
         }
 
         return nodeData;
       });
+
+      console.log('allEvidenceNodes final count:', result.length);
+      return result;
     },
     [nodes, caseData.nodes, caseData.combinations]
   );
@@ -492,11 +503,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // WIN CONDITION CHECK: Trigger whenever edges or nodes change
   // This ensures we check victory AFTER state has been updated (not during callbacks)
   useEffect(() => {
+    console.log('=== WIN CONDITION useEffect TRIGGERED ===');
+    console.log('  Edges count:', edges.length);
+    console.log('  Nodes count:', nodes.length);
+    console.log('  allEvidenceNodes count:', allEvidenceNodes.length);
+    console.log('  Required tags:', caseData.requiredTags);
+    console.log('  Game over?', gameState.isGameOver);
+    console.log('  Already victory?', gameState.isVictory);
+
     // Don't check if game is already over
-    if (gameState.isVictory || gameState.isGameOver) return;
+    if (gameState.isVictory || gameState.isGameOver) {
+      console.log('  Skipping: game already ended');
+      return;
+    }
 
     // Don't check if no requiredTags defined
     if (!caseData.requiredTags || caseData.requiredTags.length === 0) {
+      console.log('  Skipping: no requiredTags defined');
       if (gameState.missingTags.length > 0) {
         setGameState((prev) => ({ ...prev, missingTags: [] }));
       }
@@ -505,21 +528,32 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
     // Must have at least some edges to win
     if (edges.length === 0) {
+      console.log('  Skipping: no edges yet');
       if (gameState.missingTags.length > 0) {
         setGameState((prev) => ({ ...prev, missingTags: [] }));
       }
       return;
     }
 
+    console.log('  Running checkWinConditionDetailed...');
+
     // Perform the win condition check with the current state
-    const { isVictory, missingTags } = checkWinConditionDetailed(
+    const winEdges = toWinValidationEdges(edges);
+    console.log('  Win validation edges:', winEdges);
+
+    const { isVictory, missingTags, collectedTags, winningClusterNodeIds } = checkWinConditionDetailed(
       allEvidenceNodes,
-      toWinValidationEdges(edges),
+      winEdges,
       caseData.requiredTags
     );
 
+    console.log('  Result: isVictory =', isVictory);
+    console.log('  Result: missingTags =', missingTags);
+    console.log('  Result: collectedTags =', collectedTags);
+    console.log('  Result: winningClusterNodeIds =', winningClusterNodeIds);
+
     if (isVictory && !gameState.isVictory) {
-      console.log('🎉 VICTORY detected in useEffect!');
+      console.log('🎉🎉🎉 VICTORY detected in useEffect! Setting isVictory = true 🎉🎉🎉');
       setGameState((prev) => ({
         ...prev,
         isVictory: true,
