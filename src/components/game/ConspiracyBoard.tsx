@@ -51,7 +51,7 @@ import {
   getRandomFromArray,
 } from "@/constants/game";
 import { isColliding, areNodesNearby, generateUniqueId } from "@/utils/helpers";
-import { checkWinCondition, checkWinConditionDetailed, WinValidationEdge } from "@/utils/winValidation";
+import { checkWinConditionDetailed, WinValidationEdge } from "@/utils/winValidation";
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -348,6 +348,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     nodeScribbles: [],
     isGameOver: false,
     isVictory: false,
+    missingTags: [],
     // Credibility Engine - starts at 500
     credibility: 500,
     cleanupBonus: 0,
@@ -495,13 +496,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     if (gameState.isVictory || gameState.isGameOver) return;
 
     // Don't check if no requiredTags defined
-    if (!caseData.requiredTags || caseData.requiredTags.length === 0) return;
+    if (!caseData.requiredTags || caseData.requiredTags.length === 0) {
+      if (gameState.missingTags.length > 0) {
+        setGameState((prev) => ({ ...prev, missingTags: [] }));
+      }
+      return;
+    }
 
     // Must have at least some edges to win
-    if (edges.length === 0) return;
+    if (edges.length === 0) {
+      if (gameState.missingTags.length > 0) {
+        setGameState((prev) => ({ ...prev, missingTags: [] }));
+      }
+      return;
+    }
 
     // Perform the win condition check with the current state
-    const isVictory = checkWinCondition(
+    const { isVictory, missingTags } = checkWinConditionDetailed(
       allEvidenceNodes,
       toWinValidationEdges(edges),
       caseData.requiredTags
@@ -512,9 +523,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setGameState((prev) => ({
         ...prev,
         isVictory: true,
+        missingTags: [],
+      }));
+    } else if (!isVictory) {
+      setGameState((prev) => ({
+        ...prev,
+        missingTags: missingTags || [],
       }));
     }
-  }, [edges, nodes, allEvidenceNodes, caseData.requiredTags, gameState.isVictory, gameState.isGameOver]);
+  }, [edges, nodes, allEvidenceNodes, caseData.requiredTags, gameState.isVictory, gameState.isGameOver, gameState.missingTags.length]);
 
   // Handle game end
   useEffect(() => {
@@ -868,19 +885,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }, []);
 
   // Check win condition after state changes (combinations, etc.)
-  // Uses the imported checkWinCondition from winValidation.ts
+  // Uses the detailed check to surface missing tags for UI feedback
   const checkWinConditionAfterCombination = useCallback((
     currentEdges: Edge[],
     currentNodes: EvidenceNodeType[],
     requiredTags: string[] | undefined
-  ): boolean => {
+  ) => {
     if (!requiredTags || requiredTags.length === 0) {
-      return false;
+      return { isVictory: false, missingTags: [] };
     }
 
-    // Use the new semantic tag-based win condition check
+    // Use the semantic tag-based win condition check with details
     // This checks ALL connected clusters (not just the largest) for having all required tags
-    return checkWinCondition(
+    return checkWinConditionDetailed(
       currentNodes,
       toWinValidationEdges(currentEdges),
       requiredTags
@@ -1019,7 +1036,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
         // Check win condition after combination
         // We need to check if the new state contains all required truthTags in any cluster
-        const isVictoryAfterCombine = checkWinConditionAfterCombination(
+        const combinationWinResult = checkWinConditionAfterCombination(
           remainingEdges,
           allNodesAfterCombination,
           caseData.requiredTags
@@ -1033,7 +1050,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ...prev,
           credibility: prev.credibility + credBonus,
           validConnections: connectedCriticalAfterCombine.size,
-          isVictory: isVictoryAfterCombine,
+          isVictory: combinationWinResult.isVictory,
+          missingTags: combinationWinResult.missingTags || [],
         }));
       } else {
         // Invalid combination - shake both nodes
@@ -1104,15 +1122,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
         const linkedEvidenceCount = connectedCritical.size;
 
-        // Use the new checkWinCondition from winValidation.ts for tag-based victory
-        const tagBasedVictory = checkWinCondition(
+        // Use the detailed win validation from winValidation.ts for tag-based victory
+        const tagWinResult = checkWinConditionDetailed(
           allEvidenceNodes,
           toWinValidationEdges(updatedEdges),
           caseData.requiredTags || []
         );
         const legacyVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
         // Tag-based takes priority if requiredTags is defined, otherwise use legacy
-        const isVictory = caseData.requiredTags?.length ? tagBasedVictory : legacyVictory;
+        const isVictory = caseData.requiredTags?.length ? tagWinResult.isVictory : legacyVictory;
 
         // Calculate combo bonus for consecutive correct connections
         const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;
@@ -1138,6 +1156,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ...prev,
           validConnections: linkedEvidenceCount,
           isVictory,
+          missingTags: isVictory || !caseData.requiredTags?.length ? [] : (tagWinResult.missingTags || []),
           consecutiveCorrect: newConsecutiveCorrect,
           comboBonus: prev.comboBonus + comboBonus,
           credibility: prev.credibility + comboBonus,
@@ -1252,7 +1271,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           max={criticalNodeIds.length}
           isVictory={gameState.isVictory}
         />
-        
+
+        {gameState.validConnections === criticalNodeIds.length &&
+          !gameState.isVictory &&
+          (caseData.requiredTags?.length ?? 0) > 0 &&
+          gameState.missingTags.length > 0 && (
+            <div className="bg-amber-100/90 border border-amber-300 text-amber-900 rounded px-2 py-1 shadow-sm text-[10px] font-typewriter uppercase tracking-wide">
+              Missing: {gameState.missingTags.join(', ')}
+            </div>
+          )}
+
         {/* UV Light Toggle */}
         <UVLightToggle isEnabled={isUVEnabled} onToggle={handleUVToggle} />
         
