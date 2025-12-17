@@ -212,33 +212,63 @@ export const checkWinCondition = (
   edges: WinValidationEdge[],
   requiredTags: string[]
 ): boolean => {
+  // VERBOSE DEBUG: Start of win condition check
+  console.log('=== WIN CONDITION CHECK ===');
+  console.log('Required Tags:', requiredTags);
+  console.log('Total Nodes:', nodes.length);
+  console.log('Total Edges:', edges.length);
+
   // No required tags = no semantic win condition defined
   if (!requiredTags || requiredTags.length === 0) {
+    console.log('❌ No required tags defined - returning false');
     return false;
   }
 
   // No nodes on board = can't win
   if (nodes.length === 0) {
+    console.log('❌ No nodes on board - returning false');
     return false;
   }
 
   const allNodeIds = nodes.map((n) => n.id);
   const clusters = findAllConnectedClusters(edges, allNodeIds);
 
+  console.log('Clusters Found:', clusters.length);
+
   // No connected clusters = can't win (need at least connections)
   if (clusters.length === 0) {
+    console.log('❌ No connected clusters found - returning false');
     return false;
   }
 
   // Check each cluster to see if any has all required tags
-  for (const cluster of clusters) {
+  for (let i = 0; i < clusters.length; i++) {
+    const cluster = clusters[i];
     const collectedTags = collectTruthTagsFromCluster(cluster, nodes);
 
-    if (hasAllRequiredTags(collectedTags, requiredTags)) {
+    console.log(`--- Cluster ${i + 1} ---`);
+    console.log('  Nodes in cluster:', Array.from(cluster));
+    console.log('  Collected truthTags:', Array.from(collectedTags));
+
+    // Show which nodes contributed which tags
+    cluster.forEach((nodeId) => {
+      const node = nodes.find((n) => n.id === nodeId);
+      console.log(`    Node "${nodeId}" truthTags:`, node?.truthTags || '(none)');
+    });
+
+    // Check for match using case-insensitive subset check
+    const normalizedRequired = requiredTags.map(normalizeTag);
+    const missingTags = normalizedRequired.filter((tag) => !collectedTags.has(tag));
+
+    if (missingTags.length === 0) {
+      console.log('✅ VICTORY! All required tags found in cluster!');
       return true;
+    } else {
+      console.log('  Missing tags:', missingTags);
     }
   }
 
+  console.log('❌ No cluster has all required tags - returning false');
   return false;
 };
 
