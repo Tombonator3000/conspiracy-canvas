@@ -9,6 +9,7 @@ interface GameState {
   sanity: number;
   requiredTags: string[];
   isVictory: boolean;
+  isGameOver: boolean;
   threadColor: 'red' | 'blue';
 
   // SCORING DATA
@@ -16,6 +17,9 @@ interface GameState {
   junkBinned: number;
   mistakes: number;
   startTime: number;
+
+  // AUDIO/VISUAL SIGNAL (transient - for UI effects)
+  lastAction: { type: string; id: number } | null;
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
@@ -28,6 +32,7 @@ interface GameState {
   onNodeDragStop: (id: string, position: {x: number, y: number}) => void;
   checkCombine: (sourceId: string, targetId: string, availableCombinations: Combination[]) => void;
   trashNode: (id: string, isJunk: boolean) => void;
+  modifySanity: (delta: number) => void;
   resetLevel: () => void;
 
   // Internal helper
@@ -40,6 +45,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   sanity: 100,
   requiredTags: [],
   isVictory: false,
+  isGameOver: false,
   threadColor: 'red',
 
   // Initial Score State
@@ -48,14 +54,19 @@ export const useGameStore = create<GameState>((set, get) => ({
   mistakes: 0,
   startTime: Date.now(),
 
+  // Audio/Visual Signal
+  lastAction: null,
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
     isVictory: false,
+    isGameOver: false,
     score: 0,
     junkBinned: 0,
     mistakes: 0,
-    sanity: 100
+    sanity: 100,
+    lastAction: null
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -77,7 +88,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       data: { type: threadColor }
     } as Edge;
 
-    set(state => ({ edges: [...state.edges, newEdge] }));
+    set(state => ({
+      edges: [...state.edges, newEdge],
+      lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
+    }));
 
     // 2. Log connection
     console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
@@ -151,7 +165,8 @@ export const useGameStore = create<GameState>((set, get) => ({
         edges: prev.edges.filter(e =>
           e.source !== sourceId && e.target !== sourceId &&
           e.source !== targetId && e.target !== targetId
-        )
+        ),
+        lastAction: { type: 'COMBINE_SUCCESS', id: Date.now() }
       }));
 
       // 6. Check for win condition after combination
@@ -184,20 +199,48 @@ export const useGameStore = create<GameState>((set, get) => ({
         console.log('❌ Evidence destroyed! -200 points, -20 sanity');
       }
 
+      // Check for game over
+      const isGameOver = newSanity <= 0;
+
       return {
         nodes: newNodes,
         edges: newEdges,
-        sanity: newSanity,
+        sanity: Math.max(0, newSanity),
         score: newScore,
         junkBinned: newJunkCount,
-        mistakes: newMistakes
+        mistakes: newMistakes,
+        isGameOver,
+        lastAction: { type: isJunk ? 'TRASH_SUCCESS' : 'TRASH_FAIL', id: Date.now() }
+      };
+    });
+  },
+
+  modifySanity: (delta) => {
+    set(state => {
+      const newSanity = Math.max(0, Math.min(100, state.sanity + delta));
+      const isGameOver = newSanity <= 0;
+      return {
+        sanity: newSanity,
+        isGameOver
       };
     });
   },
 
   resetLevel: () => {
     // Temporary Reset
-    set({ nodes: [], edges: [], sanity: 100, requiredTags: [], isVictory: false, score: 0, junkBinned: 0, mistakes: 0, startTime: Date.now() });
+    set({
+      nodes: [],
+      edges: [],
+      sanity: 100,
+      requiredTags: [],
+      isVictory: false,
+      isGameOver: false,
+      score: 0,
+      junkBinned: 0,
+      mistakes: 0,
+      startTime: Date.now(),
+      lastAction: null
+    });
   },
 
   validateWin: () => {
@@ -255,7 +298,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       // - Mistakes * 200
       const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
       console.log(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
-      set({ isVictory: true, score: finalScore });
+      set({
+        isVictory: true,
+        score: finalScore,
+        lastAction: { type: 'VICTORY', id: Date.now() }
+      });
     }
   }
 }));
