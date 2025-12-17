@@ -9,9 +9,25 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
   const intensity = Math.max(0, (100 - sanity) / 100);
   const isLow = sanity < 50;
   const isCritical = sanity < 25;
+  const isGameOver = sanity <= 0;
 
   return (
     <>
+      {/* GAME OVER BLACKOUT - Full screen blur and blackout when sanity = 0 */}
+      <motion.div
+        className="fixed inset-0 pointer-events-none z-[100]"
+        style={{
+          backdropFilter: isGameOver ? 'blur(20px)' : 'blur(0px)',
+          WebkitBackdropFilter: isGameOver ? 'blur(20px)' : 'blur(0px)',
+        }}
+        initial={{ opacity: 0, backgroundColor: 'rgba(0, 0, 0, 0)' }}
+        animate={{
+          opacity: isGameOver ? 1 : 0,
+          backgroundColor: isGameOver ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0)',
+        }}
+        transition={{ duration: 1.5, ease: "easeInOut" }}
+      />
+
       {/* Vignette effect */}
       <motion.div
         className="fixed inset-0 pointer-events-none z-[90]"
@@ -23,6 +39,20 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
         }}
         transition={{ duration: 1 }}
       />
+
+      {/* Progressive blur effect as sanity decreases */}
+      {isCritical && !isGameOver && (
+        <motion.div
+          className="fixed inset-0 pointer-events-none z-[91]"
+          style={{
+            backdropFilter: `blur(${Math.max(0, (25 - sanity) / 25 * 8)}px)`,
+            WebkitBackdropFilter: `blur(${Math.max(0, (25 - sanity) / 25 * 8)}px)`,
+          }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        />
+      )}
 
       {/* Noise overlay */}
       <motion.div
