@@ -16,6 +16,7 @@ import { RedStringEdge, BlueStringEdge } from "./StringEdge";
 import { SanityMeter } from "./SanityMeter";
 import { CaseHeader } from "./CaseHeader";
 import { EvidenceBin } from "./EvidenceBin";
+import { UndoButton } from "./UndoButton";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
@@ -136,6 +137,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         playSFX('trash_evidence_fail');
         break;
       case 'COMBINE_SUCCESS':
+        playSFX('connect_success');
+        break;
+      case 'UNDO_TRASH':
         playSFX('connect_success');
         break;
       case 'VICTORY':
@@ -294,6 +298,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* Evidence Bin */}
       <EvidenceBin ref={binRef} isHighlighted={isBinHighlighted} />
+
+      {/* Undo Button */}
+      <UndoButton />
 
       {/* React Flow Board - THE DUMB RENDERER */}
       <ReactFlow
