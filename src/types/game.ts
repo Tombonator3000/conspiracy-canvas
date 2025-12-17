@@ -95,6 +95,7 @@ export interface GameState {
   nodeScribbles: NodeScribble[];
   isGameOver: boolean;
   isVictory: boolean;
+  missingTags: string[];
   // Credibility Engine
   credibility: number;
   cleanupBonus: number;
