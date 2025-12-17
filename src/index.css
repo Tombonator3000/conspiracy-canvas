@@ -292,8 +292,66 @@
   /* Handwritten scribble text */
   .scribble {
     font-family: 'Permanent Marker', cursive;
-    color: hsl(var(--marker-red));
     text-shadow: 1px 1px 0 rgba(0, 0, 0, 0.1);
+  }
+
+  /* Scribble variant: Error (red) - default for mistakes */
+  .scribble-error {
+    color: hsl(var(--marker-red));
+    text-shadow:
+      1px 1px 0 rgba(0, 0, 0, 0.2),
+      0 0 10px rgba(194, 28, 56, 0.5);
+  }
+
+  /* Scribble variant: Success (green) - for valid connections */
+  .scribble-success {
+    color: #22c55e;
+    text-shadow:
+      1px 1px 0 rgba(0, 0, 0, 0.2),
+      0 0 12px rgba(34, 197, 94, 0.6),
+      0 0 20px rgba(34, 197, 94, 0.3);
+  }
+
+  /* Scribble variant: Insight (blue/cyan) - for discoveries/combinations */
+  .scribble-insight {
+    color: #06b6d4;
+    text-shadow:
+      1px 1px 0 rgba(0, 0, 0, 0.2),
+      0 0 15px rgba(6, 182, 212, 0.7),
+      0 0 25px rgba(6, 182, 212, 0.4);
+    animation: insight-glow 1s ease-in-out infinite alternate;
+  }
+
+  @keyframes insight-glow {
+    from {
+      text-shadow:
+        1px 1px 0 rgba(0, 0, 0, 0.2),
+        0 0 15px rgba(6, 182, 212, 0.7),
+        0 0 25px rgba(6, 182, 212, 0.4);
+    }
+    to {
+      text-shadow:
+        1px 1px 0 rgba(0, 0, 0, 0.2),
+        0 0 20px rgba(6, 182, 212, 0.9),
+        0 0 35px rgba(6, 182, 212, 0.6);
+    }
+  }
+
+  /* Scribble variant: Paranoia (purple/red) - for low sanity whispers */
+  .scribble-paranoia {
+    color: #a855f7;
+    text-shadow:
+      2px 0 #ef4444,
+      -2px 0 #3b82f6,
+      0 0 15px rgba(168, 85, 247, 0.8);
+    animation: paranoia-glitch 0.3s ease-in-out infinite;
+  }
+
+  @keyframes paranoia-glitch {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-2px) skewX(1deg); }
+    50% { transform: translateX(2px); }
+    75% { transform: translateX(-1px) skewX(-1deg); }
   }
 
   /* Scribble feedback - ephemeral text that fades out */
