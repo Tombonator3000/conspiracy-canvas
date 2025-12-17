@@ -42,7 +42,7 @@ export const TEST_CASE: CaseData = {
       position: { x: 100, y: 100 },
       isRedHerring: false,
       isCritical: true,
-      truthTags: []
+      truthTags: ['dummy_a']
     },
     {
       id: 'node-b',
@@ -54,7 +54,7 @@ export const TEST_CASE: CaseData = {
       position: { x: 100, y: 200 },
       isRedHerring: false,
       isCritical: true,
-      truthTags: []
+      truthTags: ['dummy_b']
     },
     {
       id: 'node-c',
