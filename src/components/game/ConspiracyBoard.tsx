@@ -77,14 +77,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     onNodeDragStop,
     checkCombine,
     trashNode,
+    startTrashAnimation,
     modifySanity,
     toggleUV,
     triggerParanoiaMovement,
     revealNode,
   } = useGameStore();
 
-  // React Flow instance for camera control
-  const { fitView } = useReactFlow();
+  // React Flow instance for camera control and coordinate conversion
+  const { fitView, flowToScreenPosition } = useReactFlow();
 
   // Audio context for sound effects
   const { playSFX, startAmbient, stopAmbient, updateSanity } = useAudioContext();
@@ -262,7 +263,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Check if it's junk (no truthTags or empty truthTags means it's junk/red herring)
         const truthTags = (droppedNode.data as { truthTags?: string[] }).truthTags || [];
         const isJunk = truthTags.length === 0;
-        trashNode(node.id, isJunk);
+        // Start trash animation - node will be removed after animation completes
+        startTrashAnimation(node.id, isJunk);
         console.log(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}`);
       }
       setIsBinHighlighted(false);
@@ -282,7 +284,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       // Pass the level's combinations to the store action
       checkCombine(node.id, overlappingNode.id, caseData.combinations);
     }
-  }, [isNodeOverBin, nodes, trashNode, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
+  }, [isNodeOverBin, nodes, startTrashAnimation, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
   // GLITCH TEXT & NODE TRANSFORMATION
   // Map nodes with shake, UV state, and hallucination effects for visual feedback
@@ -415,15 +417,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* PARTICLE EFFECT LAYER - Merge burst effects */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
-        {bursts.map((burst) => (
-          <ParticleBurst
-            key={burst.id}
-            id={burst.id}
-            x={burst.x}
-            y={burst.y}
-            onComplete={removeBurst}
-          />
-        ))}
+        {bursts.map((burst) => {
+          // Convert flow coordinates to screen coordinates
+          const screenPos = flowToScreenPosition({ x: burst.x, y: burst.y });
+          return (
+            <ParticleBurst
+              key={burst.id}
+              id={burst.id}
+              x={screenPos.x}
+              y={screenPos.y}
+              onComplete={removeBurst}
+            />
+          );
+        })}
       </div>
 
       {/* UV Light Overlay (visual only) */}

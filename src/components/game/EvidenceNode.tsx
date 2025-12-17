@@ -15,6 +15,7 @@ interface EvidenceNodeData extends EvidenceNodeType {
   nodeScribbles?: NodeScribble[];
   isSpawning?: boolean;
   isCombineTarget?: boolean;
+  isTrashing?: boolean;          // Node is being trashed (shrink animation)
   // New combination features
   isNearbyCombinable?: boolean;  // Glow when near a valid combination partner
   isChainCombinable?: boolean;   // Purple glow for chain combination items
@@ -307,20 +308,38 @@ export const EvidenceNodeComponent = memo(({ data }: EvidenceNodeProps) => {
 
   return (
     <motion.div
-      className={`relative ${glowClasses}`}
+      className={`relative ${glowClasses} ${data.isTrashing ? 'pointer-events-none' : ''}`}
       style={{ rotate: `${baseRotation}deg` }}
       initial={data.isSpawning ? { scale: 0, opacity: 0 } : false}
       animate={{
-        scale: data.isSpawning ? [0, 1.2, 1] : isHovered ? 1.05 : 1,
-        opacity: 1,
+        scale: data.isTrashing
+          ? 0
+          : data.isSpawning
+            ? [0, 1.2, 1]
+            : isHovered ? 1.05 : 1,
+        opacity: data.isTrashing ? 0 : 1,
         rotate: data.isShaking
           ? [baseRotation, baseRotation - 3, baseRotation + 3, baseRotation - 3, baseRotation + 3, baseRotation]
-          : baseRotation,
+          : data.isTrashing
+            ? baseRotation + 360
+            : baseRotation,
+        y: data.isTrashing ? 100 : 0,
       }}
       transition={{
-        scale: data.isSpawning ? { duration: 0.5, ease: "backOut" } : { duration: 0.2 },
-        rotate: { duration: 0.4, ease: "easeInOut" },
-        opacity: { duration: 0.3 },
+        scale: data.isTrashing
+          ? { duration: 0.4, ease: "easeIn" }
+          : data.isSpawning
+            ? { duration: 0.5, ease: "backOut" }
+            : { duration: 0.2 },
+        rotate: data.isTrashing
+          ? { duration: 0.4, ease: "easeIn" }
+          : { duration: 0.4, ease: "easeInOut" },
+        opacity: data.isTrashing
+          ? { duration: 0.4, ease: "easeIn" }
+          : { duration: 0.3 },
+        y: data.isTrashing
+          ? { duration: 0.4, ease: "easeIn" }
+          : { duration: 0 },
       }}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
