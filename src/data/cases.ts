@@ -12,7 +12,55 @@ import { case011 } from "./case_011";
 import { case012 } from "./case_012";
 import type { CaseData } from "@/types/game";
 
+// DEBUG TEST CASE - Testing the new Zustand engine
+export const TEST_CASE: CaseData = {
+  id: 'test-001',
+  title: 'DEBUG PROTOCOL',
+  description: 'Testing the new engine. Connect A to B.',
+  difficulty: 'TUTORIAL',
+  theTruth: {
+    subject: 'NODE A',
+    action: 'CONNECTS TO',
+    target: 'NODE B',
+    motive: 'FOR TESTING'
+  },
+  boardState: {
+    sanity: 100,
+    chaosLevel: 0,
+    maxConnectionsNeeded: 1
+  },
+  requiredTags: ['test'],
+  nodes: [
+    {
+      id: 'node-a',
+      type: 'sticky_note',
+      title: 'Node A',
+      contentUrl: null,
+      description: 'Connect me to Node B!',
+      tags: ['A', 'test'],
+      position: { x: 100, y: 100 },
+      isRedHerring: false,
+      isCritical: true,
+      truthTags: ['test']
+    },
+    {
+      id: 'node-b',
+      type: 'sticky_note',
+      title: 'Node B',
+      contentUrl: null,
+      description: 'Connect me to Node A!',
+      tags: ['B', 'test'],
+      position: { x: 400, y: 100 },
+      isRedHerring: false,
+      isCritical: true,
+      truthTags: ['test']
+    },
+  ],
+  scribblePool: ['IT WORKS!', 'CONNECTED!', 'SUCCESS!']
+};
+
 export const allCases: CaseData[] = [
+  TEST_CASE,
   case001,
   case002,
   case003,
