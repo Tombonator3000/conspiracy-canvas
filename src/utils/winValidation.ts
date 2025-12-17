@@ -2,16 +2,11 @@
  * Win Condition Validation Utilities
  *
  * This module implements semantic tag-based win condition checking.
- * Instead of checking specific node IDs, it validates that all required
- * "truth tags" are present within a single connected cluster on the board.
- *
- * This approach supports:
- * - Combined nodes (nodes created by merging items inherit parent tags)
- * - Multiple valid solutions (different node combinations can satisfy the same tags)
- * - Flexible game design (win conditions defined by semantic meaning, not specific nodes)
+ * Uses UNDIRECTED graph traversal (bidirectional edges) to find connected clusters
+ * and validates that all required "truth tags" are present within a single cluster.
  */
 
-import { EvidenceNode, Position } from '../types/game';
+import { EvidenceNode } from '@/types/game';
 
 /**
  * Represents an edge connection between two nodes
@@ -33,258 +28,20 @@ export interface WinConditionResult {
 
 /**
  * Simplified node interface for win validation
- * (allows flexibility with different node representations)
  */
 export interface ValidatableNode {
   id: string;
   truthTags?: string[];
-  position?: Position;
 }
 
 /**
- * Build an adjacency list from edges for graph traversal
- */
-const buildAdjacencyList = (edges: WinValidationEdge[]): Map<string, Set<string>> => {
-  const adjacency = new Map<string, Set<string>>();
-
-  edges.forEach((edge) => {
-    if (!adjacency.has(edge.source)) {
-      adjacency.set(edge.source, new Set());
-    }
-    if (!adjacency.has(edge.target)) {
-      adjacency.set(edge.target, new Set());
-    }
-    adjacency.get(edge.source)!.add(edge.target);
-    adjacency.get(edge.target)!.add(edge.source);
-  });
-
-  return adjacency;
-};
-
-/**
- * Find all connected clusters (subgraphs) on the board using BFS
- *
- * @param edges - Array of edges representing connections between nodes
- * @param allNodeIds - Array of all node IDs currently on the board
- * @returns Array of Sets, each Set containing the node IDs of a connected cluster
- */
-export const findAllConnectedClusters = (
-  edges: WinValidationEdge[],
-  allNodeIds: string[]
-): Set<string>[] => {
-  if (allNodeIds.length === 0) return [];
-
-  const adjacency = buildAdjacencyList(edges);
-  const visited = new Set<string>();
-  const clusters: Set<string>[] = [];
-
-  // Find clusters for connected nodes
-  for (const nodeId of allNodeIds) {
-    // Skip already visited nodes
-    if (visited.has(nodeId)) continue;
-
-    // Skip isolated nodes (no connections) - they can't form a winning cluster
-    if (!adjacency.has(nodeId)) continue;
-
-    // BFS to find this connected component
-    const cluster = new Set<string>();
-    const queue: string[] = [nodeId];
-
-    while (queue.length > 0) {
-      const current = queue.shift()!;
-
-      if (visited.has(current)) continue;
-
-      visited.add(current);
-      cluster.add(current);
-
-      const neighbors = adjacency.get(current);
-      if (neighbors) {
-        neighbors.forEach((neighbor) => {
-          if (!visited.has(neighbor) && allNodeIds.includes(neighbor)) {
-            queue.push(neighbor);
-          }
-        });
-      }
-    }
-
-    // Only add non-empty clusters
-    if (cluster.size > 0) {
-      clusters.push(cluster);
-    }
-  }
-
-  return clusters;
-};
-
-/**
- * Normalize a tag for case-insensitive comparison
- * Converts to lowercase and trims whitespace
- */
-const normalizeTag = (tag: string): string => tag.toLowerCase().trim();
-
-/**
- * Collect all unique truth tags from nodes in a cluster
- *
- * This function handles combined nodes correctly because combined nodes
- * inherit truthTags from their parent nodes during the combination process.
- * Tags are normalized to lowercase for case-insensitive comparison.
- *
- * @param clusterNodeIds - Set of node IDs in the cluster
- * @param allNodes - Array of all nodes with their data
- * @returns Set of all unique truth tags found in the cluster (normalized to lowercase)
- */
-export const collectTruthTagsFromCluster = (
-  clusterNodeIds: Set<string>,
-  allNodes: ValidatableNode[]
-): Set<string> => {
-  const collectedTags = new Set<string>();
-
-  clusterNodeIds.forEach((nodeId) => {
-    const node = allNodes.find((n) => n.id === nodeId);
-    if (node?.truthTags) {
-      // Normalize tags to lowercase for case-insensitive comparison
-      node.truthTags.forEach((tag) => collectedTags.add(normalizeTag(tag)));
-    }
-  });
-
-  return collectedTags;
-};
-
-/**
- * Check if a set of collected tags satisfies the required truth tags
- * Uses case-insensitive comparison for matching.
- *
- * @param collectedTags - Set of tags collected from a cluster (should already be normalized)
- * @param requiredTags - Array of tags that must ALL be present
- * @returns true if all required tags are present
- */
-export const hasAllRequiredTags = (
-  collectedTags: Set<string>,
-  requiredTags: string[]
-): boolean => {
-  // Normalize required tags for case-insensitive comparison
-  return requiredTags.every((tag) => collectedTags.has(normalizeTag(tag)));
-};
-
-/**
- * Find which tags are missing from a collection
- * Uses case-insensitive comparison for matching.
- *
- * @param collectedTags - Set of tags collected from a cluster (should already be normalized)
- * @param requiredTags - Array of tags that should be present
- * @returns Array of missing tags (original case preserved)
- */
-export const findMissingTags = (
-  collectedTags: Set<string>,
-  requiredTags: string[]
-): string[] => {
-  // Normalize required tags for case-insensitive comparison
-  return requiredTags.filter((tag) => !collectedTags.has(normalizeTag(tag)));
-};
-
-/**
- * Main win condition check function
+ * Main win condition check function with detailed results
  *
  * Algorithm:
- * 1. Use BFS to identify ALL connected clusters (subgraphs) on the board
- * 2. For each cluster, collect ALL unique truthTags from its nodes
- * 3. Check if ANY single cluster contains ALL the requiredTags
- * 4. Return true if a valid cluster exists
- *
- * This is an improvement over checking only the largest cluster, because:
- * - A smaller but complete cluster should win
- * - Multiple disconnected theories on the board shouldn't prevent victory
- *   if one of them is correct
- *
- * Combined nodes are handled correctly because:
- * - When nodes are combined, the result node inherits truthTags from both parents
- * - The inherited tags are stored in the node's truthTags array
- * - This function simply reads whatever truthTags are on the node
- *
- * @param nodes - Array of all nodes currently on the board
- * @param edges - Array of edges representing connections between nodes
- * @param requiredTags - Array of truth tags that must ALL be present in a single cluster
- * @returns true if any connected cluster contains all required tags
- */
-export const checkWinCondition = (
-  nodes: ValidatableNode[],
-  edges: WinValidationEdge[],
-  requiredTags: string[]
-): boolean => {
-  // VERBOSE DEBUG: Start of win condition check
-  console.log('=== WIN CONDITION CHECK (checkWinCondition) ===');
-  console.log('Required Tags:', JSON.stringify(requiredTags));
-  console.log('Total Nodes:', nodes.length);
-  console.log('Total Edges:', edges.length);
-  console.log('All Nodes with truthTags:', nodes.map(n => ({ id: n.id, truthTags: n.truthTags })));
-
-  // No required tags = no semantic win condition defined
-  if (!requiredTags || requiredTags.length === 0) {
-    console.log('❌ No required tags defined - returning false');
-    return false;
-  }
-
-  // No nodes on board = can't win
-  if (nodes.length === 0) {
-    console.log('❌ No nodes on board - returning false');
-    return false;
-  }
-
-  const allNodeIds = nodes.map((n) => n.id);
-  const clusters = findAllConnectedClusters(edges, allNodeIds);
-
-  console.log('Current Clusters Found:', clusters.length);
-  console.log('Edge list:', edges.map(e => `${e.source} -> ${e.target}`));
-
-  // No connected clusters = can't win (need at least connections)
-  if (clusters.length === 0) {
-    console.log('❌ No connected clusters found - returning false');
-    return false;
-  }
-
-  // Normalize required tags once for comparison
-  const normalizedRequired = requiredTags.map(normalizeTag);
-  console.log('Normalized Required Tags:', normalizedRequired);
-
-  // Check each cluster to see if any has all required tags
-  for (let i = 0; i < clusters.length; i++) {
-    const cluster = clusters[i];
-    const collectedTags = collectTruthTagsFromCluster(cluster, nodes);
-
-    console.log(`--- Cluster ${i + 1} Tags ---`);
-    console.log('  Nodes in cluster:', Array.from(cluster));
-    console.log('  Collected truthTags (normalized):', Array.from(collectedTags));
-
-    // Show which nodes contributed which tags
-    cluster.forEach((nodeId) => {
-      const node = nodes.find((n) => n.id === nodeId);
-      console.log(`    Node "${nodeId}" truthTags:`, node?.truthTags || '(NONE - THIS IS A PROBLEM!)');
-    });
-
-    // SUBSET CHECK: Check if all required tags are present (case-insensitive)
-    // This allows extra tags in the cluster - only checks that required ones exist
-    const missingTags = normalizedRequired.filter((reqTag) => !collectedTags.has(reqTag));
-
-    console.log('  Required Tags:', normalizedRequired);
-    console.log('  Match Result:', missingTags.length === 0 ? 'ALL MATCHED!' : `Missing: ${missingTags.join(', ')}`);
-
-    if (missingTags.length === 0) {
-      console.log('✅ VICTORY! All required tags found in cluster!');
-      console.log('✅ Winning cluster nodes:', Array.from(cluster));
-      console.log('✅ Collected tags:', Array.from(collectedTags));
-      return true;
-    }
-  }
-
-  console.log('❌ No cluster has all required tags - returning false');
-  return false;
-};
-
-/**
- * Extended win condition check that returns detailed results
- *
- * Useful for debugging, UI feedback, and progress tracking.
+ * 1. Build an UNDIRECTED adjacency list (A->B implies B->A)
+ * 2. Use BFS flood-fill to find all connected components
+ * 3. For each component, aggregate ALL truthTags from every node
+ * 4. Check if the aggregated tags are a superset of requiredTags
  *
  * @param nodes - Array of all nodes currently on the board
  * @param edges - Array of edges representing connections between nodes
@@ -296,97 +53,208 @@ export const checkWinConditionDetailed = (
   edges: WinValidationEdge[],
   requiredTags: string[]
 ): WinConditionResult => {
-  // VERBOSE DEBUG
-  console.log('=== WIN CONDITION DETAILED CHECK ===');
-  console.log('Required Tags:', JSON.stringify(requiredTags));
-  console.log('Nodes passed in:', nodes.length);
-  console.log('Edges passed in:', edges.length);
+  console.log('=== WIN VALIDATION (Bidirectional BFS) ===');
+  console.log('Nodes count:', nodes.length);
+  console.log('Edges count:', edges.length);
+  console.log('Required tags:', JSON.stringify(requiredTags));
 
-  // Log all nodes with their truthTags for debugging
-  console.log('Node truthTags breakdown:');
-  nodes.forEach((n) => {
-    console.log(`  - ${n.id}: truthTags = ${JSON.stringify(n.truthTags)}`);
-  });
-
-  // No required tags = no semantic win condition defined
+  // 1. Quick exit if no requirements
   if (!requiredTags || requiredTags.length === 0) {
-    console.log('❌ No required tags defined');
+    console.log('❌ No required tags defined - cannot win');
     return { isVictory: false, missingTags: [] };
   }
 
-  // No nodes on board = can't win
+  // 2. Quick exit if no nodes
   if (nodes.length === 0) {
     console.log('❌ No nodes on board');
     return { isVictory: false, missingTags: [...requiredTags] };
   }
 
-  const allNodeIds = nodes.map((n) => n.id);
-  const clusters = findAllConnectedClusters(edges, allNodeIds);
+  // 3. Build Adjacency List (UNDIRECTED / Bidirectional)
+  // This ensures that dragging A->B is treated the same as B->A
+  const adj = new Map<string, string[]>();
 
-  console.log('Clusters found:', clusters.length);
+  // Initialize ALL nodes in the map first (important!)
+  nodes.forEach(node => adj.set(node.id, []));
 
-  // Track the best cluster (one with most required tags)
-  let bestCluster: Set<string> | null = null;
-  let bestTags: Set<string> = new Set();
-  let fewestMissing: string[] = [...requiredTags];
+  // Populate connections (both directions)
+  edges.forEach(edge => {
+    // Ensure source exists in map
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    // Ensure target exists in map
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
 
-  // Normalize required tags for comparison
-  const normalizedRequired = requiredTags.map(normalizeTag);
+    // Add BOTH directions (CRITICAL for undirected graph)
+    adj.get(edge.source)!.push(edge.target);
+    adj.get(edge.target)!.push(edge.source);
+  });
 
-  // Check each cluster
-  for (let i = 0; i < clusters.length; i++) {
-    const cluster = clusters[i];
-    const collectedTags = collectTruthTagsFromCluster(cluster, nodes);
+  console.log('Adjacency list built. Edges (bidirectional):');
+  edges.forEach(e => console.log(`  ${e.source} <-> ${e.target}`));
 
-    console.log(`--- Cluster ${i + 1} ---`);
-    console.log('  Nodes:', Array.from(cluster));
-    console.log('  Collected tags:', Array.from(collectedTags));
+  // 4. Find Connected Components using BFS Flood-Fill
+  const visited = new Set<string>();
+  let victoryFound = false;
+  let bestMissingTags = [...requiredTags]; // Track the "closest" attempt for UI feedback
+  let winningClusterIds: string[] = [];
+  let winningClusterTags: string[] = [];
 
-    // SUBSET CHECK: Check if all required tags are present
-    const hasAll = normalizedRequired.every((reqTag) => collectedTags.has(reqTag));
+  // Normalize required tags for case-insensitive comparison
+  const normalizedRequired = requiredTags.map(t => t.toLowerCase().trim());
 
-    if (hasAll) {
-      console.log('✅ VICTORY DETECTED! Cluster has all required tags!');
-      return {
-        isVictory: true,
-        winningClusterNodeIds: Array.from(cluster),
-        collectedTags: Array.from(collectedTags),
-        missingTags: [],
-      };
+  for (const node of nodes) {
+    // Skip already visited nodes
+    if (visited.has(node.id)) continue;
+
+    // Start a new cluster search (BFS)
+    const clusterNodeIds: string[] = [];
+    const clusterTags = new Set<string>();
+    const queue = [node.id];
+    visited.add(node.id);
+
+    while (queue.length > 0) {
+      const currentId = queue.shift()!;
+      clusterNodeIds.push(currentId);
+
+      // Find the current node and collect its tags
+      const currentNode = nodes.find(n => n.id === currentId);
+      if (currentNode?.truthTags && currentNode.truthTags.length > 0) {
+        currentNode.truthTags.forEach(tag => {
+          clusterTags.add(tag.toLowerCase().trim());
+        });
+      }
+
+      // Visit all neighbors (undirected - works in both directions)
+      const neighbors = adj.get(currentId) || [];
+      for (const neighborId of neighbors) {
+        if (!visited.has(neighborId)) {
+          visited.add(neighborId);
+          queue.push(neighborId);
+        }
+      }
     }
 
-    // Track best partial match for feedback
-    const missing = normalizedRequired.filter((tag) => !collectedTags.has(tag));
-    console.log('  Missing tags:', missing);
+    // Only process clusters with at least one connection (2+ nodes)
+    if (clusterNodeIds.length < 2) {
+      continue;
+    }
 
-    if (missing.length < fewestMissing.length) {
-      fewestMissing = missing;
-      bestCluster = cluster;
-      bestTags = collectedTags;
+    console.log(`\n--- Cluster Found ---`);
+    console.log('  Nodes in cluster:', clusterNodeIds);
+    console.log('  Tags collected:', Array.from(clusterTags));
+
+    // Log individual node contributions for debugging
+    clusterNodeIds.forEach(nodeId => {
+      const n = nodes.find(x => x.id === nodeId);
+      console.log(`    Node "${nodeId}": truthTags = ${JSON.stringify(n?.truthTags || [])}`);
+    });
+
+    // 5. Validate this Cluster against Requirements
+    const missingInThisCluster = normalizedRequired.filter(
+      reqTag => !clusterTags.has(reqTag)
+    );
+
+    console.log('  Required tags (normalized):', normalizedRequired);
+    console.log('  Missing in this cluster:', missingInThisCluster.length === 0 ? 'NONE - ALL MATCHED!' : missingInThisCluster);
+
+    if (missingInThisCluster.length === 0) {
+      // WINNER!
+      console.log('🏆 VICTORY! All required tags found in cluster!');
+      victoryFound = true;
+      bestMissingTags = [];
+      winningClusterIds = clusterNodeIds;
+      winningClusterTags = Array.from(clusterTags);
+      break;
+    }
+
+    // Keep track of the "closest" attempt for UI feedback
+    if (missingInThisCluster.length < bestMissingTags.length) {
+      bestMissingTags = missingInThisCluster;
     }
   }
 
-  console.log('❌ No winning cluster found');
-  console.log('Best cluster missing:', fewestMissing);
+  if (!victoryFound) {
+    console.log('❌ No winning cluster found. Best attempt missing:', bestMissingTags);
+  }
 
-  // No winning cluster found - return info about best attempt
   return {
-    isVictory: false,
-    winningClusterNodeIds: bestCluster ? Array.from(bestCluster) : undefined,
-    collectedTags: bestTags.size > 0 ? Array.from(bestTags) : undefined,
-    missingTags: fewestMissing,
+    isVictory: victoryFound,
+    winningClusterNodeIds: victoryFound ? winningClusterIds : undefined,
+    collectedTags: victoryFound ? winningClusterTags : undefined,
+    missingTags: bestMissingTags,
   };
 };
 
 /**
+ * Simple boolean win condition check (for backwards compatibility)
+ */
+export const checkWinCondition = (
+  nodes: ValidatableNode[],
+  edges: WinValidationEdge[],
+  requiredTags: string[]
+): boolean => {
+  return checkWinConditionDetailed(nodes, edges, requiredTags).isVictory;
+};
+
+/**
+ * Find all connected clusters (for UI/debugging purposes)
+ */
+export const findAllConnectedClusters = (
+  edges: WinValidationEdge[],
+  allNodeIds: string[]
+): Set<string>[] => {
+  if (allNodeIds.length === 0) return [];
+
+  // Build bidirectional adjacency list
+  const adj = new Map<string, string[]>();
+  allNodeIds.forEach(id => adj.set(id, []));
+
+  edges.forEach(edge => {
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
+    adj.get(edge.source)!.push(edge.target);
+    adj.get(edge.target)!.push(edge.source);
+  });
+
+  const visited = new Set<string>();
+  const clusters: Set<string>[] = [];
+
+  for (const nodeId of allNodeIds) {
+    if (visited.has(nodeId)) continue;
+
+    // Check if this node has any connections
+    const neighbors = adj.get(nodeId) || [];
+    if (neighbors.length === 0) continue;
+
+    // BFS to find this connected component
+    const cluster = new Set<string>();
+    const queue = [nodeId];
+
+    while (queue.length > 0) {
+      const current = queue.shift()!;
+      if (visited.has(current)) continue;
+
+      visited.add(current);
+      cluster.add(current);
+
+      const currentNeighbors = adj.get(current) || [];
+      for (const neighbor of currentNeighbors) {
+        if (!visited.has(neighbor)) {
+          queue.push(neighbor);
+        }
+      }
+    }
+
+    if (cluster.size > 0) {
+      clusters.push(cluster);
+    }
+  }
+
+  return clusters;
+};
+
+/**
  * Get the largest connected cluster (legacy compatibility)
- *
- * This is provided for backwards compatibility with code that expects
- * only the largest cluster to be checked.
- *
- * @param edges - Array of edges representing connections
- * @param allNodeIds - Array of all node IDs on the board
- * @returns Set of node IDs in the largest cluster, or empty Set if none
  */
 export const getLargestConnectedCluster = (
   edges: WinValidationEdge[],
@@ -401,4 +269,43 @@ export const getLargestConnectedCluster = (
   return clusters.reduce((largest, current) =>
     current.size > largest.size ? current : largest
   , clusters[0]);
+};
+
+/**
+ * Collect all unique truth tags from nodes in a cluster
+ */
+export const collectTruthTagsFromCluster = (
+  clusterNodeIds: Set<string>,
+  allNodes: ValidatableNode[]
+): Set<string> => {
+  const collectedTags = new Set<string>();
+
+  clusterNodeIds.forEach((nodeId) => {
+    const node = allNodes.find((n) => n.id === nodeId);
+    if (node?.truthTags) {
+      node.truthTags.forEach((tag) => collectedTags.add(tag.toLowerCase().trim()));
+    }
+  });
+
+  return collectedTags;
+};
+
+/**
+ * Check if a set of collected tags satisfies the required truth tags
+ */
+export const hasAllRequiredTags = (
+  collectedTags: Set<string>,
+  requiredTags: string[]
+): boolean => {
+  return requiredTags.every((tag) => collectedTags.has(tag.toLowerCase().trim()));
+};
+
+/**
+ * Find which tags are missing from a collection
+ */
+export const findMissingTags = (
+  collectedTags: Set<string>,
+  requiredTags: string[]
+): string[] => {
+  return requiredTags.filter((tag) => !collectedTags.has(tag.toLowerCase().trim()));
 };
