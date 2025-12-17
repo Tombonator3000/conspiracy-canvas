@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { bigfootFootprint, pattersonFilm, thermalForest, brokenBranches, destroyedTent } from "@/assets/evidence";
 
 export const case011: CaseData = {
   id: "case_011_bigfoot",
@@ -23,7 +24,7 @@ export const case011: CaseData = {
       id: "ev_footprint_cast",
       type: "photo",
       title: "Footprint Cast Analysis",
-      contentUrl: null,
+      contentUrl: bigfootFootprint,
       description: "Size 28 footprint. Dermal ridges match NO known primate. Boot tread pattern visible in heel. BOOTS?!",
       tags: ["FOOTPRINT", "BIGFOOT", "EVIDENCE"],
       position: { x: 130, y: 110 },

@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { lightbulbOff, eclipse, telescope } from "@/assets/evidence";
+import { lightbulbOff, eclipse, telescope, astronautSelfie, sundial } from "@/assets/evidence";
 
 export const case006: CaseData = {
   id: "case_006_moon",
@@ -113,7 +113,7 @@ export const case006: CaseData = {
       id: "ev_astronaut_photo",
       type: "photo",
       title: "Astronaut Selfie",
-      contentUrl: null,
+      contentUrl: astronautSelfie,
       description: "Taken on 'moon'. Background suspiciously smooth. Green screen?",
       tags: ["SPACE", "PHOTO"],
       position: { x: 200, y: 280 },
@@ -195,7 +195,7 @@ export const case006: CaseData = {
       id: "ev_sundial",
       type: "photo",
       title: "Sundial Photo",
-      contentUrl: null,
+      contentUrl: sundial,
       description: "Ancient time-telling device. They KNEW about the sun back then too.",
       tags: ["TIME", "ANCIENT"],
       position: { x: 650, y: 480 },

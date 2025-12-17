@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { catRouter, catPhone, goodDog } from "@/assets/evidence";
+import { catRouter, catPhone, goodDog, fiveGTower, scratchingPost } from "@/assets/evidence";
 
 export const case005: CaseData = {
   id: "case_005_cats",
@@ -110,7 +110,7 @@ export const case005: CaseData = {
       id: "ev_5g_tower",
       type: "photo",
       title: "5G Tower Photo",
-      contentUrl: null,
+      contentUrl: fiveGTower,
       description: "Regular 5G tower. No cats nearby. SUSPICIOUS ABSENCE.",
       tags: ["TOWER", "ABSENT"],
       position: { x: 420, y: 250 },
@@ -132,7 +132,7 @@ export const case005: CaseData = {
       id: "ev_scratching_post",
       type: "photo",
       title: "Scratching Post",
-      contentUrl: null,
+      contentUrl: scratchingPost,
       description: "Destroyed by claws. Message in the scratches? Just random marks.",
       tags: ["FURNITURE", "MARKS"],
       position: { x: 350, y: 450 },

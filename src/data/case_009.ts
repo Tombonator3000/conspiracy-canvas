@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { burgerKingSighting, area51Badge, elvisImpersonator, blueSuedeShoes } from "@/assets/evidence";
 
 export const case009: CaseData = {
   id: "case_009_elvis",
@@ -23,7 +24,7 @@ export const case009: CaseData = {
       id: "ev_burger_king_elvis",
       type: "photo",
       title: "Burger King Sighting - 1992",
-      contentUrl: null,
+      contentUrl: burgerKingSighting,
       description: "Security footage from Kalamazoo, MI. Subject ordered peanut butter banana sandwich. Cashier 'trembled' according to police report.",
       tags: ["ELVIS", "SIGHTING", "FOOD"],
       position: { x: 150, y: 120 },
@@ -49,7 +50,7 @@ export const case009: CaseData = {
       id: "ev_area51_badge",
       type: "photo",
       title: "Mystery Employee Badge",
-      contentUrl: null,
+      contentUrl: area51Badge,
       description: "Found in Nevada desert. Photo shows sideburns. Name: 'E. AARON'. Security clearance: ULTRAVIOLET. Expires: NEVER.",
       tags: ["AREA51", "BADGE", "NEVADA"],
       position: { x: 350, y: 380 },
@@ -77,7 +78,7 @@ export const case009: CaseData = {
       id: "ev_elvis_impersonator",
       type: "photo",
       title: "Vegas Impersonator Photo",
-      contentUrl: null,
+      contentUrl: elvisImpersonator,
       description: "Could be anyone. Rhinestones are CLEARLY fake. But that lip curl...",
       tags: ["VEGAS", "COSTUME"],
       position: { x: 100, y: 280 },
@@ -117,7 +118,7 @@ export const case009: CaseData = {
       id: "ev_blue_suede",
       type: "photo",
       title: "Worn Blue Suede Shoes",
-      contentUrl: null,
+      contentUrl: blueSuedeShoes,
       description: "Found in thrift store. Size 11. Definitely stepped on. By whom? We may never know.",
       tags: ["SHOES", "BLUE"],
       position: { x: 180, y: 420 },

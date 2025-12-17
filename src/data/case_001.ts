@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { pigeonSuspicious, powerlinesBirds, catSuspicious } from "@/assets/evidence";
+import { pigeonSuspicious, powerlinesBirds, catSuspicious, weatherBalloon, blurryThumb } from "@/assets/evidence";
 
 export const case001: CaseData = {
   id: "case_001_birds",
@@ -77,7 +77,7 @@ export const case001: CaseData = {
       id: "ev_weather_balloon",
       type: "photo",
       title: "UFO Sighting??",
-      contentUrl: null,
+      contentUrl: weatherBalloon,
       description: "Spotted over Main St. 2019. Definitely not a weather balloon.",
       tags: ["SKY", "FLYING"],
       position: { x: 100, y: 300 },
@@ -149,7 +149,7 @@ export const case001: CaseData = {
       id: "ev_blurry_photo",
       type: "photo",
       title: "Blurry Thumb Photo",
-      contentUrl: null,
+      contentUrl: blurryThumb,
       description: "Accidentally took this. Might be important? Probably not.",
       tags: ["ACCIDENT", "BLURRY"],
       position: { x: 420, y: 320 },

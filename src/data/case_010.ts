@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { roswellDebris, strangeCamera, blurryUfo, cropCircle, thermalForest, brokenBranches, menInBlack, destroyedTent } from "@/assets/evidence";
 
 export const case010: CaseData = {
   id: "case_010_ufo",
@@ -23,7 +24,7 @@ export const case010: CaseData = {
       id: "ev_roswell_debris",
       type: "photo",
       title: "Roswell Debris Analysis",
-      contentUrl: null,
+      contentUrl: roswellDebris,
       description: "Metal fragment shows manufacturing date: '2847 CE'. Metallurgist said 'impossible' then disappeared.",
       tags: ["ROSWELL", "METAL", "FUTURE"],
       position: { x: 120, y: 100 },
@@ -49,7 +50,7 @@ export const case010: CaseData = {
       id: "ev_recovered_camera",
       type: "photo",
       title: "Strange Camera Device",
-      contentUrl: null,
+      contentUrl: strangeCamera,
       description: "Found at crop circle site. Has button labeled 'CAPTURE MOMENT'. Memory contains photos of Pompeii, Titanic, and... 2024???",
       tags: ["CAMERA", "TOURIST", "FUTURE"],
       position: { x: 350, y: 350 },

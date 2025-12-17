@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { bodybuilderMilk, oatMilk } from "@/assets/evidence";
+import { bodybuilderMilk, oatMilk, cowSuspicious, spilledMilk } from "@/assets/evidence";
 
 export const case003: CaseData = {
   id: "case_003_milk",
@@ -98,7 +98,7 @@ export const case003: CaseData = {
       id: "ev_cow_photo",
       type: "photo",
       title: "Cow Photo",
-      contentUrl: null,
+      contentUrl: cowSuspicious,
       description: "This cow looks guilty. Of what? Unclear.",
       tags: ["MOO", "FARM"],
       position: { x: 450, y: 280 },
@@ -150,7 +150,7 @@ export const case003: CaseData = {
       id: "ev_spilled_milk",
       type: "photo",
       title: "Spilled Milk Photo",
-      contentUrl: null,
+      contentUrl: spilledMilk,
       description: "Crime scene or accident? The carpet knows.",
       tags: ["SPILL", "CARPET"],
       position: { x: 250, y: 450 },
