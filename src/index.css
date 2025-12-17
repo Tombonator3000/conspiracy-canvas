@@ -719,7 +719,38 @@
     border-radius: 50%;
     /* A mix of paper dust colors */
     background-color: hsl(40, 20%, 90%);
-    box-shadow: 0 0 2px rgba(0,0,0,0.1);
+    box-shadow: 0 0 4px rgba(255, 200, 100, 0.5), 0 0 2px rgba(0,0,0,0.1);
+  }
+
+  /* Central flash effect for merge */
+  @keyframes merge-flash {
+    0% {
+      width: 0;
+      height: 0;
+      opacity: 1;
+      box-shadow: 0 0 30px 15px rgba(255, 220, 100, 0.8),
+                  0 0 60px 30px rgba(255, 180, 50, 0.5);
+    }
+    50% {
+      width: 80px;
+      height: 80px;
+      opacity: 0.8;
+      box-shadow: 0 0 50px 25px rgba(255, 220, 100, 0.6),
+                  0 0 80px 40px rgba(255, 180, 50, 0.3);
+    }
+    100% {
+      width: 120px;
+      height: 120px;
+      opacity: 0;
+      box-shadow: 0 0 0 0 transparent;
+    }
+  }
+
+  .animate-merge-flash {
+    animation: merge-flash 0.5s ease-out forwards;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 240, 200, 0.9) 0%, rgba(255, 200, 100, 0.6) 40%, transparent 70%);
+    pointer-events: none;
   }
 
   /* === VICTORY GLOW EFFECT === */

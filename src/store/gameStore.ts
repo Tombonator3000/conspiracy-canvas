@@ -18,6 +18,13 @@ interface BurstData {
   y: number;
 }
 
+// Trash animation data
+interface TrashingNode {
+  id: string;
+  nodeId: string;
+  startTime: number;
+}
+
 // Saved node for undo functionality
 interface TrashedNode {
   node: Node;
@@ -54,10 +61,12 @@ interface GameState {
   // UV LIGHT & SHAKE STATE
   isUVEnabled: boolean;
   shakingNodeIds: string[];
-  scribbles: Scribble[];
 
   // PARTICLE EFFECTS
   bursts: BurstData[];
+
+  // TRASH ANIMATION
+  trashingNodes: TrashingNode[];
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
@@ -87,8 +96,6 @@ interface GameState {
   // UV & SHAKE ACTIONS
   toggleUV: () => void;
   triggerShake: (id: string) => void;
-  addScribble: (text: string, x: number, y: number) => void;
-  removeScribble: (id: string) => void;
 
   // PARANOIA & REVEAL ACTIONS
   revealNode: (id: string) => void;
@@ -96,6 +103,10 @@ interface GameState {
 
   // PARTICLE EFFECT ACTIONS
   removeBurst: (id: string) => void;
+
+  // TRASH ANIMATION ACTIONS
+  startTrashAnimation: (nodeId: string, isJunk: boolean) => void;
+  completeTrashAnimation: (nodeId: string) => void;
 
   // Internal helper
   validateWin: () => void;
@@ -150,10 +161,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   // UV Light & Shake State
   isUVEnabled: false,
   shakingNodeIds: [],
-  scribbles: [],
 
   // Particle Effects
   bursts: [],
+
+  // Trash Animation
+  trashingNodes: [],
 
   setNodes: (nodes) => set({
     nodes,
@@ -169,7 +182,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     shakingNodeIds: [],
     scribbles: [],
     trashedNodes: [],
-    bursts: []
+    bursts: [],
+    trashingNodes: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -226,6 +240,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       scribbles: [],
       trashedNodes: [],
       bursts: [],
+      trashingNodes: [],
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -398,23 +413,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       console.log("🧬 Inherited Tags:", Array.from(inheritedTags));
 
       // 4. PREPARE NEW NODES
-      const newNodes = validCombo.resultNodes.map((blueprint: EvidenceNode) => {
+      const newNodes = validCombo.resultNodes.map((blueprint: EvidenceNode, index: number) => {
         // Merge inherited tags with any specific tags the new node should have
         const finalTags = Array.from(new Set([
           ...inheritedTags,
           ...(blueprint.truthTags || [])
         ]));
 
+        // Offset position slightly for multiple results
+        const offsetX = index * 50;
+        const offsetY = index * 30;
+
         return {
           id: blueprint.id,
           type: 'evidence',
           position: {
-            x: (sourceNode.position.x + targetNode.position.x) / 2,
-            y: (sourceNode.position.y + targetNode.position.y) / 2
+            x: (sourceNode.position.x + targetNode.position.x) / 2 + offsetX,
+            y: (sourceNode.position.y + targetNode.position.y) / 2 + offsetY
           },
           data: {
             ...blueprint,
-            truthTags: finalTags // <--- CRITICAL INJECTION
+            truthTags: finalTags, // <--- CRITICAL INJECTION
+            isSpawning: true,     // Trigger spawn animation
+            rotation: Math.random() * 30 - 15, // Random rotation
           }
         };
       });
@@ -435,7 +456,18 @@ export const useGameStore = create<GameState>((set, get) => ({
         lastAction: { type: 'COMBINE_SUCCESS', id: Date.now() }
       }));
 
-      // 6. Check for win condition after combination
+      // 6. Clear spawning flag after animation completes
+      setTimeout(() => {
+        set(state => ({
+          nodes: state.nodes.map(n =>
+            newNodes.some(nn => nn.id === n.id)
+              ? { ...n, data: { ...n.data, isSpawning: false } }
+              : n
+          )
+        }));
+      }, 600);
+
+      // 7. Check for win condition after combination
       get().validateWin();
     }
   },
@@ -587,6 +619,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       scribbles: [],
       trashedNodes: [],
       bursts: [],
+      trashingNodes: [],
     });
   },
 
@@ -635,33 +668,42 @@ export const useGameStore = create<GameState>((set, get) => ({
     }, 500);
   },
 
-  addScribble: (text, x, y) => {
-    const newScribble: Scribble = {
-      id: `scribble-${Date.now()}`,
-      text,
-      x,
-      y,
-      rotation: Math.random() * 20 - 10
-    };
-    set(state => ({ scribbles: [...state.scribbles, newScribble] }));
-    // Auto-remove scribble after 2 seconds
-    setTimeout(() => {
-      set(state => ({
-        scribbles: state.scribbles.filter(s => s.id !== newScribble.id)
-      }));
-    }, 2000);
-  },
-
-  removeScribble: (id) => {
-    set(state => ({
-      scribbles: state.scribbles.filter(s => s.id !== id)
-    }));
-  },
-
   // Particle effect cleanup
   removeBurst: (id) => {
     set(state => ({
       bursts: state.bursts.filter(b => b.id !== id)
+    }));
+  },
+
+  // Trash animation actions
+  startTrashAnimation: (nodeId, isJunk) => {
+    // Mark node as trashing (for animation)
+    set(state => ({
+      trashingNodes: [
+        ...state.trashingNodes,
+        { id: `trash-${Date.now()}`, nodeId, startTime: Date.now() }
+      ],
+      // Mark the node with isTrashing flag for CSS animation
+      nodes: state.nodes.map(n =>
+        n.id === nodeId
+          ? { ...n, data: { ...n.data, isTrashing: true } }
+          : n
+      )
+    }));
+
+    // Store isJunk for when animation completes
+    const completeTrash = () => {
+      get().completeTrashAnimation(nodeId);
+      get().trashNode(nodeId, isJunk);
+    };
+
+    // Complete after animation (500ms)
+    setTimeout(completeTrash, 500);
+  },
+
+  completeTrashAnimation: (nodeId) => {
+    set(state => ({
+      trashingNodes: state.trashingNodes.filter(t => t.nodeId !== nodeId)
     }));
   },
 
