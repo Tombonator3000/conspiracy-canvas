@@ -11,6 +11,13 @@ interface Scribble {
   rotation: number;
 }
 
+// Particle burst data for merge effects
+interface BurstData {
+  id: string;
+  x: number;
+  y: number;
+}
+
 // Saved node for undo functionality
 interface TrashedNode {
   node: Node;
@@ -49,6 +56,9 @@ interface GameState {
   shakingNodeIds: string[];
   scribbles: Scribble[];
 
+  // PARTICLE EFFECTS
+  bursts: BurstData[];
+
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -79,6 +89,9 @@ interface GameState {
   triggerShake: (id: string) => void;
   addScribble: (text: string, x: number, y: number) => void;
   removeScribble: (id: string) => void;
+
+  // PARTICLE EFFECT ACTIONS
+  removeBurst: (id: string) => void;
 
   // Internal helper
   validateWin: () => void;
@@ -135,6 +148,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   shakingNodeIds: [],
   scribbles: [],
 
+  // Particle Effects
+  bursts: [],
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
@@ -148,7 +164,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     isUVEnabled: false,
     shakingNodeIds: [],
     scribbles: [],
-    trashedNodes: []
+    trashedNodes: [],
+    bursts: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -204,6 +221,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastAction: null,
       scribbles: [],
       trashedNodes: [],
+      bursts: [],
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -310,6 +328,17 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (validCombo) {
       console.log(`🧪 COMBINE SUCCESS: ${sourceId} + ${targetId}`);
+
+      // --- FIRE VISUAL EFFECT ---
+      const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
+      const centerY = (sourceNode.position.y + targetNode.position.y) / 2;
+      set(state => ({
+        bursts: [
+          ...state.bursts,
+          { id: `burst-${Date.now()}`, x: centerX, y: centerY }
+        ]
+      }));
+      // --------------------------
 
       // 3. HARVEST TAGS (The "Zombie Fix")
       // We manually extract tags from the data object of the parents
@@ -508,6 +537,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastAction: null,
       scribbles: [],
       trashedNodes: [],
+      bursts: [],
     });
   },
 
@@ -544,6 +574,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   removeScribble: (id) => {
     set(state => ({
       scribbles: state.scribbles.filter(s => s.id !== id)
+    }));
+  },
+
+  // Particle effect cleanup
+  removeBurst: (id) => {
+    set(state => ({
+      bursts: state.bursts.filter(b => b.id !== id)
     }));
   },
 
