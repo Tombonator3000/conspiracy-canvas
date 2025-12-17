@@ -13,10 +13,11 @@ import { case012 } from "./case_012";
 import type { CaseData } from "@/types/game";
 
 // DEBUG TEST CASE - Testing the new Zustand engine
+// Win condition: Combine A+B to get THE TRUTH, then connect to Node C
 export const TEST_CASE: CaseData = {
   id: 'test-001',
   title: 'DEBUG PROTOCOL',
-  description: 'Testing the new engine. Connect A to B.',
+  description: 'Combine A+B, then connect the result to C.',
   difficulty: 'TUTORIAL',
   theTruth: {
     subject: 'NODE A',
@@ -29,31 +30,43 @@ export const TEST_CASE: CaseData = {
     chaosLevel: 0,
     maxConnectionsNeeded: 1
   },
-  requiredTags: ['test'],
+  requiredTags: ['truth', 'final_piece'],
   nodes: [
     {
       id: 'node-a',
       type: 'sticky_note',
       title: 'Node A',
       contentUrl: null,
-      description: 'Connect me to Node B!',
-      tags: ['A', 'test'],
+      description: 'Combine me with Node B!',
+      tags: ['A'],
       position: { x: 100, y: 100 },
       isRedHerring: false,
       isCritical: true,
-      truthTags: ['test']
+      truthTags: []
     },
     {
       id: 'node-b',
       type: 'sticky_note',
       title: 'Node B',
       contentUrl: null,
-      description: 'Connect me to Node A!',
-      tags: ['B', 'test'],
-      position: { x: 400, y: 100 },
+      description: 'Combine me with Node A!',
+      tags: ['B'],
+      position: { x: 100, y: 200 },
       isRedHerring: false,
       isCritical: true,
-      truthTags: ['test']
+      truthTags: []
+    },
+    {
+      id: 'node-c',
+      type: 'sticky_note',
+      title: 'Node C',
+      contentUrl: null,
+      description: 'Connect the combined result to me!',
+      tags: ['C'],
+      position: { x: 400, y: 150 },
+      isRedHerring: false,
+      isCritical: true,
+      truthTags: ['final_piece']
     },
   ],
   combinations: [
@@ -62,13 +75,13 @@ export const TEST_CASE: CaseData = {
       itemB: 'node-b',
       resultNodes: [
         {
-          id: 'node-c',
+          id: 'the-truth',
           type: 'sticky_note',
           title: 'THE TRUTH',
           contentUrl: null,
           description: 'You discovered the truth by combining Node A and Node B!',
           tags: ['truth', 'combined'],
-          position: { x: 250, y: 100 },
+          position: { x: 100, y: 150 },
           isRedHerring: false,
           isCritical: true,
           truthTags: ['truth']
