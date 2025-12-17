@@ -21,6 +21,7 @@ import { UVLightToggle, UVOverlay } from "./UVLight";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
 import { Scribble } from "./Scribble";
+import { ParticleBurst } from "./ParticleBurst";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
@@ -62,11 +63,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     scribbles,
     isUVEnabled,
     shakingNodeIds,
+    bursts,
     setNodes,
     setEdges,
     setRequiredTags,
     setThreadColor,
     removeScribble,
+    removeBurst,
     onNodesChange,
     onConnect,
     onNodeDragStop,
@@ -350,6 +353,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             key={scribble.id}
             scribble={scribble}
             onRemove={() => removeScribble(scribble.id)}
+          />
+        ))}
+      </div>
+
+      {/* PARTICLE EFFECT LAYER - Merge burst effects */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+        {bursts.map((burst) => (
+          <ParticleBurst
+            key={burst.id}
+            id={burst.id}
+            x={burst.x}
+            y={burst.y}
+            onComplete={removeBurst}
           />
         ))}
       </div>

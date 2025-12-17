@@ -698,4 +698,27 @@
     text-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
     box-shadow: 0 0 10px rgba(255, 0, 0, 0.3);
   }
+
+  /* Particle Animation for merge effect */
+  @keyframes puff-out {
+    0% {
+      transform: translate(-50%, -50%) scale(1);
+      opacity: 1;
+    }
+    100% {
+      /* Move towards the random direction variables and shrink */
+      transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(0);
+      opacity: 0;
+    }
+  }
+
+  .animate-puff {
+    /* Run once, stay at the end state (invisible) */
+    animation: puff-out 0.7s ease-out forwards;
+    position: absolute;
+    border-radius: 50%;
+    /* A mix of paper dust colors */
+    background-color: hsl(40, 20%, 90%);
+    box-shadow: 0 0 2px rgba(0,0,0,0.1);
+  }
 }
