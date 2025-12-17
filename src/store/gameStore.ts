@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination } from '@/types/game';
+import { allCases } from '@/data/cases';
 
 interface GameState {
   // DATA
@@ -11,6 +12,9 @@ interface GameState {
   isVictory: boolean;
   isGameOver: boolean;
   threadColor: 'red' | 'blue';
+
+  // LEVEL TRACKING
+  currentLevelIndex: number;
 
   // SCORING DATA
   score: number;
@@ -27,6 +31,11 @@ interface GameState {
   setRequiredTags: (tags: string[]) => void;
   setThreadColor: (color: 'red' | 'blue') => void;
 
+  // LEVEL ACTIONS
+  loadLevel: (index: number) => void;
+  nextLevel: () => void;
+  getCurrentCase: () => typeof allCases[number] | null;
+
   // LOGIC ACTIONS (Synchronous & Immediate)
   onNodesChange: (changes: NodeChange[]) => void;
   onConnect: (connection: Connection) => void;
@@ -40,6 +49,27 @@ interface GameState {
   validateWin: () => void;
 }
 
+// Helper to convert case data nodes to React Flow nodes
+const createNodesFromCase = (caseData: typeof allCases[number]) => {
+  return caseData.nodes.map((node) => {
+    const rotation = Math.random() * 30 - 15;
+    const zIndex = Math.floor(Math.random() * 100);
+
+    return {
+      id: node.id,
+      type: 'evidence',
+      position: node.position,
+      data: {
+        ...node,
+        rotation,
+        isDesktop: true,
+      },
+      draggable: true,
+      zIndex,
+    };
+  });
+};
+
 export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -48,6 +78,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   isVictory: false,
   isGameOver: false,
   threadColor: 'red',
+
+  // Level Tracking
+  currentLevelIndex: 0,
 
   // Initial Score State
   score: 0,
@@ -72,6 +105,50 @@ export const useGameStore = create<GameState>((set, get) => ({
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
   setThreadColor: (color) => set({ threadColor: color }),
+
+  // Level Management
+  loadLevel: (index) => {
+    const level = allCases[index];
+    if (!level) {
+      console.warn(`Level ${index} not found`);
+      return;
+    }
+
+    const initialNodes = createNodesFromCase(level);
+
+    set({
+      currentLevelIndex: index,
+      nodes: initialNodes,
+      edges: [],
+      sanity: 100,
+      isVictory: false,
+      isGameOver: false,
+      score: 0,
+      junkBinned: 0,
+      mistakes: 0,
+      startTime: Date.now(),
+      requiredTags: level.requiredTags || [],
+      lastAction: null,
+    });
+
+    console.log(`📂 Loaded level ${index}: ${level.title}`);
+  },
+
+  nextLevel: () => {
+    const { currentLevelIndex } = get();
+    const nextIndex = currentLevelIndex + 1;
+
+    if (nextIndex < allCases.length) {
+      get().loadLevel(nextIndex);
+    } else {
+      console.log("🎉 ALL CASES SOLVED! No more levels.");
+    }
+  },
+
+  getCurrentCase: () => {
+    const { currentLevelIndex } = get();
+    return allCases[currentLevelIndex] || null;
+  },
 
   onNodesChange: (changes) => {
     set({ nodes: applyNodeChanges(changes, get().nodes) });
