@@ -185,29 +185,36 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { nodes, threadColor, triggerShake, addScribble } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake } = get();
 
-    // 1. Validate Connection Logic (Simple Tag Match)
+    // Prevent duplicate connections
+    const exists = edges.some(e =>
+      (e.source === params.source && e.target === params.target) ||
+      (e.source === params.target && e.target === params.source)
+    );
+    if (exists) return;
+
     const source = nodes.find(n => n.id === params.source);
     const target = nodes.find(n => n.id === params.target);
 
-    // Check if they share ANY tags (Primitive check)
-    const sourceTags = (source?.data as { truthTags?: string[] })?.truthTags || [];
-    const targetTags = (target?.data as { truthTags?: string[] })?.truthTags || [];
-    const hasMatch = sourceTags.some((t: string) => targetTags.includes(t));
+    // 1. CHECK IF EVIDENCE IS REAL
+    // We assume any node with 'truthTags' is relevant to the case.
+    // Nodes with empty/undefined truthTags are considered "Junk".
+    const sourceIsReal = ((source?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
+    const targetIsReal = ((target?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
 
-    // 2. Handle Outcome
-    if (hasMatch) {
-      // SUCCESS - Determine edge style based on thread color
-      const isBlue = threadColor === 'blue';
-      const colorHex = isBlue ? '#3b82f6' : '#e11d48'; // Blue-500 vs Rose-600
+    // VALIDATION LOGIC:
+    // Allow connection if BOTH are real evidence.
+    // (Investigators link different facts to form a theory!)
+    const isValidConnection = sourceIsReal && targetIsReal;
 
+    if (isValidConnection) {
+      // SUCCESS
       const newEdge = {
         ...params,
         id: `e-${params.source}-${params.target}`,
-        type: isBlue ? 'blueString' : 'redString',
-        style: { stroke: colorHex, strokeWidth: 3 },
-        data: { type: threadColor }
+        type: threadColor === 'blue' ? 'blueString' : 'redString',
+        style: { stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48', strokeWidth: 3 }
       } as Edge;
 
       set(state => ({
@@ -216,31 +223,23 @@ export const useGameStore = create<GameState>((set, get) => ({
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
-      // Log connection
-      console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
-
-      // Check for win condition
+      // Check win condition immediately
       get().validateWin();
+
     } else {
-      // FAILURE (Penalize)
+      // FAILURE (Connecting Junk)
       set(state => ({
         sanity: Math.max(0, state.sanity - 10),
         mistakes: state.mistakes + 1,
         lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
       }));
 
-      // Visual feedback - shake the nodes
-      if (params.source) triggerShake(params.source);
-      if (params.target) triggerShake(params.target);
-
-      // Add scribble near source node
-      addScribble(
-        "NO MATCH!",
-        (source?.position.x || 0) + 50,
+      triggerShake(params.source);
+      triggerShake(params.target);
+      addScribble("IRRELEVANT!",
+        (source?.position.x || 0),
         (source?.position.y || 0) - 50
       );
-
-      console.log(`❌ Connection failed: ${params.source} <-> ${params.target} (no matching tags)`);
     }
   },
 
