@@ -9,6 +9,7 @@ interface GameState {
   sanity: number;
   requiredTags: string[];
   isVictory: boolean;
+  threadColor: 'red' | 'blue';
 
   // SCORING DATA
   score: number;
@@ -20,6 +21,7 @@ interface GameState {
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
   setRequiredTags: (tags: string[]) => void;
+  setThreadColor: (color: 'red' | 'blue') => void;
 
   // LOGIC ACTIONS (Synchronous & Immediate)
   onConnect: (connection: Connection) => void;
@@ -38,6 +40,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   sanity: 100,
   requiredTags: [],
   isVictory: false,
+  threadColor: 'red',
 
   // Initial Score State
   score: 0,
@@ -56,20 +59,28 @@ export const useGameStore = create<GameState>((set, get) => ({
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
+  setThreadColor: (color) => set({ threadColor: color }),
 
   onConnect: (params) => {
+    const { threadColor } = get();
+
+    // Determine edge style based on thread color
+    const isBlue = threadColor === 'blue';
+    const colorHex = isBlue ? '#3b82f6' : '#e11d48'; // Blue-500 vs Rose-600
+
     // 1. Immediate visual feedback
     const newEdge = {
       ...params,
       id: `e-${params.source}-${params.target}`,
-      type: 'redString',
-      style: { stroke: '#e11d48', strokeWidth: 3 }
+      type: isBlue ? 'blueString' : 'redString',
+      style: { stroke: colorHex, strokeWidth: 3 },
+      data: { type: threadColor }
     } as Edge;
 
     set(state => ({ edges: [...state.edges, newEdge] }));
 
     // 2. Log connection
-    console.log(`🔗 Connected: ${params.source} <-> ${params.target}`);
+    console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
 
     // 3. Check for win condition
     get().validateWin();
