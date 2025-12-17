@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone, X, MessageSquare, AlertTriangle } from "lucide-react";
+import { Phone, X, MessageSquare, AlertTriangle, PhoneOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 interface ParanoiaEventsProps {
   sanity: number;
@@ -10,7 +11,7 @@ interface ParanoiaEventsProps {
   playSFX: (sound: string) => void;
 }
 
-type EventType = "phone_call" | "chat_bubble" | "screen_glitch" | null;
+type EventType = "phone_call" | "chat_bubble" | "screen_glitch" | "phone_ring_toast" | null;
 
 const SCARY_MESSAGES = [
   "STOP DIGGING",
@@ -34,6 +35,16 @@ const CALLER_NAMES = [
   "THEY",
 ];
 
+const PHONE_RING_MESSAGES = [
+  "We know what you found...",
+  "Stop looking. Now.",
+  "You're getting too close...",
+  "They're watching your screen.",
+  "Delete everything. Run.",
+  "Wrong number? ...or is it?",
+  "We've been trying to reach you...",
+];
+
 export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }: ParanoiaEventsProps) => {
   const [activeEvent, setActiveEvent] = useState<EventType>(null);
   const [countdown, setCountdown] = useState(5);
@@ -49,6 +60,47 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
       setMessage(SCARY_MESSAGES[Math.floor(Math.random() * SCARY_MESSAGES.length)]);
     }
     setActiveEvent(type);
+  }, [playSFX]);
+
+  // Toast-style phone ring event (less intrusive than full modal)
+  const triggerPhoneRingToast = useCallback(() => {
+    playSFX("connect_fail"); // Phone ring sound
+
+    const phoneMessage = PHONE_RING_MESSAGES[Math.floor(Math.random() * PHONE_RING_MESSAGES.length)];
+
+    toast.custom(
+      (t) => (
+        <motion.div
+          initial={{ x: 100, opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: 100, opacity: 0 }}
+          className="flex items-center gap-4 bg-secondary/95 backdrop-blur-md border border-destructive rounded-lg p-4 shadow-xl max-w-sm"
+        >
+          <motion.div
+            animate={{ rotate: [0, -15, 15, -15, 15, 0] }}
+            transition={{ duration: 0.5, repeat: Infinity }}
+            className="w-12 h-12 bg-destructive/20 rounded-full flex items-center justify-center flex-shrink-0"
+          >
+            <Phone className="w-6 h-6 text-destructive" />
+          </motion.div>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-destructive text-sm uppercase tracking-wider">UNKNOWN NUMBER</p>
+            <p className="text-xs text-muted-foreground italic truncate">"{phoneMessage}"</p>
+          </div>
+          <button
+            onClick={() => toast.dismiss(t)}
+            className="bg-destructive hover:bg-destructive/80 text-white px-3 py-1.5 text-xs font-bold uppercase rounded flex items-center gap-1 flex-shrink-0 transition-colors"
+          >
+            <PhoneOff className="w-3 h-3" />
+            HANG UP
+          </button>
+        </motion.div>
+      ),
+      {
+        duration: 6000,
+        position: 'bottom-right',
+      }
+    );
   }, [playSFX]);
 
   // Trigger paranoia events based on sanity and timer
@@ -101,6 +153,20 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
 
     return () => clearTimeout(timer);
   }, [activeEvent]);
+
+  // Phone ring toast event - triggers when sanity < 50
+  useEffect(() => {
+    if (!isGameActive || sanity >= 50) return;
+
+    const interval = setInterval(() => {
+      // 20% chance to trigger every 15 seconds when sanity is under 50
+      if (Math.random() > 0.8) {
+        triggerPhoneRingToast();
+      }
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [sanity, isGameActive, triggerPhoneRingToast]);
 
   const handleBlockCall = () => {
     playSFX("paper_crumple");
