@@ -222,18 +222,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const finalJunkBinned = junkBinned;
       const victory = isVictory;
 
-      // Delay slightly for final sound effect to play
-      const timeoutId = setTimeout(() => {
-        console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
-        onGameEnd(victory, finalSanity, finalScore, {
-          credibility: victory ? 100 : 0,
-          cleanupBonus: finalJunkBinned * 100,
-          trashedJunkCount: finalJunkBinned,
-          junkRemaining: remainingJunk
-        });
-      }, 1500);
-
-      return () => clearTimeout(timeoutId);
+      // Trigger game end immediately
+      console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
+      onGameEnd(victory, finalSanity, finalScore, {
+        credibility: victory ? 100 : 0,
+        cleanupBonus: finalJunkBinned * 100,
+        trashedJunkCount: finalJunkBinned,
+        junkRemaining: remainingJunk
+      });
     }
   }, [isVictory, isGameOver, sanity, score, junkBinned, nodes, onGameEnd]);
 
