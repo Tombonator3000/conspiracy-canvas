@@ -11,6 +11,13 @@ interface Scribble {
   rotation: number;
 }
 
+// Saved node for undo functionality
+interface TrashedNode {
+  node: Node;
+  edges: Edge[];
+  wasJunk: boolean;
+}
+
 interface GameState {
   // DATA
   nodes: Node[];
@@ -21,6 +28,9 @@ interface GameState {
   isGameOver: boolean;
   threadColor: 'red' | 'blue';
   scribbles: Scribble[];
+
+  // UNDO SYSTEM
+  trashedNodes: TrashedNode[];
 
   // LEVEL TRACKING
   currentLevelIndex: number;
@@ -60,6 +70,7 @@ interface GameState {
   onNodeDragStop: (id: string, position: {x: number, y: number}) => void;
   checkCombine: (sourceId: string, targetId: string, availableCombinations: Combination[]) => void;
   trashNode: (id: string, isJunk: boolean) => void;
+  undoTrash: () => void;
   modifySanity: (delta: number) => void;
   resetLevel: () => void;
 
@@ -104,6 +115,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   threadColor: 'red',
   scribbles: [],
 
+  // Undo System
+  trashedNodes: [],
+
   // Level Tracking
   currentLevelIndex: 0,
 
@@ -133,7 +147,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     lastAction: null,
     isUVEnabled: false,
     shakingNodeIds: [],
-    scribbles: []
+    scribbles: [],
+    trashedNodes: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -188,6 +203,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       requiredTags: level.requiredTags || [],
       lastAction: null,
       scribbles: [],
+      trashedNodes: [],
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -348,6 +364,10 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   trashNode: (id, isJunk) => {
     set(state => {
+      // 0. Save node for undo
+      const trashedNode = state.nodes.find(n => n.id === id);
+      const trashedEdges = state.edges.filter(e => e.source === id || e.target === id);
+
       // 1. Remove Node
       const newNodes = state.nodes.filter(n => n.id !== id);
       const newEdges = state.edges.filter(e => e.source !== id && e.target !== id);
@@ -374,6 +394,11 @@ export const useGameStore = create<GameState>((set, get) => ({
       // Check for game over
       const isGameOver = newSanity <= 0;
 
+      // Save to undo stack (keep only last 5)
+      const newTrashedNodes = trashedNode
+        ? [...state.trashedNodes.slice(-4), { node: trashedNode, edges: trashedEdges, wasJunk: isJunk }]
+        : state.trashedNodes;
+
       return {
         nodes: newNodes,
         edges: newEdges,
@@ -382,6 +407,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         junkBinned: newJunkCount,
         mistakes: newMistakes,
         isGameOver,
+        trashedNodes: newTrashedNodes,
         lastAction: { type: isJunk ? 'TRASH_SUCCESS' : 'TRASH_FAIL', id: Date.now() }
       };
     });
@@ -393,6 +419,66 @@ export const useGameStore = create<GameState>((set, get) => ({
       // Spawn scribble near center of screen with some randomness
       get().addScribble(randomText, 200 + Math.random() * 400, 150 + Math.random() * 200);
     }
+  },
+
+  undoTrash: () => {
+    const { trashedNodes, sanity, addScribble } = get();
+
+    // Check if there's anything to undo
+    if (trashedNodes.length === 0) {
+      console.log('⚠️ Nothing to undo');
+      return;
+    }
+
+    // Check if player has enough sanity (costs 20)
+    if (sanity < 20) {
+      console.log('⚠️ Not enough sanity to undo (need 20)');
+      addScribble("TOO TIRED...", 300 + Math.random() * 200, 150 + Math.random() * 100);
+      return;
+    }
+
+    set(state => {
+      const lastTrashed = state.trashedNodes[state.trashedNodes.length - 1];
+      const newTrashedNodes = state.trashedNodes.slice(0, -1);
+
+      // Restore score/stats based on what was undone
+      let newScore = state.score;
+      let newJunkCount = state.junkBinned;
+      let newMistakes = state.mistakes;
+
+      if (lastTrashed.wasJunk) {
+        // Undo junk deletion - remove the bonus
+        newScore -= 100;
+        newJunkCount -= 1;
+      } else {
+        // Undo evidence deletion - remove the penalty
+        newScore += 200;
+        newMistakes -= 1;
+      }
+
+      // Calculate new sanity (cost 20, but no longer -20 from evidence deletion)
+      const newSanity = Math.max(0, state.sanity - 20);
+      const isGameOver = newSanity <= 0;
+
+      console.log(`↩️ Undo: Restored ${lastTrashed.node.id}, cost 20 sanity`);
+
+      return {
+        nodes: [...state.nodes, lastTrashed.node],
+        edges: [...state.edges, ...lastTrashed.edges],
+        trashedNodes: newTrashedNodes,
+        sanity: newSanity,
+        score: newScore,
+        junkBinned: newJunkCount,
+        mistakes: newMistakes,
+        isGameOver,
+        lastAction: { type: 'UNDO_TRASH', id: Date.now() }
+      };
+    });
+
+    // Feedback
+    const undoTexts = ["WAIT... I NEED THAT!", "SECOND THOUGHTS...", "MAYBE IT'S IMPORTANT?"];
+    const randomText = undoTexts[Math.floor(Math.random() * undoTexts.length)];
+    get().addScribble(randomText, 300 + Math.random() * 200, 150 + Math.random() * 100);
   },
 
   modifySanity: (delta) => {
@@ -421,6 +507,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       startTime: Date.now(),
       lastAction: null,
       scribbles: [],
+      trashedNodes: [],
     });
   },
 
