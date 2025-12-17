@@ -1,15 +1,32 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
-import { EvidenceNode, Combination, Scribble } from '@/types/game';
+import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
 import { allCases } from '@/data/cases';
 
-interface Scribble {
-  id: string;
-  text: string;
-  x: number;
-  y: number;
-  rotation: number;
-}
+// Scribble text pools for different events
+const SUCCESS_CONNECTION_TEXTS = [
+  "YES!", "I KNEW IT!", "CONNECTED!", "THE PLOT THICKENS...",
+  "FOLLOW THE THREAD!", "THEY'RE ALL LINKED!", "SEE?!",
+  "IT ALL MAKES SENSE!", "I'M ONTO SOMETHING!", "GOTCHA!"
+];
+
+const SUCCESS_TRASH_TEXTS = [
+  "GOOD RIDDANCE!", "DECLUTTER!", "RED HERRING!", "NICE TRY...",
+  "NOT FOOLING ME!", "DISINFORMATION!", "PLANTED EVIDENCE!",
+  "THEY THOUGHT I'D FALL FOR THIS?", "OBVIOUS FAKE!"
+];
+
+const SUCCESS_COMBINE_TEXTS = [
+  "EUREKA!", "THE PIECES FIT!", "OF COURSE!", "BREAKTHROUGH!",
+  "NOW I SEE!", "IT WAS RIGHT THERE!", "HIDDEN IN PLAIN SIGHT!",
+  "THE TRUTH EMERGES!", "REVELATION!"
+];
+
+const PARANOIA_TEXTS = [
+  "THEY KNOW", "RUN", "BEHIND YOU", "WATCHING", "TOO LATE",
+  "TRUST NO ONE", "THEY'RE LISTENING", "IT'S ALL CONNECTED",
+  "DON'T LOOK", "THEY SEE EVERYTHING"
+];
 
 // Particle burst data for merge effects
 interface BurstData {
@@ -75,7 +92,7 @@ interface GameState {
   setThreadColor: (color: 'red' | 'blue') => void;
 
   // SCRIBBLE ACTIONS
-  addScribble: (text: string, x: number, y: number) => void;
+  addScribble: (text: string, x: number, y: number, variant?: ScribbleVariant) => void;
   removeScribble: (id: string) => void;
 
   // LEVEL ACTIONS
@@ -190,13 +207,14 @@ export const useGameStore = create<GameState>((set, get) => ({
   setThreadColor: (color) => set({ threadColor: color }),
 
   // Scribble Actions
-  addScribble: (text, x, y) => {
+  addScribble: (text, x, y, variant = 'error') => {
     const newScribble: Scribble = {
       id: `scr-${Date.now()}-${Math.random()}`,
       text,
       x,
       y,
-      rotation: Math.random() * 20 - 10
+      rotation: Math.random() * 20 - 10,
+      variant
     };
 
     // Keep max 5 scribbles to avoid clutter
@@ -350,6 +368,12 @@ export const useGameStore = create<GameState>((set, get) => ({
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
+      // SUCCESS SCRIBBLE - Handwritten feedback for valid connection
+      const successText = SUCCESS_CONNECTION_TEXTS[Math.floor(Math.random() * SUCCESS_CONNECTION_TEXTS.length)];
+      const midX = (source.position.x + target.position.x) / 2;
+      const midY = (source.position.y + target.position.y) / 2;
+      addScribble(successText, midX, midY - 30, 'success');
+
       // Check win condition immediately
       get().validateWin();
 
@@ -402,6 +426,11 @@ export const useGameStore = create<GameState>((set, get) => ({
           { id: `burst-${Date.now()}`, x: centerX, y: centerY }
         ]
       }));
+
+      // SUCCESS SCRIBBLE - Use unlockText from combo or random insight text
+      const scribbleText = validCombo.unlockText ||
+        SUCCESS_COMBINE_TEXTS[Math.floor(Math.random() * SUCCESS_COMBINE_TEXTS.length)];
+      get().addScribble(scribbleText, centerX, centerY - 50, 'insight');
       // --------------------------
 
       // 3. HARVEST TAGS (The "Zombie Fix")
@@ -523,11 +552,15 @@ export const useGameStore = create<GameState>((set, get) => ({
     });
 
     // Spawn scribble feedback after state update
-    if (!isJunk) {
+    if (isJunk) {
+      // SUCCESS - Junk correctly identified
+      const successText = SUCCESS_TRASH_TEXTS[Math.floor(Math.random() * SUCCESS_TRASH_TEXTS.length)];
+      get().addScribble(successText, 200 + Math.random() * 400, 150 + Math.random() * 200, 'success');
+    } else {
+      // FAILURE - Real evidence trashed
       const failTexts = ["I NEEDED THAT!", "NO NO NO!", "CRITICAL EVIDENCE!", "WHAT HAVE I DONE?", "THEY WANTED THIS"];
       const randomText = failTexts[Math.floor(Math.random() * failTexts.length)];
-      // Spawn scribble near center of screen with some randomness
-      get().addScribble(randomText, 200 + Math.random() * 400, 150 + Math.random() * 200);
+      get().addScribble(randomText, 200 + Math.random() * 400, 150 + Math.random() * 200, 'error');
     }
   },
 

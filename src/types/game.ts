@@ -33,12 +33,15 @@ export interface EvidenceNode {
   isRevealed?: boolean; // Set to true when UV light reveals the hidden content
 }
 
+export type ScribbleVariant = 'error' | 'success' | 'insight' | 'paranoia';
+
 export interface Scribble {
   id: string;
   text: string;
   x: number;
   y: number;
   rotation: number;
+  variant?: ScribbleVariant; // Defaults to 'error' for backward compatibility
 }
 
 // Scribble attached to a specific node (parented)
