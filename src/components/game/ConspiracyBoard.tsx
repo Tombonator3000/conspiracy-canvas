@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useEffect } from "react";
+import { useCallback, useMemo, useEffect, useState, useRef } from "react";
 import {
   ReactFlow,
   Background,
@@ -76,13 +76,22 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     edges,
     sanity,
     isVictory,
+    score,
+    junkBinned,
+    mistakes,
     setNodes,
     setEdges,
     setRequiredTags,
     onConnect,
     onNodeDragStop,
     checkCombine,
+    trashNode,
   } = useGameStore();
+
+  // Bin state
+  const [isBinHighlighted, setIsBinHighlighted] = useState(false);
+  const binRef = useRef<HTMLDivElement>(null);
+  const draggedNodeRef = useRef<string | null>(null);
 
   // Helper: Find overlapping node based on simple distance check
   const findOverlappingNode = useCallback((draggedNode: { id: string; position: { x: number; y: number } }) => {
@@ -113,18 +122,74 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // Handle victory condition
   useEffect(() => {
     if (isVictory) {
-      console.log("🎉 Victory detected! Triggering game end...");
-      onGameEnd(true, sanity, edges.length, {
-        truthfulConnections: edges.length,
-        falseConnections: 0,
-        missedTruths: 0,
-        accuracy: 100
+      // Count remaining junk/red herrings that weren't binned
+      const remainingJunk = nodes.filter(n => {
+        const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
+        return truthTags.length === 0; // No tags = junk
+      }).length;
+
+      console.log("🎉 Victory detected! Triggering game end with score:", score);
+      onGameEnd(true, sanity, score, {
+        credibility: 100,
+        cleanupBonus: junkBinned * 100,
+        trashedJunkCount: junkBinned,
+        junkRemaining: remainingJunk
       });
     }
-  }, [isVictory, sanity, edges.length, onGameEnd]);
+  }, [isVictory, sanity, score, junkBinned, nodes, onGameEnd]);
+
+  // Helper: Check if node is over the bin
+  const isNodeOverBin = useCallback((event: React.MouseEvent | React.TouchEvent) => {
+    if (!binRef.current) return false;
+
+    const binRect = binRef.current.getBoundingClientRect();
+    let clientX: number, clientY: number;
+
+    if ('touches' in event && event.touches.length > 0) {
+      clientX = event.touches[0].clientX;
+      clientY = event.touches[0].clientY;
+    } else if ('clientX' in event) {
+      clientX = event.clientX;
+      clientY = event.clientY;
+    } else {
+      return false;
+    }
+
+    return (
+      clientX >= binRect.left &&
+      clientX <= binRect.right &&
+      clientY >= binRect.top &&
+      clientY <= binRect.bottom
+    );
+  }, []);
+
+  // Handle node drag - check if hovering over bin
+  const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: { id: string }) => {
+    draggedNodeRef.current = node.id;
+    const overBin = isNodeOverBin(event);
+    setIsBinHighlighted(overBin);
+  }, [isNodeOverBin]);
 
   // Handle node drag stop - update store and check for combinations
-  const handleNodeDragStop = useCallback((_event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {
+  const handleNodeDragStop = useCallback((event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {
+    // Check if dropped on bin
+    if (isNodeOverBin(event)) {
+      const droppedNode = nodes.find(n => n.id === node.id);
+      if (droppedNode) {
+        // Check if it's junk (no truthTags or empty truthTags means it's junk/red herring)
+        const truthTags = (droppedNode.data as { truthTags?: string[] }).truthTags || [];
+        const isJunk = truthTags.length === 0;
+        trashNode(node.id, isJunk);
+        console.log(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}`);
+      }
+      setIsBinHighlighted(false);
+      draggedNodeRef.current = null;
+      return;
+    }
+
+    setIsBinHighlighted(false);
+    draggedNodeRef.current = null;
+
     // Update position in store
     onNodeDragStop(node.id, node.position);
 
@@ -134,7 +199,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       // Pass the level's combinations to the store action
       checkCombine(node.id, overlappingNode.id, caseData.combinations);
     }
-  }, [onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
+  }, [isNodeOverBin, nodes, trashNode, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
@@ -155,14 +220,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <SanityMeter sanity={sanity} />
       </div>
 
-      {/* Evidence Bin (visual only for now) */}
-      <EvidenceBin isHighlighted={false} />
+      {/* Evidence Bin */}
+      <EvidenceBin ref={binRef} isHighlighted={isBinHighlighted} />
 
       {/* React Flow Board - THE DUMB RENDERER */}
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onConnect={onConnect}
+        onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
