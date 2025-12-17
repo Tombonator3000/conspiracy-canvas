@@ -1,5 +1,12 @@
 export type NodeType = "photo" | "document" | "sticky_note";
 
+// Simple edge type for Zustand store (not React Flow Edge)
+export interface GameEdge {
+  id: string;
+  source: string;
+  target: string;
+}
+
 export interface Position {
   x: number;
   y: number;

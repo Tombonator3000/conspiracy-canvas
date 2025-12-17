@@ -51,7 +51,7 @@ import {
   getRandomFromArray,
 } from "@/constants/game";
 import { isColliding, areNodesNearby, generateUniqueId } from "@/utils/helpers";
-import { checkWinConditionDetailed, WinValidationEdge } from "@/utils/winValidation";
+import { useGameStore } from "@/store/gameStore";
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -234,10 +234,6 @@ const checkAllCriticalConnected = (edges: Edge[], criticalNodeIds: string[]): bo
   return criticalNodeIds.every((id) => connectedCritical.has(id));
 };
 
-// Helper to convert React Flow edges to WinValidationEdge format
-const toWinValidationEdges = (edges: Edge[]): WinValidationEdge[] => {
-  return edges.map((e) => ({ source: e.source, target: e.target }));
-};
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
 
@@ -296,7 +292,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }, [isDesktop]);
   
   const { playSFX, playSound, updateSanity, startAmbient, stopAmbient } = useAudioContext();
-  
+
+  // Zustand store for centralized game state (nodes, edges, win condition)
+  const {
+    nodes: storeNodes,
+    edges: storeEdges,
+    isVictory: storeIsVictory,
+    setInitialCase,
+    connectNodes: storeConnectNodes,
+    combineNodes: storeCombineNodes,
+    removeNode: storeRemoveNode,
+  } = useGameStore();
+
+  // Initialize store with case data on mount
+  useEffect(() => {
+    setInitialCase({ nodes: caseData.nodes, requiredTags: caseData.requiredTags });
+  }, [caseData.nodes, caseData.requiredTags, setInitialCase]);
+
   const [nodes, setNodes, onNodesChange] = useNodesState(createInitialNodes(caseData, interactionMode === 'pan', isUVEnabled, interactionMode === 'connect'));
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
@@ -509,50 +521,13 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     ).length;
   }, [nodes, caseData.nodes]);
 
-  // WIN CONDITION CHECK: Robust version that re-calculates nodes to ensure latest tags
-  // This fixes the "stale state" bug where truthTags gets lost during React's render cycle
+  // WIN CONDITION CHECK: Subscribe to Zustand store's isVictory state
+  // The store handles win condition checking synchronously after each action
   useEffect(() => {
-    // 1. Safety Checks
     if (gameState.isVictory || gameState.isGameOver) return;
 
-    // 2. Wait for edges to exist
-    if (edges.length === 0) return;
-
-    // 3. Re-calculate active nodes to ensure latest tags are present
-    // (We manually merge active node state with CaseData to guarantee tags exist)
-    const currentActiveNodes = nodes.map(n => {
-      const original = caseData.nodes.find(od => od.id === n.id);
-      // Also check combination result nodes for spawned nodes
-      let comboResultNode: EvidenceNodeType | undefined;
-      if (caseData.combinations) {
-        for (const combo of caseData.combinations) {
-          const found = combo.resultNodes.find(rn => rn.id === n.id);
-          if (found) {
-            comboResultNode = found;
-            break;
-          }
-        }
-      }
-      // Prioritize: 1. Data in Node, 2. Original Case Data, 3. Combo Result, 4. Empty
-      const nodeData = n.data as unknown as EvidenceNodeType;
-      const tags = (nodeData.truthTags && nodeData.truthTags.length > 0)
-        ? nodeData.truthTags
-        : (original?.truthTags && original.truthTags.length > 0)
-          ? original.truthTags
-          : (comboResultNode?.truthTags || []);
-      return { ...nodeData, id: n.id, truthTags: tags } as EvidenceNodeType;
-    });
-
-    // 4. Run the Detailed Win Check
-    const { isVictory, missingTags } = checkWinConditionDetailed(
-      currentActiveNodes,
-      toWinValidationEdges(edges),
-      caseData.requiredTags || []
-    );
-
-    // 5. Trigger State Update ONLY if changed
-    if (isVictory) {
-      console.log("🏆 VICTORY TRIGGERED - Cluster found:", caseData.requiredTags);
+    if (storeIsVictory) {
+      console.log("🏆 VICTORY TRIGGERED via Zustand store:", caseData.requiredTags);
       playSFX("connect_success");
       setGameState(prev => ({
         ...prev,
@@ -560,14 +535,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         missingTags: [],
         validConnections: caseData.requiredTags?.length || 0
       }));
-    } else {
-      // Only update missing tags if they changed to avoid re-renders
-      setGameState(prev => {
-        if (JSON.stringify(prev.missingTags) === JSON.stringify(missingTags)) return prev;
-        return { ...prev, missingTags: missingTags || [] };
-      });
     }
-  }, [edges, nodes, caseData.requiredTags, caseData.nodes, caseData.combinations, gameState.isVictory, gameState.isGameOver, playSFX]);
+  }, [storeIsVictory, caseData.requiredTags, gameState.isVictory, gameState.isGameOver, playSFX]);
 
   // IMMEDIATE GAME OVER CHECK: Watches sanity specifically to trigger game over immediately
   // This fixes the bug where Game Over state lags behind the Sanity update
@@ -930,26 +899,6 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setCombineTargetId(foundTarget);
   }, []);
 
-  // Check win condition after state changes (combinations, etc.)
-  // Uses the detailed check to surface missing tags for UI feedback
-  const checkWinConditionAfterCombination = useCallback((
-    currentEdges: Edge[],
-    currentNodes: EvidenceNodeType[],
-    requiredTags: string[] | undefined
-  ) => {
-    if (!requiredTags || requiredTags.length === 0) {
-      return { isVictory: false, missingTags: [] };
-    }
-
-    // Use the semantic tag-based win condition check with details
-    // This checks ALL connected clusters (not just the largest) for having all required tags
-    return checkWinConditionDetailed(
-      currentNodes,
-      toWinValidationEdges(currentEdges),
-      requiredTags
-    );
-  }, []);
-
   // Spawn new nodes from combination with burst animation
   // CRITICAL: This function must preserve truthTags from the passed resultNodes
   const spawnCombinationNodes = useCallback((resultNodes: EvidenceNodeType[], centerPosition: { x: number; y: number }) => {
@@ -1106,8 +1055,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           e.source !== combineTargetId && e.target !== combineTargetId
         ));
 
-        // Spawn new nodes with inherited truthTags
+        // Spawn new nodes with inherited truthTags (for React Flow UI)
         spawnCombinationNodes(resultNodesWithInheritedTags, centerPos);
+
+        // Update Zustand store (handles win condition check synchronously)
+        storeCombineNodes(draggedNodeId, combineTargetId, combination);
 
         // Add unlock scribble
         const unlockText = combination.unlockText || getRandomFromArray(COMBINE_UNLOCK_SCRIBBLES);
@@ -1117,21 +1069,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const credBonus = combination.bonusCredibility ?? 200;
         spawnFloatingScore(credBonus, cursorPosition.x, cursorPosition.y, true);
 
-        // Calculate all nodes after combination (remaining + new spawned nodes)
+        // Update connected critical count for display
         const allNodesAfterCombination: EvidenceNodeType[] = [
           ...remainingNodes.map((n) => n.data as unknown as EvidenceNodeType),
           ...resultNodesWithInheritedTags,
         ];
-
-        // Check win condition after combination
-        // We need to check if the new state contains all required truthTags in any cluster
-        const combinationWinResult = checkWinConditionAfterCombination(
-          remainingEdges,
-          allNodesAfterCombination,
-          caseData.requiredTags
-        );
-
-        // Update connected critical count for display
         const newCriticalIds = allNodesAfterCombination.filter((n) => n.isCritical).map((n) => n.id);
         const connectedCriticalAfterCombine = getConnectedCriticalNodes(remainingEdges, newCriticalIds);
 
@@ -1139,8 +1081,6 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ...prev,
           credibility: prev.credibility + credBonus,
           validConnections: connectedCriticalAfterCombine.size,
-          isVictory: combinationWinResult.isVictory,
-          missingTags: combinationWinResult.missingTags || [],
         }));
       } else {
         // Invalid combination - shake both nodes
@@ -1156,7 +1096,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setBinHighlighted(false);
     setDraggedNodeId(null);
     setCombineTargetId(null);
-  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.requiredTags, caseData.nodes, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, checkWinConditionAfterCombination]);
+  }, [binHighlighted, draggedNodeId, combineTargetId, handleNodeDropToBin, caseData.combinations, caseData.nodes, nodes, edges, setNodes, setEdges, spawnCombinationNodes, addScribble, playSFX, shakeNode, spawnFloatingScore, cursorPosition, storeCombineNodes]);
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -1188,9 +1128,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           target: connection.target,
         };
 
-        // Calculate new edges array to check cluster connectivity
+        // Calculate new edges array for React Flow UI
         const updatedEdges = addEdge(newEdge, edges);
         setEdges(updatedEdges);
+
+        // Update Zustand store (handles win condition check synchronously)
+        storeConnectNodes(connection.source, connection.target);
 
         // Add scribble - parented to target node on desktop, floating on mobile
         const sourceNode = nodes.find((n) => n.id === connection.source);
@@ -1206,20 +1149,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           }
         }
 
-        // Use tag-based semantic truth verification for win condition
-        // Falls back to legacy critical node check if no requiredTags defined
+        // Use legacy critical node check for UI display
         const connectedCritical = getConnectedCriticalNodes(updatedEdges, criticalNodeIds);
         const linkedEvidenceCount = connectedCritical.size;
-
-        // Use the detailed win validation from winValidation.ts for tag-based victory
-        const tagWinResult = checkWinConditionDetailed(
-          allEvidenceNodes,
-          toWinValidationEdges(updatedEdges),
-          caseData.requiredTags || []
-        );
-        const legacyVictory = checkAllCriticalConnected(updatedEdges, criticalNodeIds);
-        // Tag-based takes priority if requiredTags is defined, otherwise use legacy
-        const isVictory = caseData.requiredTags?.length ? tagWinResult.isVictory : legacyVictory;
 
         // Calculate combo bonus for consecutive correct connections
         const newConsecutiveCorrect = gameState.consecutiveCorrect + 1;
@@ -1241,11 +1173,10 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         }
 
         // Update game state with cluster-based detection and combo
+        // Victory is now handled by the Zustand store subscription
         setGameState((prev) => ({
           ...prev,
           validConnections: linkedEvidenceCount,
-          isVictory,
-          missingTags: isVictory || !caseData.requiredTags?.length ? [] : (tagWinResult.missingTags || []),
           consecutiveCorrect: newConsecutiveCorrect,
           comboBonus: prev.comboBonus + comboBonus,
           credibility: prev.credibility + comboBonus,
@@ -1289,7 +1220,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setTagMatchInfo((prev) => ({ ...prev, visible: false }));
       setConnectingSourceId(null);
     },
-    [edges, nodes, caseData, allEvidenceNodes, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop, threadType]
+    [edges, nodes, caseData, allEvidenceNodes, gameState.isGameOver, gameState.isVictory, gameState.consecutiveCorrect, setEdges, shakeNode, addScribble, addNodeScribble, playSFX, criticalNodeIds, spawnFloatingScore, cursorPosition, isDesktop, threadType, storeConnectNodes]
   );
 
   // Handle connection start - track source for tag visualization
