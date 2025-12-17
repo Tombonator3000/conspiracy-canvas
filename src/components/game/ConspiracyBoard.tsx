@@ -43,28 +43,6 @@ interface ConspiracyBoardProps {
   ) => void;
 }
 
-// Convert case data to React Flow nodes
-const createInitialNodes = (caseData: CaseData) => {
-  return caseData.nodes.map((node, index) => {
-    const rotation = Math.random() * 30 - 15;
-    const zIndex = Math.floor(Math.random() * 100);
-
-    return {
-      id: node.id,
-      type: "evidence",
-      position: node.position,
-      data: {
-        ...node,
-        rotation,
-        isDesktop: true,
-      },
-      draggable: true,
-      zIndex,
-    };
-  });
-};
-
-
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   // Zustand store - THE SINGLE SOURCE OF TRUTH
   const {
@@ -123,13 +101,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     return null;
   }, [nodes]);
 
-  // Initialize store with case data on mount
+  // Ensure required tags are synced with case data
+  // Note: loadLevel is called by Index.tsx when selecting a case,
+  // which initializes nodes, edges, and requiredTags
   useEffect(() => {
-    const initialNodes = createInitialNodes(caseData);
-    setNodes(initialNodes);
-    setEdges([]);
-    setRequiredTags(caseData.requiredTags || []);
-  }, [caseData, setNodes, setEdges, setRequiredTags]);
+    // Only set required tags if they differ (for edge cases)
+    if (caseData.requiredTags) {
+      setRequiredTags(caseData.requiredTags);
+    }
+  }, [caseData, setRequiredTags]);
 
   // 1. AUDIO LAYER: React to Store Actions
   useEffect(() => {

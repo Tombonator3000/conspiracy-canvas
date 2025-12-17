@@ -7,6 +7,7 @@ import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
 import { allCases } from "@/data/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
+import { useGameStore } from "@/store/gameStore";
 import type { CaseData, CredibilityStats } from "@/types/game";
 
 type GameScreen = 'menu' | 'files' | 'briefing' | 'game' | 'result' | 'gameover';
@@ -22,17 +23,20 @@ const Index = () => {
   const [currentScreen, setCurrentScreen] = useState<GameScreen>('menu');
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
-  
+
   const { completedCases, completeCase } = useGameProgress();
+  const { loadLevel, nextLevel, currentLevelIndex } = useGameStore();
 
   const handleStartGame = useCallback(() => {
     setCurrentScreen('files');
   }, []);
 
   const handleSelectCase = useCallback((caseData: CaseData) => {
+    const caseIndex = allCases.findIndex(c => c.id === caseData.id);
     setSelectedCase(caseData);
+    loadLevel(caseIndex >= 0 ? caseIndex : 0);
     setCurrentScreen('briefing');
-  }, []);
+  }, [loadLevel]);
 
   const handleExecuteBriefing = useCallback(() => {
     setCurrentScreen('game');
@@ -65,14 +69,13 @@ const Index = () => {
   }, []);
 
   const handleNextCase = useCallback(() => {
-    if (!selectedCase) return;
-
-    const currentIndex = allCases.findIndex(c => c.id === selectedCase.id);
-    const nextCase = allCases[currentIndex + 1];
+    const nextIndex = currentLevelIndex + 1;
+    const nextCase = allCases[nextIndex];
 
     if (nextCase) {
       setSelectedCase(nextCase);
       setGameResult(null);
+      nextLevel(); // Use store's nextLevel to load the next case
       setCurrentScreen('briefing');
     } else {
       // No more cases, go back to files
@@ -80,7 +83,7 @@ const Index = () => {
       setGameResult(null);
       setCurrentScreen('files');
     }
-  }, [selectedCase]);
+  }, [currentLevelIndex, nextLevel]);
 
   const resetAndNavigate = useCallback((screen: GameScreen) => {
     setSelectedCase(null);
