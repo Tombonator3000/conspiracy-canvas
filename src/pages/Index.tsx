@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { ReactFlowProvider } from "@xyflow/react";
 import { MainMenu } from "@/components/game/MainMenu";
 import { FilingCabinet } from "@/components/game/FilingCabinet";
 import { BriefingScreen } from "@/components/game/BriefingScreen";
@@ -65,8 +66,10 @@ const Index = () => {
 
   const handleRetry = useCallback(() => {
     setGameResult(null);
+    // Reload the current level to reset all nodes
+    loadLevel(currentLevelIndex);
     setCurrentScreen('game');
-  }, []);
+  }, [loadLevel, currentLevelIndex]);
 
   const handleNextCase = useCallback(() => {
     const nextIndex = currentLevelIndex + 1;
@@ -122,11 +125,13 @@ const Index = () => {
     case 'game':
       if (!selectedCase) return null;
       return (
-        <ConspiracyBoard
-          caseData={selectedCase}
-          onBackToMenu={handleBackToFiles}
-          onGameEnd={handleGameEnd}
-        />
+        <ReactFlowProvider>
+          <ConspiracyBoard
+            caseData={selectedCase}
+            onBackToMenu={handleBackToFiles}
+            onGameEnd={handleGameEnd}
+          />
+        </ReactFlowProvider>
       );
     
     case 'result': {
