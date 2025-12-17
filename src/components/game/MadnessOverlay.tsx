@@ -6,16 +6,59 @@ interface MadnessOverlayProps {
 
 export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
   // Calculate intensity based on sanity (more intense as sanity drops)
-  // Stop all effects when sanity reaches 0 (game over handled by GameOverScreen)
-  const intensity = sanity > 0 ? Math.max(0, (100 - sanity) / 100) : 0;
-  const isLow = sanity < 50 && sanity > 0;
-  const isCritical = sanity < 25 && sanity > 0;
+  const intensity = Math.max(0, (100 - sanity) / 100);
+  const isLow = sanity < 50;
+  const isCritical = sanity < 25;
+  const isVeryLow = sanity < 40;
+  const isGameOver = sanity <= 0;
+
+  // Chromatic aberration offset increases as sanity decreases
+  const chromaticOffset = isVeryLow ? Math.min(4, (40 - sanity) / 10) : 0;
 
   return (
     <>
       {/* GAME OVER BLACKOUT - Removed, GameOverScreen handles this now */}
 
-      {/* Vignette effect */}
+      {/* Chromatic Aberration Effect - RGB Split as sanity drops */}
+      {isVeryLow && !isGameOver && (
+        <>
+          {/* Red channel - shifted left */}
+          <motion.div
+            className="fixed inset-0 pointer-events-none z-[92]"
+            style={{
+              background: 'transparent',
+              boxShadow: `inset ${-chromaticOffset}px 0 ${chromaticOffset * 2}px rgba(255, 0, 0, 0.15)`,
+            }}
+            animate={{
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 0.3,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+          {/* Cyan channel - shifted right */}
+          <motion.div
+            className="fixed inset-0 pointer-events-none z-[92]"
+            style={{
+              background: 'transparent',
+              boxShadow: `inset ${chromaticOffset}px 0 ${chromaticOffset * 2}px rgba(0, 255, 255, 0.15)`,
+            }}
+            animate={{
+              opacity: [0.5, 0.8, 0.5],
+            }}
+            transition={{
+              duration: 0.3,
+              repeat: Infinity,
+              ease: "linear",
+              delay: 0.05,
+            }}
+          />
+        </>
+      )}
+
+      {/* Vignette effect - enhanced at low sanity */}
       <motion.div
         className="fixed inset-0 pointer-events-none z-[90]"
         style={{
@@ -41,7 +84,7 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
         />
       )}
 
-      {/* Noise overlay */}
+      {/* Noise overlay - intensifies at low sanity */}
       <motion.div
         className="fixed inset-0 pointer-events-none z-[89] mix-blend-overlay"
         style={{
@@ -83,6 +126,21 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
             duration: 0.5,
             repeat: Infinity,
             repeatDelay: 3,
+          }}
+        />
+      )}
+
+      {/* Heavy screen flicker at critical state */}
+      {isCritical && !isGameOver && (
+        <motion.div
+          className="fixed inset-0 pointer-events-none z-[86] bg-black"
+          animate={{
+            opacity: [0, 0.05, 0, 0.08, 0, 0.03, 0],
+          }}
+          transition={{
+            duration: 0.5,
+            repeat: Infinity,
+            times: [0, 0.1, 0.2, 0.5, 0.6, 0.8, 1],
           }}
         />
       )}

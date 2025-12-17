@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&family=Courier+Prime:wght@400;700&family=VT323&family=Press+Start+2P&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Special+Elite&family=Courier+Prime:wght@400;700&family=VT323&family=Press+Start+2P&family=Caveat:wght@400;700&family=Nanum+Pen+Script&family=Rock+Salt&family=Shadows+Into+Light&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -54,6 +54,12 @@
     --noise-opacity: 0;
     --distort-amount: 0deg;
     --vignette-intensity: 0;
+
+    /* 90s Analog filter effects */
+    --film-grain-opacity: 0.08;
+    --chromatic-offset: 0px;
+    --scanline-opacity: 0;
+    --vignette-darkness: 0.4;
   }
 
   .dark {
@@ -876,5 +882,564 @@
       0 0 20px rgba(127, 255, 0, 0.3),
       inset 0 0 5px rgba(127, 255, 0, 0.2) !important;
     border: 1px solid rgba(127, 255, 0, 0.5) !important;
+  }
+
+  /* ========================================
+     90S ANALOG AESTHETIC - "The Basement Conspiracy"
+     ======================================== */
+
+  /* === FILM GRAIN OVERLAY === */
+  /* Creates the VHS/analog camera feel */
+  .film-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9999;
+    opacity: var(--film-grain-opacity, 0.08);
+    mix-blend-mode: overlay;
+    animation: grain-shift 0.1s steps(5) infinite;
+  }
+
+  .film-grain::before {
+    content: "";
+    position: absolute;
+    inset: -200%;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+  }
+
+  @keyframes grain-shift {
+    0%, 100% { transform: translate(0, 0); }
+    10% { transform: translate(-2%, -2%); }
+    20% { transform: translate(2%, 2%); }
+    30% { transform: translate(-1%, 2%); }
+    40% { transform: translate(2%, -1%); }
+    50% { transform: translate(-2%, 1%); }
+    60% { transform: translate(1%, -2%); }
+    70% { transform: translate(-1%, -1%); }
+    80% { transform: translate(2%, 1%); }
+    90% { transform: translate(-2%, 2%); }
+  }
+
+  /* === PERMANENT VIGNETTE === */
+  /* Dark corners - "working by lamplight" feel */
+  .vignette-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9998;
+    background: radial-gradient(
+      ellipse 80% 60% at 50% 50%,
+      transparent 0%,
+      transparent 40%,
+      rgba(0, 0, 0, 0.3) 70%,
+      rgba(0, 0, 0, var(--vignette-darkness, 0.4)) 100%
+    );
+  }
+
+  /* === CHROMATIC ABERRATION === */
+  /* RGB split effect - simulates bad video quality / headache */
+  .chromatic-aberration {
+    position: relative;
+  }
+
+  .chromatic-aberration::before,
+  .chromatic-aberration::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    opacity: 0.7;
+  }
+
+  .chromatic-aberration::before {
+    background: inherit;
+    filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='r'%3E%3CfeColorMatrix values='1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3C/svg%3E#r");
+    transform: translateX(calc(var(--chromatic-offset, 0px) * -1));
+  }
+
+  .chromatic-aberration::after {
+    background: inherit;
+    filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='b'%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 1 0'/%3E%3C/filter%3E%3C/svg%3E#b");
+    transform: translateX(var(--chromatic-offset, 0px));
+  }
+
+  /* Simpler chromatic effect for text */
+  .chromatic-text {
+    text-shadow:
+      calc(var(--chromatic-offset, 2px) * -1) 0 rgba(255, 0, 0, 0.7),
+      var(--chromatic-offset, 2px) 0 rgba(0, 255, 255, 0.7);
+  }
+
+  /* === CRT SCANLINES (Global) === */
+  /* Horizontal lines that scroll slowly */
+  .crt-lines {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9997;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 2px,
+      rgba(0, 0, 0, 0.1) 2px,
+      rgba(0, 0, 0, 0.1) 4px
+    );
+    background-size: 100% 4px;
+    animation: scanline-scroll 10s linear infinite;
+    opacity: var(--scanline-opacity, 0);
+  }
+
+  @keyframes scanline-scroll {
+    0% { background-position: 0 0; }
+    100% { background-position: 0 100vh; }
+  }
+
+  /* === DUST PARTICLES === */
+  /* Floating particles in front of the "camera" */
+  .dust-particle {
+    position: fixed;
+    width: var(--size, 3px);
+    height: var(--size, 3px);
+    background: radial-gradient(circle, rgba(255, 250, 240, 0.8) 0%, rgba(255, 250, 240, 0) 70%);
+    border-radius: 50%;
+    pointer-events: none;
+    filter: blur(1px);
+    animation: dust-float var(--duration, 20s) linear infinite;
+    opacity: var(--opacity, 0.6);
+  }
+
+  @keyframes dust-float {
+    0% {
+      transform: translate(0, 100vh) rotate(0deg);
+      opacity: 0;
+    }
+    10% {
+      opacity: var(--opacity, 0.6);
+    }
+    90% {
+      opacity: var(--opacity, 0.6);
+    }
+    100% {
+      transform: translate(var(--drift, 50px), -100px) rotate(360deg);
+      opacity: 0;
+    }
+  }
+
+  /* === PAPER TEXTURES & TORN EDGES === */
+
+  /* Newspaper clipping - yellowed, grainy */
+  .paper-newspaper {
+    background:
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.15'/%3E%3C/svg%3E"),
+      linear-gradient(
+        135deg,
+        hsl(45 30% 85%) 0%,
+        hsl(42 25% 80%) 50%,
+        hsl(38 20% 75%) 100%
+      );
+    filter: sepia(0.15) contrast(1.05);
+  }
+
+  /* Photo - glossy with slight reflection */
+  .paper-glossy {
+    background: linear-gradient(
+      145deg,
+      hsl(0 0% 98%) 0%,
+      hsl(0 0% 95%) 50%,
+      hsl(0 0% 92%) 100%
+    );
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.8),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.05);
+  }
+
+  .paper-glossy::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 60%;
+    bottom: 60%;
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.3) 0%,
+      transparent 50%
+    );
+    pointer-events: none;
+  }
+
+  /* Notebook paper - lined */
+  .paper-lined {
+    background:
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 23px,
+        rgba(180, 200, 220, 0.5) 23px,
+        rgba(180, 200, 220, 0.5) 24px
+      ),
+      linear-gradient(
+        to bottom,
+        hsl(45 20% 96%) 0%,
+        hsl(45 15% 94%) 100%
+      );
+    background-position: 0 8px;
+  }
+
+  /* Graph paper - grid */
+  .paper-grid {
+    background:
+      repeating-linear-gradient(
+        to right,
+        transparent 0px,
+        transparent 19px,
+        rgba(180, 200, 220, 0.3) 19px,
+        rgba(180, 200, 220, 0.3) 20px
+      ),
+      repeating-linear-gradient(
+        to bottom,
+        transparent 0px,
+        transparent 19px,
+        rgba(180, 200, 220, 0.3) 19px,
+        rgba(180, 200, 220, 0.3) 20px
+      ),
+      linear-gradient(
+        to bottom,
+        hsl(45 15% 97%) 0%,
+        hsl(45 10% 95%) 100%
+      );
+  }
+
+  /* Torn paper edges */
+  .torn-edge-top {
+    clip-path: polygon(
+      0% 4%, 3% 0%, 8% 3%, 12% 1%, 18% 4%, 22% 0%, 28% 2%, 33% 0%,
+      38% 3%, 45% 1%, 52% 4%, 58% 0%, 65% 2%, 72% 0%, 78% 3%, 85% 1%,
+      92% 4%, 97% 0%, 100% 3%, 100% 100%, 0% 100%
+    );
+  }
+
+  .torn-edge-bottom {
+    clip-path: polygon(
+      0% 0%, 100% 0%, 100% 96%, 97% 100%, 92% 96%, 85% 99%, 78% 97%,
+      72% 100%, 65% 98%, 58% 100%, 52% 96%, 45% 99%, 38% 97%, 33% 100%,
+      28% 98%, 22% 100%, 18% 96%, 12% 99%, 8% 97%, 3% 100%, 0% 96%
+    );
+  }
+
+  .torn-edge-all {
+    clip-path: polygon(
+      2% 4%, 5% 0%, 10% 3%, 15% 1%, 20% 4%, 28% 0%, 35% 2%, 42% 0%,
+      50% 3%, 58% 1%, 65% 4%, 72% 0%, 80% 2%, 88% 0%, 95% 3%, 98% 1%,
+      100% 5%, 97% 12%, 100% 20%, 98% 28%, 100% 35%, 97% 42%, 100% 50%,
+      98% 58%, 100% 65%, 97% 72%, 100% 80%, 98% 88%, 100% 95%, 97% 98%,
+      92% 96%, 85% 100%, 78% 97%, 70% 100%, 62% 97%, 55% 100%, 48% 97%,
+      40% 100%, 32% 97%, 25% 100%, 18% 97%, 10% 100%, 3% 97%, 0% 95%,
+      3% 88%, 0% 80%, 2% 72%, 0% 65%, 3% 58%, 0% 50%, 2% 42%, 0% 35%,
+      3% 28%, 0% 20%, 2% 12%, 0% 5%
+    );
+  }
+
+  /* Coffee stain overlay */
+  .coffee-stain {
+    position: relative;
+  }
+
+  .coffee-stain::after {
+    content: "";
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse at center,
+      transparent 40%,
+      rgba(139, 90, 43, 0.15) 50%,
+      rgba(139, 90, 43, 0.1) 60%,
+      transparent 70%
+    );
+    pointer-events: none;
+    top: var(--stain-top, 20%);
+    left: var(--stain-left, 60%);
+    transform: rotate(var(--stain-rotate, 15deg)) scale(var(--stain-scale, 1));
+  }
+
+  /* === TAPE EFFECTS === */
+
+  .tape {
+    position: absolute;
+    width: 60px;
+    height: 20px;
+    background: linear-gradient(
+      to bottom,
+      rgba(255, 248, 220, 0.85) 0%,
+      rgba(245, 235, 200, 0.9) 50%,
+      rgba(235, 220, 180, 0.85) 100%
+    );
+    transform: rotate(var(--tape-angle, -5deg));
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.3);
+    opacity: 0.9;
+    z-index: 10;
+  }
+
+  .tape::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background:
+      repeating-linear-gradient(
+        90deg,
+        transparent 0px,
+        transparent 3px,
+        rgba(0, 0, 0, 0.02) 3px,
+        rgba(0, 0, 0, 0.02) 4px
+      );
+  }
+
+  .tape-top {
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%) rotate(var(--tape-angle, 0deg));
+  }
+
+  .tape-corner-left {
+    top: -5px;
+    left: -15px;
+    transform: rotate(-45deg);
+  }
+
+  .tape-corner-right {
+    top: -5px;
+    right: -15px;
+    transform: rotate(45deg);
+  }
+
+  /* Paper clip */
+  .paperclip {
+    position: absolute;
+    width: 20px;
+    height: 50px;
+    border: 3px solid #888;
+    border-radius: 10px 10px 0 0;
+    border-bottom: none;
+    top: -15px;
+    right: 10px;
+    transform: rotate(var(--clip-angle, 5deg));
+    z-index: 10;
+  }
+
+  .paperclip::before {
+    content: "";
+    position: absolute;
+    width: 12px;
+    height: 35px;
+    border: 3px solid #888;
+    border-radius: 6px 6px 0 0;
+    border-bottom: none;
+    top: 10px;
+    left: 1px;
+  }
+
+  /* === DEEP SHADOWS ON DRAG === */
+
+  .evidence-card.dragging,
+  .evidence-card:active {
+    box-shadow:
+      8px 16px 40px rgba(0, 0, 0, 0.5),
+      4px 8px 20px rgba(0, 0, 0, 0.35),
+      2px 4px 10px rgba(0, 0, 0, 0.25),
+      0 0 0 1px rgba(0, 0, 0, 0.1) !important;
+    transform: rotate(var(--rotation, 0deg)) scale(1.05) translateY(-8px);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+  }
+
+  /* Settled shadow - when dropped */
+  .evidence-card.dropped {
+    animation: settle-shadow 0.3s ease forwards;
+  }
+
+  @keyframes settle-shadow {
+    0% {
+      box-shadow:
+        8px 16px 40px rgba(0, 0, 0, 0.5),
+        4px 8px 20px rgba(0, 0, 0, 0.35);
+      transform: rotate(var(--rotation, 0deg)) scale(1.05) translateY(-8px);
+    }
+    100% {
+      box-shadow:
+        2px 4px 12px rgba(0, 0, 0, 0.35),
+        1px 2px 4px rgba(0, 0, 0, 0.2);
+      transform: rotate(var(--rotation, 0deg)) scale(1) translateY(0);
+    }
+  }
+
+  /* === HANDWRITING FONT VARIANTS === */
+
+  .handwriting-1 { font-family: 'Permanent Marker', cursive; }
+  .handwriting-2 { font-family: 'Caveat', cursive; }
+  .handwriting-3 { font-family: 'Nanum Pen Script', cursive; }
+  .handwriting-4 { font-family: 'Rock Salt', cursive; }
+  .handwriting-5 { font-family: 'Shadows Into Light', cursive; }
+
+  /* === EKG / HEARTBEAT SANITY METER === */
+
+  .ekg-container {
+    position: relative;
+    width: 120px;
+    height: 40px;
+    background: rgba(0, 0, 0, 0.8);
+    border: 1px solid rgba(0, 255, 0, 0.3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .ekg-container::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+      to bottom,
+      transparent 0px,
+      transparent 1px,
+      rgba(0, 255, 0, 0.1) 1px,
+      rgba(0, 255, 0, 0.1) 2px
+    );
+    pointer-events: none;
+  }
+
+  .ekg-line {
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    fill: none;
+    filter: drop-shadow(0 0 3px currentColor);
+  }
+
+  .ekg-pulse {
+    animation: ekg-beep var(--pulse-rate, 1s) ease-in-out infinite;
+  }
+
+  @keyframes ekg-beep {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+  }
+
+  /* Critical EKG - faster, erratic */
+  .ekg-critical {
+    animation:
+      ekg-beep 0.3s ease-in-out infinite,
+      ekg-shake 0.1s linear infinite;
+  }
+
+  @keyframes ekg-shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-1px); }
+    75% { transform: translateX(1px); }
+  }
+
+  /* Flatline animation */
+  .ekg-flatline {
+    animation: flatline-beep 2s ease-in-out infinite;
+  }
+
+  @keyframes flatline-beep {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  /* === TYPEWRITER TEXT EFFECT === */
+
+  .typewriter-text {
+    font-family: 'Special Elite', 'Courier Prime', monospace;
+    position: relative;
+  }
+
+  /* Ink bleed effect */
+  .typewriter-text::before {
+    content: attr(data-text);
+    position: absolute;
+    inset: 0;
+    color: inherit;
+    filter: blur(0.5px);
+    opacity: 0.3;
+    transform: translate(0.5px, 0.5px);
+  }
+
+  /* Smudge overlay */
+  .ink-smudge {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='3' result='n'/%3E%3CfeDisplacementMap in='SourceGraphic' in2='n' scale='3' xChannelSelector='R' yChannelSelector='G'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23s)'/%3E%3C/svg%3E");
+    filter: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='s'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04' numOctaves='2'/%3E%3CfeDisplacementMap in='SourceGraphic' scale='2'/%3E%3C/filter%3E%3C/svg%3E#s");
+  }
+
+  /* === FLASHLIGHT / SPOTLIGHT EFFECT === */
+
+  .flashlight-overlay {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 9996;
+    background: radial-gradient(
+      circle 150px at var(--mouse-x, 50%) var(--mouse-y, 50%),
+      transparent 0%,
+      rgba(0, 0, 0, 0.1) 30%,
+      rgba(0, 0, 0, 0.5) 70%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    transition: background 0.05s ease;
+    opacity: var(--flashlight-intensity, 0);
+  }
+
+  /* === POLAROID FRAME === */
+
+  .polaroid-frame {
+    background: linear-gradient(
+      to bottom,
+      #fefefe 0%,
+      #f8f8f8 100%
+    );
+    padding: 8px 8px 40px 8px;
+    box-shadow:
+      0 3px 10px rgba(0, 0, 0, 0.2),
+      0 1px 3px rgba(0, 0, 0, 0.1),
+      inset 0 0 0 1px rgba(0, 0, 0, 0.05);
+  }
+
+  .polaroid-frame::after {
+    content: attr(data-caption);
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    right: 8px;
+    text-align: center;
+    font-family: 'Permanent Marker', cursive;
+    font-size: 12px;
+    color: #333;
+  }
+
+  /* === SCREEN FLICKER (Anxiety) === */
+
+  .screen-flicker {
+    animation: anxiety-flicker 0.15s linear infinite;
+  }
+
+  @keyframes anxiety-flicker {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.98; }
+    75% { opacity: 0.96; }
+  }
+
+  /* Heavy flicker for critical state */
+  .screen-flicker-heavy {
+    animation: heavy-flicker 0.1s linear infinite;
+  }
+
+  @keyframes heavy-flicker {
+    0%, 100% { opacity: 1; filter: brightness(1); }
+    25% { opacity: 0.95; filter: brightness(1.05); }
+    50% { opacity: 0.92; filter: brightness(0.98); }
+    75% { opacity: 0.97; filter: brightness(1.02); }
   }
 }

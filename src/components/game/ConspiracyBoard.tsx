@@ -23,6 +23,7 @@ import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
 import { Scribble } from "./Scribble";
 import { ParticleBurst } from "./ParticleBurst";
+import { AnalogFilters } from "./AnalogFilters";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
@@ -469,6 +470,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* UV Light Overlay (visual only) */}
       <UVOverlay isEnabled={false} />
+
+      {/* 90s Analog Aesthetic Filters - Film grain, vignette, dust */}
+      <AnalogFilters
+        sanity={sanity}
+        enableFilmGrain={true}
+        enableVignette={true}
+        enableDust={true}
+        enableScanlines={false}
+      />
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={sanity} />
