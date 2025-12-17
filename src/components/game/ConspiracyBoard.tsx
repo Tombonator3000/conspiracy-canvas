@@ -58,13 +58,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     mistakes,
     threadColor,
     lastAction,
-    isUVEnabled,
-    shakingNodeIds,
     scribbles,
     setNodes,
     setEdges,
     setRequiredTags,
     setThreadColor,
+    removeScribble,
     onNodesChange,
     onConnect,
     onNodeDragStop,
@@ -335,15 +334,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         />
       </ReactFlow>
 
-      {/* UV Light Overlay */}
-      <UVOverlay isEnabled={isUVEnabled} />
-
-      {/* Scribbles Layer */}
-      <AnimatePresence>
-        {scribbles.map(scribble => (
-          <Scribble key={scribble.id} scribble={scribble} />
+      {/* SCRIBBLE LAYER - Floating handwritten feedback */}
+      <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+        {scribbles.map((scribble) => (
+          <Scribble
+            key={scribble.id}
+            scribble={scribble}
+            onRemove={() => removeScribble(scribble.id)}
+          />
         ))}
-      </AnimatePresence>
+      </div>
+
+      {/* UV Light Overlay (visual only) */}
+      <UVOverlay isEnabled={false} />
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={sanity} />

@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
-import { EvidenceNode, Combination } from '@/types/game';
+import { EvidenceNode, Combination, Scribble } from '@/types/game';
 import { allCases } from '@/data/cases';
 
 interface Scribble {
@@ -20,6 +20,7 @@ interface GameState {
   isVictory: boolean;
   isGameOver: boolean;
   threadColor: 'red' | 'blue';
+  scribbles: Scribble[];
 
   // LEVEL TRACKING
   currentLevelIndex: number;
@@ -43,6 +44,10 @@ interface GameState {
   setEdges: (edges: Edge[]) => void;
   setRequiredTags: (tags: string[]) => void;
   setThreadColor: (color: 'red' | 'blue') => void;
+
+  // SCRIBBLE ACTIONS
+  addScribble: (text: string, x: number, y: number) => void;
+  removeScribble: (id: string) => void;
 
   // LEVEL ACTIONS
   loadLevel: (index: number) => void;
@@ -97,6 +102,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   isVictory: false,
   isGameOver: false,
   threadColor: 'red',
+  scribbles: [],
 
   // Level Tracking
   currentLevelIndex: 0,
@@ -133,6 +139,31 @@ export const useGameStore = create<GameState>((set, get) => ({
   setRequiredTags: (tags) => set({ requiredTags: tags }),
   setThreadColor: (color) => set({ threadColor: color }),
 
+  // Scribble Actions
+  addScribble: (text, x, y) => {
+    const newScribble: Scribble = {
+      id: `scr-${Date.now()}-${Math.random()}`,
+      text,
+      x,
+      y,
+      rotation: Math.random() * 20 - 10
+    };
+
+    // Keep max 5 scribbles to avoid clutter
+    set(state => ({
+      scribbles: [...state.scribbles.slice(-4), newScribble]
+    }));
+
+    // Auto-remove after 4 seconds for a "fleeting thought" effect
+    setTimeout(() => {
+      get().removeScribble(newScribble.id);
+    }, 4000);
+  },
+
+  removeScribble: (id) => {
+    set(state => ({ scribbles: state.scribbles.filter(s => s.id !== id) }));
+  },
+
   // Level Management
   loadLevel: (index) => {
     const level = allCases[index];
@@ -156,8 +187,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       startTime: Date.now(),
       requiredTags: level.requiredTags || [],
       lastAction: null,
-      isUVEnabled: false,
-      shakingNodeIds: [],
       scribbles: [],
     });
 
@@ -356,6 +385,14 @@ export const useGameStore = create<GameState>((set, get) => ({
         lastAction: { type: isJunk ? 'TRASH_SUCCESS' : 'TRASH_FAIL', id: Date.now() }
       };
     });
+
+    // Spawn scribble feedback after state update
+    if (!isJunk) {
+      const failTexts = ["I NEEDED THAT!", "NO NO NO!", "CRITICAL EVIDENCE!", "WHAT HAVE I DONE?", "THEY WANTED THIS"];
+      const randomText = failTexts[Math.floor(Math.random() * failTexts.length)];
+      // Spawn scribble near center of screen with some randomness
+      get().addScribble(randomText, 200 + Math.random() * 400, 150 + Math.random() * 200);
+    }
   },
 
   modifySanity: (delta) => {
@@ -383,9 +420,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       mistakes: 0,
       startTime: Date.now(),
       lastAction: null,
-      isUVEnabled: false,
-      shakingNodeIds: [],
-      scribbles: []
+      scribbles: [],
     });
   },
 
