@@ -94,7 +94,16 @@ const createInitialNodes = (
       id: node.id,
       type: "evidence",
       position: node.position,
-      data: { ...node, isUVEnabled, rotation, isLinkMode, isDesktop, nodeScribbles: scribbles },
+      data: {
+        ...node,
+        // EXPLICITLY INJECT TRUTH TAGS HERE to ensure they never depend on a lookup later
+        truthTags: node.truthTags || [],
+        isUVEnabled,
+        rotation,
+        isLinkMode,
+        isDesktop,
+        nodeScribbles: scribbles
+      },
       // On desktop, nodes are always draggable (drag from paper content)
       draggable: isDesktop ? true : isDraggable,
       zIndex,
@@ -500,72 +509,75 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     ).length;
   }, [nodes, caseData.nodes]);
 
-  // WIN CONDITION CHECK: Trigger whenever edges or nodes change
-  // This ensures we check victory AFTER state has been updated (not during callbacks)
+  // WIN CONDITION CHECK: Robust version that re-calculates nodes to ensure latest tags
+  // This fixes the "stale state" bug where truthTags gets lost during React's render cycle
   useEffect(() => {
-    console.log('=== WIN CONDITION useEffect TRIGGERED ===');
-    console.log('  Edges count:', edges.length);
-    console.log('  Nodes count:', nodes.length);
-    console.log('  allEvidenceNodes count:', allEvidenceNodes.length);
-    console.log('  Required tags:', caseData.requiredTags);
-    console.log('  Game over?', gameState.isGameOver);
-    console.log('  Already victory?', gameState.isVictory);
+    // 1. Safety Checks
+    if (gameState.isVictory || gameState.isGameOver) return;
 
-    // Don't check if game is already over
-    if (gameState.isVictory || gameState.isGameOver) {
-      console.log('  Skipping: game already ended');
-      return;
-    }
+    // 2. Wait for edges to exist
+    if (edges.length === 0) return;
 
-    // Don't check if no requiredTags defined
-    if (!caseData.requiredTags || caseData.requiredTags.length === 0) {
-      console.log('  Skipping: no requiredTags defined');
-      if (gameState.missingTags.length > 0) {
-        setGameState((prev) => ({ ...prev, missingTags: [] }));
+    // 3. Re-calculate active nodes to ensure latest tags are present
+    // (We manually merge active node state with CaseData to guarantee tags exist)
+    const currentActiveNodes = nodes.map(n => {
+      const original = caseData.nodes.find(od => od.id === n.id);
+      // Also check combination result nodes for spawned nodes
+      let comboResultNode: EvidenceNodeType | undefined;
+      if (caseData.combinations) {
+        for (const combo of caseData.combinations) {
+          const found = combo.resultNodes.find(rn => rn.id === n.id);
+          if (found) {
+            comboResultNode = found;
+            break;
+          }
+        }
       }
-      return;
-    }
+      // Prioritize: 1. Data in Node, 2. Original Case Data, 3. Combo Result, 4. Empty
+      const nodeData = n.data as unknown as EvidenceNodeType;
+      const tags = (nodeData.truthTags && nodeData.truthTags.length > 0)
+        ? nodeData.truthTags
+        : (original?.truthTags && original.truthTags.length > 0)
+          ? original.truthTags
+          : (comboResultNode?.truthTags || []);
+      return { ...nodeData, id: n.id, truthTags: tags } as EvidenceNodeType;
+    });
 
-    // Must have at least some edges to win
-    if (edges.length === 0) {
-      console.log('  Skipping: no edges yet');
-      if (gameState.missingTags.length > 0) {
-        setGameState((prev) => ({ ...prev, missingTags: [] }));
-      }
-      return;
-    }
-
-    console.log('  Running checkWinConditionDetailed...');
-
-    // Perform the win condition check with the current state
-    const winEdges = toWinValidationEdges(edges);
-    console.log('  Win validation edges:', winEdges);
-
-    const { isVictory, missingTags, collectedTags, winningClusterNodeIds } = checkWinConditionDetailed(
-      allEvidenceNodes,
-      winEdges,
-      caseData.requiredTags
+    // 4. Run the Detailed Win Check
+    const { isVictory, missingTags } = checkWinConditionDetailed(
+      currentActiveNodes,
+      toWinValidationEdges(edges),
+      caseData.requiredTags || []
     );
 
-    console.log('  Result: isVictory =', isVictory);
-    console.log('  Result: missingTags =', missingTags);
-    console.log('  Result: collectedTags =', collectedTags);
-    console.log('  Result: winningClusterNodeIds =', winningClusterNodeIds);
-
-    if (isVictory && !gameState.isVictory) {
-      console.log('🎉🎉🎉 VICTORY detected in useEffect! Setting isVictory = true 🎉🎉🎉');
-      setGameState((prev) => ({
+    // 5. Trigger State Update ONLY if changed
+    if (isVictory) {
+      console.log("🏆 VICTORY TRIGGERED - Cluster found:", caseData.requiredTags);
+      playSFX("connect_success");
+      setGameState(prev => ({
         ...prev,
         isVictory: true,
         missingTags: [],
+        validConnections: caseData.requiredTags?.length || 0
       }));
-    } else if (!isVictory) {
-      setGameState((prev) => ({
-        ...prev,
-        missingTags: missingTags || [],
-      }));
+    } else {
+      // Only update missing tags if they changed to avoid re-renders
+      setGameState(prev => {
+        if (JSON.stringify(prev.missingTags) === JSON.stringify(missingTags)) return prev;
+        return { ...prev, missingTags: missingTags || [] };
+      });
     }
-  }, [edges, nodes, allEvidenceNodes, caseData.requiredTags, gameState.isVictory, gameState.isGameOver, gameState.missingTags.length]);
+  }, [edges, nodes, caseData.requiredTags, caseData.nodes, caseData.combinations, gameState.isVictory, gameState.isGameOver, playSFX]);
+
+  // IMMEDIATE GAME OVER CHECK: Watches sanity specifically to trigger game over immediately
+  // This fixes the bug where Game Over state lags behind the Sanity update
+  useEffect(() => {
+    if (gameState.sanity <= 0 && !gameState.isGameOver) {
+      console.log("💀 GAME OVER TRIGGERED - Sanity reached 0");
+      setGameState(prev => ({ ...prev, isGameOver: true }));
+      playSFX("connect_fail");
+    }
+  }, [gameState.sanity, gameState.isGameOver, playSFX]);
 
   // Handle game end
   useEffect(() => {
