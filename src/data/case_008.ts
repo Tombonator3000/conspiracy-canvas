@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { microwaveGlow, popcornTime, rotatingPlate } from "@/assets/evidence";
+import { microwaveGlow, popcornTime, rotatingPlate, tinFoil, powerCord } from "@/assets/evidence";
 
 export const case008: CaseData = {
   id: "case_008_microwave",
@@ -107,7 +107,7 @@ export const case008: CaseData = {
       id: "ev_tin_foil",
       type: "photo",
       title: "Tin Foil Warning",
-      contentUrl: null,
+      contentUrl: tinFoil,
       description:
         "They say DON'T put metal in microwave. Because metal BLOCKS temporal waves!",
       tags: ["METAL", "WARNING"],
@@ -161,7 +161,7 @@ export const case008: CaseData = {
       id: "ev_power_cord",
       type: "photo",
       title: "Suspicious Power Cord",
-      contentUrl: null,
+      contentUrl: powerCord,
       description:
         "Three prongs. THREE. Why does time need three dimensions? UNRELATED.",
       tags: ["ELECTRIC", "PRONGS"],

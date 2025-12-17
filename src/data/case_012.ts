@@ -1,4 +1,5 @@
 import type { CaseData } from "@/types/game";
+import { reptilianEye, awkwardCeo, indoorSunglasses, bodyguard, unblinkingStare } from "@/assets/evidence";
 
 export const case012: CaseData = {
   id: "case_012_reptilians",
@@ -23,7 +24,7 @@ export const case012: CaseData = {
       id: "ev_eye_glitch",
       type: "photo",
       title: "Press Conference Glitch",
-      contentUrl: null,
+      contentUrl: reptilianEye,
       description: "Screenshot from live TV. World leader's pupil briefly goes VERTICAL. 'Camera glitch' says network. Camera doesn't affect PUPILS.",
       tags: ["REPTILIAN", "EYES", "GLITCH"],
       position: { x: 140, y: 100 },

@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { cloudDisk, serverSmoke, umbrella } from "@/assets/evidence";
+import { cloudDisk, serverSmoke, umbrella, airplaneClouds, puddleReflection } from "@/assets/evidence";
 
 export const case004: CaseData = {
   id: "case_004_cloud",
@@ -152,7 +152,7 @@ export const case004: CaseData = {
       id: "ev_airplane_photo",
       type: "photo",
       title: "Airplane Window Shot",
-      contentUrl: null,
+      contentUrl: airplaneClouds,
       description: "Flew through clouds. Data transfer? Or just turbulence?",
       tags: ["PLANE", "VIEW"],
       position: { x: 250, y: 450 },
@@ -182,7 +182,7 @@ export const case004: CaseData = {
       id: "ev_puddle_photo",
       type: "photo",
       title: "Puddle Reflection",
-      contentUrl: null,
+      contentUrl: puddleReflection,
       description: "Water on ground. DATA on ground? No, just water.",
       tags: ["WATER", "GROUND"],
       position: { x: 350, y: 480 },

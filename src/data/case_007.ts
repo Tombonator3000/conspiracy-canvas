@@ -1,5 +1,5 @@
 import type { CaseData } from "@/types/game";
-import { iphone1912, fakeIceberg, titanicMovie } from "@/assets/evidence";
+import { iphone1912, fakeIceberg, titanicMovie, vintageViolin } from "@/assets/evidence";
 
 export const case007: CaseData = {
   id: "case_007_titanic",
@@ -185,7 +185,7 @@ export const case007: CaseData = {
       id: "ev_violin",
       type: "photo",
       title: "Violin Photo",
-      contentUrl: null,
+      contentUrl: vintageViolin,
       description: "Recovered from wreck. Music plays emotions. Emotions are timeless. Therefore... NOTHING.",
       tags: ["MUSIC", "INSTRUMENT"],
       position: { x: 80, y: 480 },
