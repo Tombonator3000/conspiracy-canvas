@@ -101,6 +101,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [isBinHighlighted, setIsBinHighlighted] = useState(false);
   const binRef = useRef<HTMLDivElement>(null);
   const draggedNodeRef = useRef<string | null>(null);
+  const gameEndTriggeredRef = useRef(false);
 
   // Helper: Find overlapping node based on simple distance check
   const findOverlappingNode = useCallback((draggedNode: { id: string; position: { x: number; y: number } }) => {
@@ -203,33 +204,48 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     updateSanity(sanity);
   }, [sanity, updateSanity]);
 
-  // Handle victory/game over condition
+  // Handle victory/game over condition - FIXED: prevent double-triggering
   useEffect(() => {
-    if (isVictory || isGameOver) {
+    // Only trigger once per game session
+    if ((isVictory || isGameOver) && !gameEndTriggeredRef.current) {
+      gameEndTriggeredRef.current = true;
+
       // Count remaining junk/red herrings that weren't binned
       const remainingJunk = nodes.filter(n => {
         const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
         return truthTags.length === 0; // No tags = junk
       }).length;
 
+      // Capture current values to avoid stale closures
+      const finalSanity = sanity;
+      const finalScore = score;
+      const finalJunkBinned = junkBinned;
+      const victory = isVictory;
+
       // Delay slightly for final sound effect to play
-      setTimeout(() => {
-        console.log(isVictory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", score);
-        onGameEnd(isVictory, sanity, score, {
-          credibility: isVictory ? 100 : 0,
-          cleanupBonus: junkBinned * 100,
-          trashedJunkCount: junkBinned,
+      const timeoutId = setTimeout(() => {
+        console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
+        onGameEnd(victory, finalSanity, finalScore, {
+          credibility: victory ? 100 : 0,
+          cleanupBonus: finalJunkBinned * 100,
+          trashedJunkCount: finalJunkBinned,
           junkRemaining: remainingJunk
         });
       }, 1500);
+
+      return () => clearTimeout(timeoutId);
     }
   }, [isVictory, isGameOver, sanity, score, junkBinned, nodes, onGameEnd]);
 
+  // Reset the trigger ref when starting a new game
+  useEffect(() => {
+    if (!isVictory && !isGameOver) {
+      gameEndTriggeredRef.current = false;
+    }
+  }, [isVictory, isGameOver]);
+
   // Helper: Check if node is over the bin
   const isNodeOverBin = useCallback((event: React.MouseEvent | React.TouchEvent) => {
-    if (!binRef.current) return false;
-
-    const binRect = binRef.current.getBoundingClientRect();
     let clientX: number, clientY: number;
 
     // For touch events, check changedTouches first (for touchend events)
@@ -248,12 +264,26 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       return isBinHighlighted;
     }
 
-    return (
-      clientX >= binRect.left &&
-      clientX <= binRect.right &&
-      clientY >= binRect.top &&
-      clientY <= binRect.bottom
-    );
+    // FIXED: Use a generous 150px zone from the bottom-right corner
+    // This is more reliable than getBoundingClientRect on mobile
+    const isInCornerZone =
+      clientX > window.innerWidth - 150 &&
+      clientY > window.innerHeight - 150;
+
+    // Also check the actual bin bounds if available (for precision)
+    if (binRef.current) {
+      const binRect = binRef.current.getBoundingClientRect();
+      const isOverBinElement = (
+        clientX >= binRect.left &&
+        clientX <= binRect.right &&
+        clientY >= binRect.top &&
+        clientY <= binRect.bottom
+      );
+      // Return true if over the bin element OR in the generous corner zone
+      return isOverBinElement || isInCornerZone;
+    }
+
+    return isInCornerZone;
   }, [isBinHighlighted]);
 
   // Handle node drag - check if hovering over bin
@@ -414,7 +444,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       </ReactFlow>
 
       {/* SCRIBBLE LAYER - Floating handwritten feedback */}
-      <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+      <div className="absolute inset-0 pointer-events-none z-[55] overflow-hidden">
         {scribbles.map((scribble) => (
           <Scribble
             key={scribble.id}
@@ -425,7 +455,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       </div>
 
       {/* PARTICLE EFFECT LAYER - Merge burst effects */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden z-40">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-[60]">
         {bursts.map((burst) => {
           // Convert flow coordinates to screen coordinates
           const screenPos = flowToScreenPosition({ x: burst.x, y: burst.y });
