@@ -10,6 +10,12 @@ interface GameState {
   requiredTags: string[];
   isVictory: boolean;
 
+  // SCORING DATA
+  score: number;
+  junkBinned: number;
+  mistakes: number;
+  startTime: number;
+
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -19,6 +25,7 @@ interface GameState {
   onConnect: (connection: Connection) => void;
   onNodeDragStop: (id: string, position: {x: number, y: number}) => void;
   checkCombine: (sourceId: string, targetId: string, availableCombinations: Combination[]) => void;
+  trashNode: (id: string, isJunk: boolean) => void;
   resetLevel: () => void;
 
   // Internal helper
@@ -32,7 +39,21 @@ export const useGameStore = create<GameState>((set, get) => ({
   requiredTags: [],
   isVictory: false,
 
-  setNodes: (nodes) => set({ nodes }),
+  // Initial Score State
+  score: 0,
+  junkBinned: 0,
+  mistakes: 0,
+  startTime: Date.now(),
+
+  setNodes: (nodes) => set({
+    nodes,
+    startTime: Date.now(),
+    isVictory: false,
+    score: 0,
+    junkBinned: 0,
+    mistakes: 0,
+    sanity: 100
+  }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
 
@@ -127,13 +148,49 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
   },
 
+  trashNode: (id, isJunk) => {
+    set(state => {
+      // 1. Remove Node
+      const newNodes = state.nodes.filter(n => n.id !== id);
+      const newEdges = state.edges.filter(e => e.source !== id && e.target !== id);
+
+      // 2. Calculate Penalty/Reward
+      let newSanity = state.sanity;
+      let newScore = state.score;
+      let newJunkCount = state.junkBinned;
+      let newMistakes = state.mistakes;
+
+      if (isJunk) {
+        // Good job!
+        newScore += 100;
+        newJunkCount += 1;
+        console.log('🗑️ Junk binned! +100 points');
+      } else {
+        // Oh no, deleted evidence!
+        newSanity -= 20;
+        newScore -= 200;
+        newMistakes += 1;
+        console.log('❌ Evidence destroyed! -200 points, -20 sanity');
+      }
+
+      return {
+        nodes: newNodes,
+        edges: newEdges,
+        sanity: newSanity,
+        score: newScore,
+        junkBinned: newJunkCount,
+        mistakes: newMistakes
+      };
+    });
+  },
+
   resetLevel: () => {
     // Temporary Reset
-    set({ nodes: [], edges: [], sanity: 100, requiredTags: [], isVictory: false });
+    set({ nodes: [], edges: [], sanity: 100, requiredTags: [], isVictory: false, score: 0, junkBinned: 0, mistakes: 0, startTime: Date.now() });
   },
 
   validateWin: () => {
-    const { nodes, edges, requiredTags } = get();
+    const { nodes, edges, requiredTags, sanity, junkBinned, mistakes } = get();
     if (!requiredTags || requiredTags.length === 0) return;
 
     // 1. Build Bidirectional Graph
@@ -179,6 +236,15 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    if (victory) set({ isVictory: true });
+    if (victory) {
+      // Calculate Final Score
+      // Base: 1000
+      // + Sanity * 10
+      // + Junk * 100
+      // - Mistakes * 200
+      const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
+      console.log(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
+      set({ isVictory: true, score: finalScore });
+    }
   }
 }));
