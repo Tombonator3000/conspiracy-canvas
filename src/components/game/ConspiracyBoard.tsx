@@ -75,8 +75,10 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     nodes,
     edges,
     sanity,
+    isVictory,
     setNodes,
     setEdges,
+    setRequiredTags,
     onConnect,
     onNodeDragStop,
     checkCombine,
@@ -105,7 +107,21 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     const initialNodes = createInitialNodes(caseData);
     setNodes(initialNodes);
     setEdges([]);
-  }, [caseData, setNodes, setEdges]);
+    setRequiredTags(caseData.requiredTags || []);
+  }, [caseData, setNodes, setEdges, setRequiredTags]);
+
+  // Handle victory condition
+  useEffect(() => {
+    if (isVictory) {
+      console.log("🎉 Victory detected! Triggering game end...");
+      onGameEnd(true, sanity, edges.length, {
+        truthfulConnections: edges.length,
+        falseConnections: 0,
+        missedTruths: 0,
+        accuracy: 100
+      });
+    }
+  }, [isVictory, sanity, edges.length, onGameEnd]);
 
   // Handle node drag stop - update store and check for combinations
   const handleNodeDragStop = useCallback((_event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {

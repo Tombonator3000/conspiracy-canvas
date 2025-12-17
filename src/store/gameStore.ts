@@ -7,25 +7,34 @@ interface GameState {
   nodes: Node[];
   edges: Edge[];
   sanity: number;
+  requiredTags: string[];
+  isVictory: boolean;
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
+  setRequiredTags: (tags: string[]) => void;
 
   // LOGIC ACTIONS (Synchronous & Immediate)
   onConnect: (connection: Connection) => void;
   onNodeDragStop: (id: string, position: {x: number, y: number}) => void;
   checkCombine: (sourceId: string, targetId: string, availableCombinations: Combination[]) => void;
   resetLevel: () => void;
+
+  // Internal helper
+  validateWin: () => void;
 }
 
 export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
   sanity: 100,
+  requiredTags: [],
+  isVictory: false,
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
+  setRequiredTags: (tags) => set({ requiredTags: tags }),
 
   onConnect: (params) => {
     // 1. Immediate visual feedback
@@ -38,8 +47,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     set(state => ({ edges: [...state.edges, newEdge] }));
 
-    // 2. Log connection (We will add Win Logic here later)
+    // 2. Log connection
     console.log(`🔗 Connected: ${params.source} <-> ${params.target}`);
+
+    // 3. Check for win condition
+    get().validateWin();
   },
 
   onNodeDragStop: (id, position) => {
@@ -109,11 +121,64 @@ export const useGameStore = create<GameState>((set, get) => ({
           e.source !== targetId && e.target !== targetId
         )
       }));
+
+      // 6. Check for win condition after combination
+      get().validateWin();
     }
   },
 
   resetLevel: () => {
     // Temporary Reset
-    set({ nodes: [], edges: [], sanity: 100 });
+    set({ nodes: [], edges: [], sanity: 100, requiredTags: [], isVictory: false });
+  },
+
+  validateWin: () => {
+    const { nodes, edges, requiredTags } = get();
+    if (!requiredTags || requiredTags.length === 0) return;
+
+    // 1. Build Bidirectional Graph
+    const adj = new Map<string, string[]>();
+    nodes.forEach(n => adj.set(n.id, []));
+    edges.forEach(e => {
+      adj.get(e.source)?.push(e.target);
+      adj.get(e.target)?.push(e.source);
+    });
+
+    // 2. Find Clusters (Flood Fill)
+    const visited = new Set<string>();
+    let victory = false;
+
+    for (const node of nodes) {
+      if (visited.has(node.id)) continue;
+
+      const clusterTags = new Set<string>();
+      const queue = [node.id];
+      visited.add(node.id);
+
+      while(queue.length > 0) {
+        const currId = queue.shift()!;
+        const currNode = nodes.find(n => n.id === currId);
+
+        // Collect Tags
+        (currNode?.data as { truthTags?: string[] }).truthTags?.forEach((t: string) => clusterTags.add(t));
+
+        // Visit Neighbors
+        adj.get(currId)?.forEach(neighbor => {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+          }
+        });
+      }
+
+      // 3. Check Logic
+      const missing = requiredTags.filter(t => !clusterTags.has(t));
+      if (missing.length === 0) {
+        victory = true;
+        console.log("🏆 WINNER! Tags found:", Array.from(clusterTags));
+      }
+    }
+
+    if (victory) set({ isVictory: true });
   }
 }));
