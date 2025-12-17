@@ -23,6 +23,7 @@ import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
 import { Scribble } from "./Scribble";
 import { ParticleBurst } from "./ParticleBurst";
+import { FBIOverlay } from "./FBIOverlay";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
@@ -307,6 +308,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }), [nodes, isUVEnabled, shakingNodeIds, sanity]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
+
+  // Render FBI Overlay when sanity reaches 0
+  if (isGameOver && sanity <= 0) {
+    return <FBIOverlay onRestart={() => window.location.reload()} />;
+  }
 
   return (
     <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden ${isVictory ? 'victory-glow' : ''}`}>
