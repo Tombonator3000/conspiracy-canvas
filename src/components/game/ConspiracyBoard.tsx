@@ -18,6 +18,7 @@ import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
+import { Scribble } from "./Scribble";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
@@ -56,10 +57,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     mistakes,
     threadColor,
     lastAction,
+    scribbles,
     setNodes,
     setEdges,
     setRequiredTags,
     setThreadColor,
+    removeScribble,
     onNodesChange,
     onConnect,
     onNodeDragStop,
@@ -313,6 +316,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           showInteractive={false}
         />
       </ReactFlow>
+
+      {/* SCRIBBLE LAYER - Floating handwritten feedback */}
+      <div className="absolute inset-0 pointer-events-none z-40 overflow-hidden">
+        {scribbles.map((scribble) => (
+          <Scribble
+            key={scribble.id}
+            scribble={scribble}
+            onRemove={() => removeScribble(scribble.id)}
+          />
+        ))}
+      </div>
 
       {/* UV Light Overlay (visual only) */}
       <UVOverlay isEnabled={false} />
