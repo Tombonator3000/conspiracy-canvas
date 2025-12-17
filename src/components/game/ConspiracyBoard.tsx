@@ -62,12 +62,6 @@ const createInitialNodes = (caseData: CaseData) => {
   });
 };
 
-// Connection line style
-const connectionLineStyle = {
-  stroke: 'hsl(350, 80%, 50%)',
-  strokeWidth: 3,
-  strokeLinecap: 'round' as const,
-};
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   // Zustand store - THE SINGLE SOURCE OF TRUTH
@@ -79,14 +73,23 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     score,
     junkBinned,
     mistakes,
+    threadColor,
     setNodes,
     setEdges,
     setRequiredTags,
+    setThreadColor,
     onConnect,
     onNodeDragStop,
     checkCombine,
     trashNode,
   } = useGameStore();
+
+  // Dynamic connection line style based on thread color
+  const connectionLineStyle = useMemo(() => ({
+    stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48',
+    strokeWidth: 3,
+    strokeLinecap: 'round' as const,
+  }), [threadColor]);
 
   // Bin state
   const [isBinHighlighted, setIsBinHighlighted] = useState(false);
@@ -218,6 +221,25 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       {/* HUD - Right side */}
       <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-50 flex flex-col gap-2 sm:gap-3 max-w-[140px] sm:max-w-none">
         <SanityMeter sanity={sanity} />
+      </div>
+
+      {/* Thread Mode Toggle */}
+      <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-black/50 p-2 rounded border border-white/10">
+        <span className="text-[10px] text-white font-mono uppercase">Thread Mode</span>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setThreadColor('red')}
+            className={`w-8 h-8 rounded-full border-2 transition-all ${threadColor === 'red' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
+            style={{ backgroundColor: '#e11d48' }}
+            title="Red Thread"
+          />
+          <button
+            onClick={() => setThreadColor('blue')}
+            className={`w-8 h-8 rounded-full border-2 transition-all ${threadColor === 'blue' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
+            style={{ backgroundColor: '#3b82f6' }}
+            title="Blue Thread"
+          />
+        </div>
       </div>
 
       {/* Evidence Bin */}
