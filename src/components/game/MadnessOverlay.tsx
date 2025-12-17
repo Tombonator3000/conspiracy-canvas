@@ -17,20 +17,7 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
 
   return (
     <>
-      {/* GAME OVER BLACKOUT - Full screen blur and blackout when sanity = 0 */}
-      <motion.div
-        className="fixed inset-0 pointer-events-none z-[100]"
-        style={{
-          backdropFilter: isGameOver ? 'blur(20px)' : 'blur(0px)',
-          WebkitBackdropFilter: isGameOver ? 'blur(20px)' : 'blur(0px)',
-        }}
-        initial={{ opacity: 0, backgroundColor: 'rgba(0, 0, 0, 0)' }}
-        animate={{
-          opacity: isGameOver ? 1 : 0,
-          backgroundColor: isGameOver ? 'rgba(0, 0, 0, 0.95)' : 'rgba(0, 0, 0, 0)',
-        }}
-        transition={{ duration: 1.5, ease: "easeInOut" }}
-      />
+      {/* GAME OVER BLACKOUT - Removed, GameOverScreen handles this now */}
 
       {/* Chromatic Aberration Effect - RGB Split as sanity drops */}
       {isVeryLow && !isGameOver && (
@@ -84,7 +71,7 @@ export const MadnessOverlay = ({ sanity }: MadnessOverlayProps) => {
       />
 
       {/* Progressive blur effect as sanity decreases */}
-      {isCritical && !isGameOver && (
+      {isCritical && (
         <motion.div
           className="fixed inset-0 pointer-events-none z-[91]"
           style={{

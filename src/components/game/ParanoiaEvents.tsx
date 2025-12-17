@@ -103,17 +103,26 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
     );
   }, [playSFX]);
 
+  // IMMEDIATE GAME OVER: Dismiss all events when game ends
+  useEffect(() => {
+    if (!isGameActive || sanity <= 0) {
+      setActiveEvent(null);
+    }
+  }, [isGameActive, sanity]);
+
   // Trigger paranoia events based on sanity and timer
   useEffect(() => {
-    if (!isGameActive || sanity > 40) return;
+    // Don't run events when game is over or sanity is depleted
+    if (!isGameActive || sanity <= 0 || sanity > 40) return;
 
     // Random chance to trigger event every 15-30 seconds when sanity is low
     const triggerInterval = setInterval(() => {
-      if (activeEvent) return; // Don't stack events
-      
+      // Double-check game state inside callback (state may have changed)
+      if (activeEvent || sanity <= 0) return; // Don't stack events or run when dead
+
       const chance = Math.random();
       const sanityFactor = (40 - sanity) / 40; // Higher chance at lower sanity
-      
+
       if (chance < 0.3 + sanityFactor * 0.4) {
         // 30-70% chance based on sanity
         const eventType = Math.random() > 0.5 ? "phone_call" : "chat_bubble";
@@ -126,13 +135,16 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
 
   // Phone call countdown
   useEffect(() => {
-    if (activeEvent !== "phone_call") return;
+    // Don't run countdown if game is over
+    if (activeEvent !== "phone_call" || !isGameActive || sanity <= 0) return;
 
     const timer = setInterval(() => {
       setCountdown((prev) => {
         if (prev <= 1) {
-          // Time's up - lose sanity
-          onSanityChange(-10);
+          // Time's up - lose sanity (only if game is still active)
+          if (sanity > 0) {
+            onSanityChange(-10);
+          }
           setActiveEvent(null);
           return 5;
         }
@@ -141,7 +153,7 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [activeEvent, onSanityChange]);
+  }, [activeEvent, onSanityChange, isGameActive, sanity]);
 
   // Auto-dismiss chat bubble after 4 seconds
   useEffect(() => {
@@ -156,11 +168,13 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
 
   // Phone ring toast event - triggers when sanity < 50
   useEffect(() => {
-    if (!isGameActive || sanity >= 50) return;
+    // Don't trigger when game is over or sanity is depleted
+    if (!isGameActive || sanity <= 0 || sanity >= 50) return;
 
     const interval = setInterval(() => {
       // 20% chance to trigger every 15 seconds when sanity is under 50
-      if (Math.random() > 0.8) {
+      // Double-check sanity inside callback
+      if (sanity > 0 && Math.random() > 0.8) {
         triggerPhoneRingToast();
       }
     }, 15000);
