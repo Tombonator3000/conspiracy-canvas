@@ -46,6 +46,7 @@ interface ConspiracyBoardProps {
     isVictory: boolean,
     sanityRemaining: number,
     connectionsFound: number,
+    score: number,
     credibilityStats: CredibilityStats
   ) => void;
 }
@@ -60,9 +61,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     isGameOver,
     score,
     junkBinned,
-    mistakes,
     threadColor,
     lastAction,
+    successfulConnections,
     scribbles,
     isUVEnabled,
     shakingNodeIds,
@@ -220,19 +221,20 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       // Capture current values to avoid stale closures
       const finalSanity = sanity;
       const finalScore = score;
+      const finalConnections = successfulConnections;
       const finalJunkBinned = junkBinned;
       const victory = isVictory;
 
       // Trigger game end immediately
       console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
-      onGameEnd(victory, finalSanity, finalScore, {
-        credibility: victory ? 100 : 0,
+      onGameEnd(victory, finalSanity, finalConnections, finalScore, {
+        credibility: finalScore,
         cleanupBonus: finalJunkBinned * 100,
         trashedJunkCount: finalJunkBinned,
         junkRemaining: remainingJunk
       });
     }
-  }, [isVictory, isGameOver, sanity, score, junkBinned, nodes, onGameEnd]);
+  }, [isVictory, isGameOver, sanity, score, successfulConnections, junkBinned, nodes, onGameEnd]);
 
   // Reset the trigger ref when starting a new game
   useEffect(() => {

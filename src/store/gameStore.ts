@@ -77,6 +77,7 @@ interface GameState {
   junkBinned: number;
   mistakes: number;
   startTime: number;
+  successfulConnections: number;
 
   // AUDIO/VISUAL SIGNAL (transient - for UI effects)
   lastAction: { type: string; id: number } | null;
@@ -177,6 +178,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   junkBinned: 0,
   mistakes: 0,
   startTime: Date.now(),
+  successfulConnections: 0,
 
   // Audio/Visual Signal
   lastAction: null,
@@ -200,6 +202,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     junkBinned: 0,
     mistakes: 0,
     sanity: 100,
+    successfulConnections: 0,
     lastAction: null,
     isUVEnabled: false,
     shakingNodeIds: [],
@@ -259,6 +262,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       junkBinned: 0,
       mistakes: 0,
       startTime: Date.now(),
+      successfulConnections: 0,
       requiredTags: level.requiredTags || [],
       lastAction: null,
       scribbles: [],
@@ -371,6 +375,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set(state => ({
         edges: [...state.edges, newEdge],
         score: state.score + 50,
+        successfulConnections: state.successfulConnections + 1,
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
@@ -685,6 +690,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       junkBinned: 0,
       mistakes: 0,
       startTime: Date.now(),
+      successfulConnections: 0,
       lastAction: null,
       scribbles: [],
       trashedNodes: [],

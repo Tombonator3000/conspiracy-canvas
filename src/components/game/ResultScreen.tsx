@@ -15,6 +15,7 @@ interface ResultScreenProps {
   isVictory: boolean;
   sanityRemaining: number;
   connectionsFound: number;
+  score: number;
   credibilityStats: CredibilityStats;
   onNextCase: () => void;
   onRetry: () => void;
@@ -26,6 +27,7 @@ export const ResultScreen = ({
   isVictory,
   sanityRemaining,
   connectionsFound,
+  score,
   credibilityStats,
   onNextCase,
   onRetry,
@@ -38,7 +40,7 @@ export const ResultScreen = ({
   const investigationScore = connectionsFound * 100; // Points from connections
   const cleanupBonus = credibilityStats.cleanupBonus; // Points from trashing junk
   const hoarderPenalty = credibilityStats.junkRemaining * 50; // -50 per junk left
-  const totalCredibility = credibilityStats.credibility - hoarderPenalty;
+  const totalCredibility = Math.max(0, score - hoarderPenalty);
 
   // Legacy scores for backward compatibility with comments
   const madnessScore = Math.min(100, Math.round(100 - sanityRemaining + (connectionsFound * 10)));
