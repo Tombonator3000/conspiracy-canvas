@@ -17,7 +17,9 @@ import { CaseHeader } from "./CaseHeader";
 import { EvidenceBin } from "./EvidenceBin";
 import { UVLightToggle, UVOverlay } from "./UVLight";
 import { MadnessOverlay } from "./MadnessOverlay";
+import { ParanoiaEvents } from "./ParanoiaEvents";
 import { useGameStore } from "@/store/gameStore";
+import { useAudioContext } from "@/contexts/AudioContext";
 
 import type { CaseData, CredibilityStats } from "@/types/game";
 
@@ -70,10 +72,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     edges,
     sanity,
     isVictory,
+    isGameOver,
     score,
     junkBinned,
     mistakes,
     threadColor,
+    lastAction,
     setNodes,
     setEdges,
     setRequiredTags,
@@ -82,7 +86,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     onNodeDragStop,
     checkCombine,
     trashNode,
+    modifySanity,
   } = useGameStore();
+
+  // Audio context for sound effects
+  const { playSFX, startAmbient, stopAmbient, updateSanity } = useAudioContext();
 
   // Dynamic connection line style based on thread color
   const connectionLineStyle = useMemo(() => ({
@@ -122,24 +130,63 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setRequiredTags(caseData.requiredTags || []);
   }, [caseData, setNodes, setEdges, setRequiredTags]);
 
-  // Handle victory condition
+  // 1. AUDIO LAYER: React to Store Actions
   useEffect(() => {
-    if (isVictory) {
+    if (!lastAction) return;
+
+    switch (lastAction.type) {
+      case 'CONNECT_SUCCESS':
+        playSFX('connect_success');
+        break;
+      case 'CONNECT_FAIL':
+        playSFX('connect_fail');
+        break;
+      case 'TRASH_SUCCESS':
+        playSFX('trash_junk_success');
+        break;
+      case 'TRASH_FAIL':
+        playSFX('trash_evidence_fail');
+        break;
+      case 'COMBINE_SUCCESS':
+        playSFX('connect_success');
+        break;
+      case 'VICTORY':
+        playSFX('access_granted');
+        break;
+    }
+  }, [lastAction, playSFX]);
+
+  // 2. AMBIENCE & SANITY SYNC
+  useEffect(() => {
+    startAmbient();
+    return () => stopAmbient();
+  }, [startAmbient, stopAmbient]);
+
+  useEffect(() => {
+    updateSanity(sanity);
+  }, [sanity, updateSanity]);
+
+  // Handle victory/game over condition
+  useEffect(() => {
+    if (isVictory || isGameOver) {
       // Count remaining junk/red herrings that weren't binned
       const remainingJunk = nodes.filter(n => {
         const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
         return truthTags.length === 0; // No tags = junk
       }).length;
 
-      console.log("🎉 Victory detected! Triggering game end with score:", score);
-      onGameEnd(true, sanity, score, {
-        credibility: 100,
-        cleanupBonus: junkBinned * 100,
-        trashedJunkCount: junkBinned,
-        junkRemaining: remainingJunk
-      });
+      // Delay slightly for final sound effect to play
+      setTimeout(() => {
+        console.log(isVictory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", score);
+        onGameEnd(isVictory, sanity, score, {
+          credibility: isVictory ? 100 : 0,
+          cleanupBonus: junkBinned * 100,
+          trashedJunkCount: junkBinned,
+          junkRemaining: remainingJunk
+        });
+      }, 1500);
     }
-  }, [isVictory, sanity, score, junkBinned, nodes, onGameEnd]);
+  }, [isVictory, isGameOver, sanity, score, junkBinned, nodes, onGameEnd]);
 
   // Helper: Check if node is over the bin
   const isNodeOverBin = useCallback((event: React.MouseEvent | React.TouchEvent) => {
@@ -290,6 +337,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       {/* Madness Effects */}
       <MadnessOverlay sanity={sanity} />
+
+      {/* Paranoia Events (random whispers/visuals) */}
+      <ParanoiaEvents
+        sanity={sanity}
+        isGameActive={!isVictory && !isGameOver}
+        onSanityChange={modifySanity}
+        playSFX={playSFX}
+      />
     </div>
   );
 };
