@@ -4,6 +4,7 @@ import {
   ReactFlow,
   Background,
   Controls,
+  useReactFlow,
   type NodeTypes,
   type EdgeTypes,
   BackgroundVariant,
@@ -77,7 +78,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     trashNode,
     modifySanity,
     toggleUV,
+    triggerParanoiaMovement,
+    revealNode,
   } = useGameStore();
+
+  // React Flow instance for camera control
+  const { fitView } = useReactFlow();
 
   // Audio context for sound effects
   const { playSFX, startAmbient, stopAmbient, updateSanity } = useAudioContext();
@@ -121,6 +127,37 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       setRequiredTags(caseData.requiredTags);
     }
   }, [caseData, setRequiredTags]);
+
+  // DYNAMIC CAMERA ON WIN - Smooth zoom out to see the whole conspiracy
+  useEffect(() => {
+    if (isVictory) {
+      fitView({ padding: 0.2, duration: 1500 });
+    }
+  }, [isVictory, fitView]);
+
+  // PARANOIA MOVEMENT LOOP - Random node jittering at low sanity
+  useEffect(() => {
+    if (sanity < 40 && !isVictory && !isGameOver) {
+      const interval = setInterval(() => {
+        // 30% chance to move a node every second
+        if (Math.random() > 0.7) {
+          triggerParanoiaMovement();
+        }
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [sanity, isVictory, isGameOver, triggerParanoiaMovement]);
+
+  // UV REVEAL LOGIC - Auto-reveal encrypted nodes when UV is enabled
+  useEffect(() => {
+    if (isUVEnabled) {
+      nodes.forEach(n => {
+        if ((n.data as any).requiresUV && !(n.data as any).isRevealed) {
+          revealNode(n.id);
+        }
+      });
+    }
+  }, [isUVEnabled, nodes, revealNode]);
 
   // 1. AUDIO LAYER: React to Store Actions
   useEffect(() => {
@@ -246,20 +283,33 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     }
   }, [isNodeOverBin, nodes, trashNode, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
-  // Map nodes with shake and UV state for visual effects
-  const visibleNodes = useMemo(() => nodes.map(node => ({
-    ...node,
-    data: {
-      ...node.data,
-      isUVEnabled,
-      isShaking: shakingNodeIds.includes(node.id)
+  // GLITCH TEXT & NODE TRANSFORMATION
+  // Map nodes with shake, UV state, and hallucination effects for visual feedback
+  const visibleNodes = useMemo(() => nodes.map(node => {
+    const nodeData = { ...node.data } as any;
+
+    // Add base states
+    nodeData.isUVEnabled = isUVEnabled;
+    nodeData.isShaking = shakingNodeIds.includes(node.id);
+
+    // GLITCH TEXT: If sanity is VERY low (under 30), 10% chance to glitch text
+    if (sanity < 30 && Math.random() < 0.1) {
+      const glitchTexts = ["THEY KNOW", "RUN", "BEHIND YOU", "WATCHING", "TOO LATE"];
+      nodeData.label = glitchTexts[Math.floor(Math.random() * glitchTexts.length)];
+      nodeData.title = glitchTexts[Math.floor(Math.random() * glitchTexts.length)];
+      nodeData.isGlitching = true;
     }
-  })), [nodes, isUVEnabled, shakingNodeIds]);
+
+    return {
+      ...node,
+      data: nodeData
+    };
+  }), [nodes, isUVEnabled, shakingNodeIds, sanity]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
   return (
-    <div className="w-full h-screen h-[100dvh] cork-texture relative overflow-hidden">
+    <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden ${isVictory ? 'victory-glow' : ''}`}>
       {/* HUD - Left side */}
       <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex flex-col gap-2 sm:gap-3">
         <CaseHeader

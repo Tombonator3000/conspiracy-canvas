@@ -90,6 +90,10 @@ interface GameState {
   addScribble: (text: string, x: number, y: number) => void;
   removeScribble: (id: string) => void;
 
+  // PARANOIA & REVEAL ACTIONS
+  revealNode: (id: string) => void;
+  triggerParanoiaMovement: () => void;
+
   // PARTICLE EFFECT ACTIONS
   removeBurst: (id: string) => void;
 
@@ -248,7 +252,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { nodes, edges, threadColor, addScribble, triggerShake } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled } = get();
 
     // Prevent duplicate connections
     const exists = edges.some(e =>
@@ -259,12 +263,53 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const source = nodes.find(n => n.id === params.source);
     const target = nodes.find(n => n.id === params.target);
+    if (!source || !target) return;
 
-    // 1. CHECK IF EVIDENCE IS REAL
+    const sourceData = source.data as any;
+    const targetData = target.data as any;
+
+    // --- 1. UV / ENCRYPTION CHECK ---
+    // If a node requires UV, it must have been revealed OR UV must be currently ON
+    const sourceEncrypted = sourceData.requiresUV && !sourceData.isRevealed && !isUVEnabled;
+    const targetEncrypted = targetData.requiresUV && !targetData.isRevealed && !isUVEnabled;
+
+    if (sourceEncrypted || targetEncrypted) {
+      // PENALTY: You are guessing!
+      set(state => ({
+        sanity: Math.max(0, state.sanity - 15),
+        mistakes: state.mistakes + 1,
+        lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+      }));
+      triggerShake(params.source);
+      triggerShake(params.target);
+      addScribble("HIDDEN DETAILS MISSED!", source.position.x, source.position.y - 50);
+      return; // Stop here
+    }
+
+    // --- 2. TIMELINE CHECK (BLUE THREAD ONLY) ---
+    if (threadColor === 'blue') {
+      const dateA = sourceData.date ? new Date(sourceData.date).getTime() : null;
+      const dateB = targetData.date ? new Date(targetData.date).getTime() : null;
+
+      if (dateA && dateB && dateA > dateB) {
+        // PENALTY: Time Paradox
+        set(state => ({
+          sanity: Math.max(0, state.sanity - 10),
+          mistakes: state.mistakes + 1,
+          lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+        }));
+        triggerShake(params.source);
+        triggerShake(params.target);
+        addScribble("WRONG ORDER!", source.position.x, source.position.y - 50);
+        return; // Stop here
+      }
+    }
+
+    // --- 3. STANDARD CONNECTION CHECK ---
     // We assume any node with 'truthTags' is relevant to the case.
     // Nodes with empty/undefined truthTags are considered "Junk".
-    const sourceIsReal = ((source?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
-    const targetIsReal = ((target?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
+    const sourceIsReal = (sourceData.truthTags?.length ?? 0) > 0;
+    const targetIsReal = (targetData.truthTags?.length ?? 0) > 0;
 
     // VALIDATION LOGIC:
     // Allow connection if BOTH are real evidence.
@@ -277,7 +322,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         ...params,
         id: `e-${params.source}-${params.target}`,
         type: threadColor === 'blue' ? 'blueString' : 'redString',
-        style: { stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48', strokeWidth: 3 }
+        animated: threadColor === 'blue', // Animate time flow for blue thread
+        style: {
+          stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48',
+          strokeWidth: 3,
+        }
       } as Edge;
 
       set(state => ({
@@ -300,8 +349,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       triggerShake(params.source);
       triggerShake(params.target);
       addScribble("IRRELEVANT!",
-        (source?.position.x || 0),
-        (source?.position.y || 0) - 50
+        source.position.x,
+        source.position.y - 50
       );
     }
   },
@@ -543,6 +592,38 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // UV & SHAKE ACTIONS
   toggleUV: () => set(state => ({ isUVEnabled: !state.isUVEnabled })),
+
+  // PARANOIA & REVEAL ACTIONS
+  revealNode: (id) => {
+    set(state => ({
+      nodes: state.nodes.map(n =>
+        n.id === id ? { ...n, data: { ...n.data, isRevealed: true } } : n
+      )
+    }));
+  },
+
+  triggerParanoiaMovement: () => {
+    set(state => {
+      // Pick 1 random node to nudge
+      if (state.nodes.length === 0) return {};
+      const randomIndex = Math.floor(Math.random() * state.nodes.length);
+      const randomNode = state.nodes[randomIndex];
+
+      // Move slightly (jitter)
+      const jitterX = (Math.random() - 0.5) * 50;
+      const jitterY = (Math.random() - 0.5) * 50;
+
+      const newPos = {
+        x: randomNode.position.x + jitterX,
+        y: randomNode.position.y + jitterY
+      };
+
+      const updatedNodes = [...state.nodes];
+      updatedNodes[randomIndex] = { ...randomNode, position: newPos };
+
+      return { nodes: updatedNodes };
+    });
+  },
 
   triggerShake: (id) => {
     set(state => ({ shakingNodeIds: [...state.shakingNodeIds, id] }));
