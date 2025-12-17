@@ -297,7 +297,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const allEvidenceNodes = useMemo(
     () => {
       return nodes.map((n) => {
-        const nodeData = n.data as EvidenceNodeType;
+        const nodeData = n.data as unknown as EvidenceNodeType;
 
         // Check if truthTags is missing OR empty array (both need fallback)
         // Note: ![] is false in JS, so we must check length explicitly
@@ -424,7 +424,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const isNearbyCombinable = nearbyPairs.has(node.id);
 
         // CRITICAL: Ensure truthTags is preserved from node.data, caseData.nodes, or combinations
-        const existingData = node.data as EvidenceNodeType;
+        const existingData = node.data as unknown as EvidenceNodeType;
 
         // Check if existing truthTags is valid (not undefined AND not empty)
         let truthTags = existingData.truthTags && existingData.truthTags.length > 0
@@ -953,8 +953,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // CRITICAL: Inherit truthTags from parent nodes to result nodes
         // This ensures the semantic meaning is preserved even after merging
         // We check both the React Flow node data AND the original caseData as fallback
-        const sourceData = sourceNode?.data as EvidenceNodeType | undefined;
-        const targetData = targetNode?.data as EvidenceNodeType | undefined;
+        const sourceData = sourceNode?.data as unknown as EvidenceNodeType | undefined;
+        const targetData = targetNode?.data as unknown as EvidenceNodeType | undefined;
 
         // Also look up original caseData nodes as fallback for truthTags
         const sourceOriginal = caseData.nodes.find((n) => n.id === draggedNodeId);
@@ -1013,7 +1013,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
         // Calculate all nodes after combination (remaining + new spawned nodes)
         const allNodesAfterCombination: EvidenceNodeType[] = [
-          ...remainingNodes.map((n) => n.data as EvidenceNodeType),
+          ...remainingNodes.map((n) => n.data as unknown as EvidenceNodeType),
           ...resultNodesWithInheritedTags,
         ];
 
@@ -1250,6 +1250,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <ConnectionCounter
           current={gameState.validConnections}
           max={criticalNodeIds.length}
+          isVictory={gameState.isVictory}
         />
         
         {/* UV Light Toggle */}
@@ -1437,11 +1438,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       <ParanoiaEvents
         sanity={gameState.sanity}
         isGameActive={!gameState.isGameOver && !gameState.isVictory}
-        onSanityChange={(delta) => setGameState((prev) => ({
-          ...prev,
-          sanity: Math.max(0, Math.min(100, prev.sanity + delta)),
-          isGameOver: prev.sanity + delta <= 0,
-        }))}
+        onSanityChange={(delta) => setGameState((prev) => {
+          const newSanity = Math.max(0, Math.min(100, prev.sanity + delta));
+          return {
+            ...prev,
+            sanity: newSanity,
+            isGameOver: newSanity <= 0,
+          };
+        })}
         playSFX={playSFX}
       />
     </div>
