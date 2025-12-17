@@ -79,7 +79,26 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setEdges,
     onConnect,
     onNodeDragStop,
+    checkCombine,
   } = useGameStore();
+
+  // Helper: Find overlapping node based on simple distance check
+  const findOverlappingNode = useCallback((draggedNode: { id: string; position: { x: number; y: number } }) => {
+    const OVERLAP_THRESHOLD = 100; // pixels - adjust for desired sensitivity
+
+    for (const node of nodes) {
+      if (node.id === draggedNode.id) continue;
+
+      const dx = node.position.x - draggedNode.position.x;
+      const dy = node.position.y - draggedNode.position.y;
+      const distance = Math.sqrt(dx * dx + dy * dy);
+
+      if (distance < OVERLAP_THRESHOLD) {
+        return node;
+      }
+    }
+    return null;
+  }, [nodes]);
 
   // Initialize store with case data on mount
   useEffect(() => {
@@ -88,10 +107,18 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setEdges([]);
   }, [caseData, setNodes, setEdges]);
 
-  // Handle node drag stop - update store
+  // Handle node drag stop - update store and check for combinations
   const handleNodeDragStop = useCallback((_event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {
+    // Update position in store
     onNodeDragStop(node.id, node.position);
-  }, [onNodeDragStop]);
+
+    // Check for collision with other nodes
+    const overlappingNode = findOverlappingNode(node);
+    if (overlappingNode && caseData.combinations) {
+      // Pass the level's combinations to the store action
+      checkCombine(node.id, overlappingNode.id, caseData.combinations);
+    }
+  }, [onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
