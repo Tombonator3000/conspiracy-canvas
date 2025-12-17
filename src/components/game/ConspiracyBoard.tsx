@@ -292,29 +292,45 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
 
   // Extract evidence data from active nodes (includes spawned nodes from combinations)
-  // CRITICAL FIX: Ensure truthTags is always present by falling back to caseData.nodes
+  // CRITICAL FIX: Ensure truthTags is always present by falling back to caseData
   // This fixes the issue where truthTags gets lost from node.data during state updates
   const allEvidenceNodes = useMemo(
     () => {
       return nodes.map((n) => {
         const nodeData = n.data as EvidenceNodeType;
 
-        // If truthTags is missing from node.data, try to get it from original caseData
-        if (!nodeData.truthTags) {
+        // Check if truthTags is missing OR empty array (both need fallback)
+        // Note: ![] is false in JS, so we must check length explicitly
+        const hasTruthTags = nodeData.truthTags && nodeData.truthTags.length > 0;
+
+        if (!hasTruthTags) {
+          // First try: Look up from original caseData.nodes
           const originalNode = caseData.nodes.find((cn) => cn.id === n.id);
-          if (originalNode?.truthTags) {
-            // Return node with truthTags from caseData as fallback
+          if (originalNode?.truthTags && originalNode.truthTags.length > 0) {
             return {
               ...nodeData,
               truthTags: originalNode.truthTags,
             };
+          }
+
+          // Second try: Look up from combination result nodes (for spawned nodes)
+          if (caseData.combinations) {
+            for (const combo of caseData.combinations) {
+              const resultNode = combo.resultNodes.find((rn) => rn.id === n.id);
+              if (resultNode?.truthTags && resultNode.truthTags.length > 0) {
+                return {
+                  ...nodeData,
+                  truthTags: resultNode.truthTags,
+                };
+              }
+            }
           }
         }
 
         return nodeData;
       });
     },
-    [nodes, caseData.nodes]
+    [nodes, caseData.nodes, caseData.combinations]
   );
 
   // Get all critical node IDs from active nodes for cluster detection (includes spawned critical nodes)
@@ -407,9 +423,29 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const { canCombine, isChainResult } = getCombinable(caseData.combinations, node.id, currentNodeIds);
         const isNearbyCombinable = nearbyPairs.has(node.id);
 
-        // CRITICAL: Ensure truthTags is preserved from either node.data or original caseData
+        // CRITICAL: Ensure truthTags is preserved from node.data, caseData.nodes, or combinations
         const existingData = node.data as EvidenceNodeType;
-        const truthTags = existingData.truthTags || originalNodeData?.truthTags;
+
+        // Check if existing truthTags is valid (not undefined AND not empty)
+        let truthTags = existingData.truthTags && existingData.truthTags.length > 0
+          ? existingData.truthTags
+          : undefined;
+
+        // Fallback 1: Try original caseData.nodes
+        if (!truthTags && originalNodeData?.truthTags && originalNodeData.truthTags.length > 0) {
+          truthTags = originalNodeData.truthTags;
+        }
+
+        // Fallback 2: Try combination result nodes (for spawned nodes)
+        if (!truthTags && caseData.combinations) {
+          for (const combo of caseData.combinations) {
+            const resultNode = combo.resultNodes.find((rn) => rn.id === node.id);
+            if (resultNode?.truthTags && resultNode.truthTags.length > 0) {
+              truthTags = resultNode.truthTags;
+              break;
+            }
+          }
+        }
 
         return {
           ...node,
