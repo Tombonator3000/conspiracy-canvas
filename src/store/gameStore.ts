@@ -3,6 +3,14 @@ import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/re
 import { EvidenceNode, Combination, Scribble } from '@/types/game';
 import { allCases } from '@/data/cases';
 
+interface Scribble {
+  id: string;
+  text: string;
+  x: number;
+  y: number;
+  rotation: number;
+}
+
 interface GameState {
   // DATA
   nodes: Node[];
@@ -25,6 +33,11 @@ interface GameState {
 
   // AUDIO/VISUAL SIGNAL (transient - for UI effects)
   lastAction: { type: string; id: number } | null;
+
+  // UV LIGHT & SHAKE STATE
+  isUVEnabled: boolean;
+  shakingNodeIds: string[];
+  scribbles: Scribble[];
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
@@ -49,6 +62,12 @@ interface GameState {
   trashNode: (id: string, isJunk: boolean) => void;
   modifySanity: (delta: number) => void;
   resetLevel: () => void;
+
+  // UV & SHAKE ACTIONS
+  toggleUV: () => void;
+  triggerShake: (id: string) => void;
+  addScribble: (text: string, x: number, y: number) => void;
+  removeScribble: (id: string) => void;
 
   // Internal helper
   validateWin: () => void;
@@ -97,6 +116,11 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Audio/Visual Signal
   lastAction: null,
 
+  // UV Light & Shake State
+  isUVEnabled: false,
+  shakingNodeIds: [],
+  scribbles: [],
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
@@ -106,7 +130,10 @@ export const useGameStore = create<GameState>((set, get) => ({
     junkBinned: 0,
     mistakes: 0,
     sanity: 100,
-    lastAction: null
+    lastAction: null,
+    isUVEnabled: false,
+    shakingNodeIds: [],
+    scribbles: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -187,31 +214,62 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { threadColor } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake } = get();
 
-    // Determine edge style based on thread color
-    const isBlue = threadColor === 'blue';
-    const colorHex = isBlue ? '#3b82f6' : '#e11d48'; // Blue-500 vs Rose-600
+    // Prevent duplicate connections
+    const exists = edges.some(e =>
+      (e.source === params.source && e.target === params.target) ||
+      (e.source === params.target && e.target === params.source)
+    );
+    if (exists) return;
 
-    // 1. Immediate visual feedback
-    const newEdge = {
-      ...params,
-      id: `e-${params.source}-${params.target}`,
-      type: isBlue ? 'blueString' : 'redString',
-      style: { stroke: colorHex, strokeWidth: 3 },
-      data: { type: threadColor }
-    } as Edge;
+    const source = nodes.find(n => n.id === params.source);
+    const target = nodes.find(n => n.id === params.target);
 
-    set(state => ({
-      edges: [...state.edges, newEdge],
-      lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
-    }));
+    // 1. CHECK IF EVIDENCE IS REAL
+    // We assume any node with 'truthTags' is relevant to the case.
+    // Nodes with empty/undefined truthTags are considered "Junk".
+    const sourceIsReal = ((source?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
+    const targetIsReal = ((target?.data as { truthTags?: string[] })?.truthTags?.length ?? 0) > 0;
 
-    // 2. Log connection
-    console.log(`🔗 Connected: ${params.source} <-> ${params.target} (${threadColor} thread)`);
+    // VALIDATION LOGIC:
+    // Allow connection if BOTH are real evidence.
+    // (Investigators link different facts to form a theory!)
+    const isValidConnection = sourceIsReal && targetIsReal;
 
-    // 3. Check for win condition
-    get().validateWin();
+    if (isValidConnection) {
+      // SUCCESS
+      const newEdge = {
+        ...params,
+        id: `e-${params.source}-${params.target}`,
+        type: threadColor === 'blue' ? 'blueString' : 'redString',
+        style: { stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48', strokeWidth: 3 }
+      } as Edge;
+
+      set(state => ({
+        edges: [...state.edges, newEdge],
+        score: state.score + 50,
+        lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
+      }));
+
+      // Check win condition immediately
+      get().validateWin();
+
+    } else {
+      // FAILURE (Connecting Junk)
+      set(state => ({
+        sanity: Math.max(0, state.sanity - 10),
+        mistakes: state.mistakes + 1,
+        lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+      }));
+
+      triggerShake(params.source);
+      triggerShake(params.target);
+      addScribble("IRRELEVANT!",
+        (source?.position.x || 0),
+        (source?.position.y || 0) - 50
+      );
+    }
   },
 
   onNodeDragStop: (id, position) => {
@@ -364,6 +422,42 @@ export const useGameStore = create<GameState>((set, get) => ({
       lastAction: null,
       scribbles: [],
     });
+  },
+
+  // UV & SHAKE ACTIONS
+  toggleUV: () => set(state => ({ isUVEnabled: !state.isUVEnabled })),
+
+  triggerShake: (id) => {
+    set(state => ({ shakingNodeIds: [...state.shakingNodeIds, id] }));
+    // Auto-remove shake after 500ms
+    setTimeout(() => {
+      set(state => ({
+        shakingNodeIds: state.shakingNodeIds.filter(nId => nId !== id)
+      }));
+    }, 500);
+  },
+
+  addScribble: (text, x, y) => {
+    const newScribble: Scribble = {
+      id: `scribble-${Date.now()}`,
+      text,
+      x,
+      y,
+      rotation: Math.random() * 20 - 10
+    };
+    set(state => ({ scribbles: [...state.scribbles, newScribble] }));
+    // Auto-remove scribble after 2 seconds
+    setTimeout(() => {
+      set(state => ({
+        scribbles: state.scribbles.filter(s => s.id !== newScribble.id)
+      }));
+    }, 2000);
+  },
+
+  removeScribble: (id) => {
+    set(state => ({
+      scribbles: state.scribbles.filter(s => s.id !== id)
+    }));
   },
 
   validateWin: () => {
