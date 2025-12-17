@@ -23,7 +23,7 @@ import { MadnessOverlay } from "./MadnessOverlay";
 import { ParanoiaEvents } from "./ParanoiaEvents";
 import { Scribble } from "./Scribble";
 import { ParticleBurst } from "./ParticleBurst";
-import { FBIOverlay } from "./FBIOverlay";
+// FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
@@ -181,6 +181,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       case 'COMBINE_SUCCESS':
         playSFX('connect_success');
         break;
+      case 'COMBINE_FAIL':
+        playSFX('connect_fail');
+        break;
       case 'UNDO_TRASH':
         playSFX('connect_success');
         break;
@@ -229,14 +232,20 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     const binRect = binRef.current.getBoundingClientRect();
     let clientX: number, clientY: number;
 
-    if ('touches' in event && event.touches.length > 0) {
+    // For touch events, check changedTouches first (for touchend events)
+    // then touches (for touchmove events)
+    if ('changedTouches' in event && event.changedTouches.length > 0) {
+      clientX = event.changedTouches[0].clientX;
+      clientY = event.changedTouches[0].clientY;
+    } else if ('touches' in event && event.touches.length > 0) {
       clientX = event.touches[0].clientX;
       clientY = event.touches[0].clientY;
     } else if ('clientX' in event) {
       clientX = event.clientX;
       clientY = event.clientY;
     } else {
-      return false;
+      // Fallback: check if bin is highlighted (user was dragging over it)
+      return isBinHighlighted;
     }
 
     return (
@@ -245,7 +254,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       clientY >= binRect.top &&
       clientY <= binRect.bottom
     );
-  }, []);
+  }, [isBinHighlighted]);
 
   // Handle node drag - check if hovering over bin
   const handleNodeDrag = useCallback((event: React.MouseEvent | React.TouchEvent, node: { id: string }) => {
@@ -256,8 +265,10 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Handle node drag stop - update store and check for combinations
   const handleNodeDragStop = useCallback((event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {
-    // Check if dropped on bin
-    if (isNodeOverBin(event)) {
+    // Check if dropped on bin - use both event position AND highlighted state
+    const wasOverBin = isBinHighlighted || isNodeOverBin(event);
+
+    if (wasOverBin) {
       const droppedNode = nodes.find(n => n.id === node.id);
       if (droppedNode) {
         // Check if it's junk (no truthTags or empty truthTags means it's junk/red herring)
@@ -265,7 +276,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const isJunk = truthTags.length === 0;
         // Start trash animation - node will be removed after animation completes
         startTrashAnimation(node.id, isJunk);
-        console.log(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}`);
+        console.log(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}, wasHighlighted: ${isBinHighlighted}`);
       }
       setIsBinHighlighted(false);
       draggedNodeRef.current = null;
@@ -284,7 +295,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       // Pass the level's combinations to the store action
       checkCombine(node.id, overlappingNode.id, caseData.combinations);
     }
-  }, [isNodeOverBin, nodes, startTrashAnimation, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
+  }, [isBinHighlighted, isNodeOverBin, nodes, startTrashAnimation, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
   // GLITCH TEXT & NODE TRANSFORMATION
   // Map nodes with shake, UV state, and hallucination effects for visual feedback
@@ -311,10 +322,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
-  // Render FBI Overlay when sanity reaches 0
-  if (isGameOver && sanity <= 0) {
-    return <FBIOverlay onRestart={() => window.location.reload()} />;
-  }
+  // Game over is now handled by Index.tsx's GameOverScreen
+  // No early return here - let the board fade out naturally
 
   return (
     <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden ${isVictory ? 'victory-glow' : ''}`}>
