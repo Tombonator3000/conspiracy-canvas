@@ -18,6 +18,7 @@ interface VictoryScreenModalProps {
   isVictory: boolean;
   sanityRemaining: number;
   connectionsFound: number;
+  score: number;
   credibilityStats: CredibilityStats;
   onNextCase: () => void;
   onRetry: () => void;
@@ -134,6 +135,7 @@ export const VictoryScreenModal = ({
   isVictory,
   sanityRemaining,
   connectionsFound,
+  score,
   credibilityStats,
   onNextCase,
   onRetry,
@@ -150,11 +152,11 @@ export const VictoryScreenModal = ({
   const { playSFX } = useAudioContext();
 
   // Calculate scores
-  const caseResolvedBonus = 1000;
+  const baseScore = 1000 + Math.floor(sanityRemaining * 10) + (credibilityStats.trashedJunkCount * 100);
+  const mistakesPenalty = Math.max(0, baseScore - score);
+  const sanityBonus = Math.floor(sanityRemaining * 10);
   const junkBinnedScore = credibilityStats.trashedJunkCount * 100;
-  const mistakesPenalty = credibilityStats.junkRemaining * 100;
-  const timeBonus = Math.max(0, Math.floor(sanityRemaining * 5));
-  const totalScore = caseResolvedBonus + junkBinnedScore - mistakesPenalty + timeBonus;
+  const totalScore = score;
   const starRating = getStarRating(totalScore);
   const rankTitle = RANK_TITLES[starRating];
 
@@ -180,7 +182,7 @@ export const VictoryScreenModal = ({
 
   // Handle score tallying completion
   const handleScoreTallyComplete = useCallback((lineIndex: number) => {
-    if (lineIndex === 3) { // After time bonus line
+    if (lineIndex === 4) { // After final score line
       setTimeout(() => setShowFinalScore(true), 300);
       setTimeout(() => setShowStars(true), 800);
       setTimeout(() => setShowRank(true), 2200);
@@ -380,33 +382,41 @@ export const VictoryScreenModal = ({
                       <div className="font-mono text-[10px] text-[#666]">
                         STATUS: RESOLVED | DATE: {new Date().toLocaleDateString()}
                       </div>
+                      <div className="font-mono text-[10px] text-[#666] mt-1">
+                        CONNECTIONS MADE: {connectionsFound}
+                      </div>
                     </div>
 
                     {/* Animated score tallying */}
                     <div className="space-y-2 border-l-4 border-[#8b0000] pl-3 py-2 bg-white/50">
                       <ScoreLine
                         label="CASE RESOLVED:"
-                        value={caseResolvedBonus}
+                        value={1000}
                         delay={500}
+                      />
+                      <ScoreLine
+                        label={`SANITY BONUS:`}
+                        value={sanityBonus}
+                        delay={1000}
                       />
                       <ScoreLine
                         label={`JUNK BINNED (x${credibilityStats.trashedJunkCount}):`}
                         value={junkBinnedScore}
-                        delay={1000}
+                        delay={1500}
                       />
                       {mistakesPenalty > 0 && (
                         <ScoreLine
-                          label={`JUNK REMAINING (x${credibilityStats.junkRemaining}):`}
+                          label="MISTAKES PENALTY:"
                           value={mistakesPenalty}
                           isPositive={false}
-                          delay={1500}
+                          delay={2000}
                         />
                       )}
                       <ScoreLine
-                        label="SANITY BONUS:"
-                        value={timeBonus}
-                        delay={2000}
-                        onComplete={() => handleScoreTallyComplete(3)}
+                        label="FINAL CALCULATION:"
+                        value={totalScore}
+                        delay={2500}
+                        onComplete={() => handleScoreTallyComplete(4)}
                       />
 
                       {/* Divider line */}
