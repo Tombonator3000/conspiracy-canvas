@@ -951,6 +951,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }, []);
 
   // Spawn new nodes from combination with burst animation
+  // CRITICAL: This function must preserve truthTags from the passed resultNodes
   const spawnCombinationNodes = useCallback((resultNodes: EvidenceNodeType[], centerPosition: { x: number; y: number }) => {
     const newFlowNodes: Node[] = resultNodes.map((node, index) => {
       const angle = (index / resultNodes.length) * 2 * Math.PI;
@@ -960,6 +961,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const rotation = Math.random() * 30 - 15;
       const zIndex = Math.floor(Math.random() * 100);
 
+      console.log(`🎯 Spawning node ${node.id} with truthTags:`, node.truthTags);
+
       return {
         id: node.id,
         type: "evidence",
@@ -967,7 +970,15 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           x: centerPosition.x + offsetX,
           y: centerPosition.y + offsetY
         },
-        data: { ...node, isUVEnabled, rotation, isLinkMode: interactionMode === 'connect', isSpawning: true },
+        data: {
+          ...node,
+          // HARD INJECT truthTags to ensure they survive React state updates
+          truthTags: node.truthTags || [],
+          isUVEnabled,
+          rotation,
+          isLinkMode: interactionMode === 'connect',
+          isSpawning: true,
+        },
         draggable: interactionMode === 'pan',
         zIndex,
       };
@@ -1026,13 +1037,42 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         // Collect all truthTags from both parents (from node data OR original caseData)
         const parentTruthTags = new Set<string>();
 
-        // Get truthTags from source node (prefer node.data, fallback to caseData)
-        const sourceTruthTags = sourceData?.truthTags || sourceOriginal?.truthTags || [];
-        sourceTruthTags.forEach((tag) => parentTruthTags.add(tag));
+        // Helper to safely extract tags from a node
+        const extractTags = (
+          nodeData: EvidenceNodeType | undefined,
+          originalData: EvidenceNodeType | undefined,
+          label: string
+        ) => {
+          // Priority 1: React Flow node data
+          if (nodeData?.truthTags && nodeData.truthTags.length > 0) {
+            console.log(`  ${label}: Found truthTags in node.data:`, nodeData.truthTags);
+            nodeData.truthTags.forEach((tag) => parentTruthTags.add(tag));
+            return;
+          }
+          // Priority 2: Original caseData.nodes
+          if (originalData?.truthTags && originalData.truthTags.length > 0) {
+            console.log(`  ${label}: Fallback to caseData.nodes:`, originalData.truthTags);
+            originalData.truthTags.forEach((tag) => parentTruthTags.add(tag));
+            return;
+          }
+          // Priority 3: Check combination result nodes (for already-spawned nodes)
+          if (caseData.combinations) {
+            for (const combo of caseData.combinations) {
+              const resultNode = combo.resultNodes.find((rn) => rn.id === nodeData?.id || rn.id === originalData?.id);
+              if (resultNode?.truthTags && resultNode.truthTags.length > 0) {
+                console.log(`  ${label}: Fallback to combination result:`, resultNode.truthTags);
+                resultNode.truthTags.forEach((tag) => parentTruthTags.add(tag));
+                return;
+              }
+            }
+          }
+          console.log(`  ${label}: NO truthTags found!`);
+        };
 
-        // Get truthTags from target node (prefer node.data, fallback to caseData)
-        const targetTruthTags = targetData?.truthTags || targetOriginal?.truthTags || [];
-        targetTruthTags.forEach((tag) => parentTruthTags.add(tag));
+        extractTags(sourceData, sourceOriginal, `Source (${draggedNodeId})`);
+        extractTags(targetData, targetOriginal, `Target (${combineTargetId})`);
+
+        console.log("🧬 MERGING TAGS from parents:", Array.from(parentTruthTags));
 
         // Create result nodes with inherited truthTags merged with their own
         const resultNodesWithInheritedTags = combination.resultNodes.map((node) => {
@@ -1043,6 +1083,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           ];
           // Remove duplicates using Set
           const uniqueTags = [...new Set(mergedTags)];
+
+          console.log(`👶 Born Node ${node.id} with tags:`, uniqueTags);
+
           return {
             ...node,
             truthTags: uniqueTags,
