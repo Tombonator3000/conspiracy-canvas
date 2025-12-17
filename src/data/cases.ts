@@ -56,6 +56,27 @@ export const TEST_CASE: CaseData = {
       truthTags: ['test']
     },
   ],
+  combinations: [
+    {
+      itemA: 'node-a',
+      itemB: 'node-b',
+      resultNodes: [
+        {
+          id: 'node-c',
+          type: 'sticky_note',
+          title: 'THE TRUTH',
+          contentUrl: null,
+          description: 'You discovered the truth by combining Node A and Node B!',
+          tags: ['truth', 'combined'],
+          position: { x: 250, y: 100 },
+          isRedHerring: false,
+          isCritical: true,
+          truthTags: ['truth']
+        }
+      ],
+      unlockText: 'THE TRUTH REVEALED!'
+    }
+  ],
   scribblePool: ['IT WORKS!', 'CONNECTED!', 'SUCCESS!']
 };
 
