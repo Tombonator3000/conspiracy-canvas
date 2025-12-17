@@ -59,6 +59,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     threadColor,
     lastAction,
     scribbles,
+    isUVEnabled,
+    shakingNodeIds,
     setNodes,
     setEdges,
     setRequiredTags,
