@@ -12,6 +12,7 @@ import { case009 } from "./case_009_elvis";
 import { case010 } from "./case_010_ufo";
 import { case011 } from "./case_011_bigfoot";
 import { case012 } from "./case_012_reptilians";
+import { case013 } from "./case_013_anchor";
 import type { CaseData } from "@/types/game";
 
 // Re-export TEST_CASE for backwards compatibility
@@ -31,6 +32,7 @@ export const allCases: CaseData[] = [
   case010,
   case011,
   case012,
+  case013,
 ];
 
 export const getCaseById = (id: string): CaseData | undefined => {
@@ -42,4 +44,4 @@ export const getCasesByDifficulty = (difficulty: string): CaseData[] => {
 };
 
 // Re-export individual cases
-export { testCase, case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012 };
+export { testCase, case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012, case013 };
