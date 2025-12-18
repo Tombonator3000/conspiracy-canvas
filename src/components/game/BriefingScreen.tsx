@@ -138,7 +138,7 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="crt-monitor w-full max-w-2xl aspect-[4/3] p-1 relative"
+        className="crt-monitor w-full h-full max-w-6xl max-h-[90vh] p-1 relative"
       >
         {/* Monitor bezel */}
         <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-4">
@@ -161,7 +161,7 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
             <div className="crt-glow" />
 
             {/* Screen content */}
-            <div className="relative z-[1] w-full h-full p-4 md:p-6 overflow-y-auto">
+            <div className="relative z-[1] w-full h-full p-6 md:p-8 lg:p-10 overflow-y-auto">
               <AnimatePresence mode="wait">
                 {isLoading ? (
                   /* Boot Sequence */
@@ -172,7 +172,7 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                     exit={{ opacity: 0 }}
                     className="crt-boot"
                   >
-                    <div className="terminal-text text-sm md:text-base space-y-1">
+                    <div className="terminal-text text-base md:text-lg lg:text-xl space-y-2">
                       {bootMessages.slice(0, bootSequence + 1).map((msg, i) => (
                         <motion.div
                           key={i}
@@ -200,7 +200,7 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                     {/* DOS Window Header */}
                     <div className="dos-window mb-4">
                       <div className="bg-[#00aa00] px-2 py-1 flex items-center justify-between">
-                        <span className="pixel-font text-[8px] md:text-[10px] text-black">
+                        <span className="pixel-font text-xs md:text-sm text-black">
                           SECURE_FILE_VIEWER.EXE
                         </span>
                         <div className="flex gap-1">
@@ -210,11 +210,11 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                         </div>
                       </div>
 
-                      <div className="p-3 md:p-4 space-y-4">
+                      <div className="p-4 md:p-6 lg:p-8 space-y-5 md:space-y-6">
                         {/* Classified Header */}
                         <div className="text-center">
                           <motion.div
-                            className={`terminal-text pixel-font text-xs md:text-sm ${headerText.isComplete ? 'classified-flash' : ''}`}
+                            className={`terminal-text pixel-font text-sm md:text-base lg:text-lg ${headerText.isComplete ? 'classified-flash' : ''}`}
                             style={{ color: '#ff3333', textShadow: '0 0 10px rgba(255, 0, 0, 0.8)' }}
                           >
                             {headerText.displayedText}
@@ -222,25 +222,25 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                         </div>
 
                         {/* File Codename */}
-                        <div className="border-b border-[#00ff00]/30 pb-3">
-                          <div className="terminal-text text-xs text-[#00aa00]">
+                        <div className="border-b border-[#00ff00]/30 pb-4">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00]">
                             {'>'} FILE CODENAME:
                           </div>
-                          <div className="terminal-text text-lg md:text-xl mt-1 tracking-wider">
+                          <div className="terminal-text text-xl md:text-2xl lg:text-3xl mt-2 tracking-wider">
                             {codenameText.displayedText}
                             {!codenameText.isComplete && <span className="typing-cursor" />}
                           </div>
-                          <div className="terminal-text text-xs text-[#00aa00] mt-1">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00] mt-2">
                             {'>'} CLEARANCE: {getDifficultyIndicator(caseData.difficulty)} {caseData.difficulty}
                           </div>
                         </div>
 
                         {/* Intel Section */}
-                        <div className="border-b border-[#00ff00]/30 pb-3">
-                          <div className="terminal-text text-xs text-[#00aa00]">
+                        <div className="border-b border-[#00ff00]/30 pb-4">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00]">
                             {'>'} THE INTEL:
                           </div>
-                          <div className="terminal-text text-sm md:text-base mt-2 leading-relaxed">
+                          <div className="terminal-text text-base md:text-lg lg:text-xl mt-2 leading-relaxed">
                             {intelText.displayedText}
                             {!intelText.isComplete && codenameText.isComplete && (
                               <span className="typing-cursor" />
@@ -250,16 +250,16 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
 
                         {/* Mission Objective */}
                         <div>
-                          <div className="terminal-text text-xs text-[#00aa00]">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00]">
                             {'>'} MISSION OBJECTIVE:
                           </div>
-                          <div className="terminal-text text-sm md:text-base mt-2" style={{ color: '#ffff00' }}>
+                          <div className="terminal-text text-base md:text-lg lg:text-xl mt-2" style={{ color: '#ffff00' }}>
                             {objectiveText.displayedText}
                             {!objectiveText.isComplete && intelText.isComplete && (
                               <span className="typing-cursor" />
                             )}
                           </div>
-                          <div className="terminal-text text-xs text-[#00aa00] mt-2">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00] mt-3">
                             {'>'} EVIDENCE COUNT: {caseData.nodes.length} items
                           </div>
                         </div>
@@ -276,13 +276,13 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                       <button
                         onClick={handleExecute}
                         disabled={!objectiveText.isComplete}
-                        className="dos-button text-base md:text-lg px-6 py-3 disabled:opacity-30 disabled:cursor-not-allowed"
+                        className="dos-button text-lg md:text-xl px-8 py-4 disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         [ EXECUTE PROTOCOL ]
                       </button>
                       <button
                         onClick={handleAbort}
-                        className="dos-button text-base md:text-lg px-6 py-3"
+                        className="dos-button text-lg md:text-xl px-8 py-4"
                         style={{
                           color: '#ff6666',
                           borderColor: '#ff6666',
@@ -298,12 +298,12 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 1 }}
-                      className="mt-4 text-center"
+                      className="mt-6 text-center"
                     >
-                      <div className="terminal-text text-[10px] text-[#006600]">
+                      <div className="terminal-text text-xs md:text-sm text-[#006600]">
                         UNAUTHORIZED ACCESS WILL BE PROSECUTED
                       </div>
-                      <div className="terminal-text text-[10px] text-[#006600]">
+                      <div className="terminal-text text-xs md:text-sm text-[#006600]">
                         © 1997 DEEP_STATE_OS v3.14
                       </div>
                     </motion.div>
