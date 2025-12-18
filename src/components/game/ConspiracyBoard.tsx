@@ -529,8 +529,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       />
 
       {/* Flashlight/Spotlight Effect - follows mouse cursor */}
+      {/* Also activates when UV lamp is enabled for dark room effect */}
       <FlashlightOverlay
-        enabled={settings.flashlightEnabled}
+        enabled={settings.flashlightEnabled || isUVEnabled}
         intensity={settings.flashlightIntensity}
         spotlightSize={settings.flashlightSize}
         sanity={sanity}
