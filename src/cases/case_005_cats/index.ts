@@ -4,6 +4,7 @@ import catPhone from "./evidence/cat_phone.jpg";
 import goodDog from "./evidence/good_dog.jpg";
 import fiveGTower from "./evidence/5g_tower.jpg";
 import scratchingPost from "./evidence/scratching_post.jpg";
+import { getJunkNodes } from "../shared/junk";
 
 export const case005: CaseData = {
   id: "case_005_cats",
@@ -191,7 +192,10 @@ export const case005: CaseData = {
       tags: ["INSURANCE", "FINE_PRINT"],
       position: { x: 650, y: 300 },
       isRedHerring: true
-    }
+    },
+
+    // ===== JUNK IMAGES FOR ATMOSPHERE =====
+    ...getJunkNodes("case_005_cats")
   ],
   scribblePool: [
     "THE PURR IS AN UPLOAD!",

@@ -7,6 +7,7 @@ import thermalForest from "./evidence/thermal_forest.jpg";
 import brokenBranches from "./evidence/broken_branches.jpg";
 import menInBlack from "./evidence/men_in_black.jpg";
 import destroyedTent from "./evidence/destroyed_tent.jpg";
+import { getJunkNodes } from "../shared/junk";
 
 export const case010: CaseData = {
   id: "case_010_ufo",
@@ -203,7 +204,10 @@ export const case010: CaseData = {
       tags: ["ANCIENT", "BOOK"],
       position: { x: 450, y: 550 },
       isRedHerring: true
-    }
+    },
+
+    // ===== JUNK IMAGES FOR ATMOSPHERE =====
+    ...getJunkNodes("case_010_ufo")
   ],
   scribblePool: [
     "THE TRUTH IS OUT THERE!",
