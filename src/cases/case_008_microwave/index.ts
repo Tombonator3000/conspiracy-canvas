@@ -4,7 +4,6 @@ import popcornTime from "./evidence/popcorn_time.jpg";
 import rotatingPlate from "./evidence/rotating_plate.jpg";
 import tinFoil from "./evidence/tin_foil.jpg";
 import powerCord from "./evidence/power_cord.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case008: CaseData = {
   id: "case_008_microwave",
@@ -194,9 +193,6 @@ export const case008: CaseData = {
       position: { x: 680, y: 280 },
       isRedHerring: true,
     },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_008_microwave")
   ],
   scribblePool: [
     "TIME IS HEATING UP!",

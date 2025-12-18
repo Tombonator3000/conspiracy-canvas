@@ -1,7 +1,6 @@
 import type { CaseData } from "@/types/game";
 import lonelySock from "./evidence/lonely_sock.jpg";
 import tidePod from "./evidence/tide_pod.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case002: CaseData = {
   id: "case_002_socks",
@@ -178,10 +177,7 @@ export const case002: CaseData = {
       tags: ["WRITING", "BROKEN"],
       position: { x: 620, y: 120 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_002_socks")
+    }
   ],
   scribblePool: [
     "WHERE DO THEY GO?!",

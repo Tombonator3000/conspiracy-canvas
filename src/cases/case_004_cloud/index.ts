@@ -4,7 +4,6 @@ import serverSmoke from "./evidence/server_smoke.jpg";
 import umbrella from "./evidence/umbrella.jpg";
 import airplaneClouds from "./evidence/airplane_clouds.jpg";
 import puddleReflection from "./evidence/puddle_reflection.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case004: CaseData = {
   id: "case_004_cloud",
@@ -192,10 +191,7 @@ export const case004: CaseData = {
       tags: ["WATER", "GROUND"],
       position: { x: 350, y: 480 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_004_cloud")
+    }
   ],
   scribblePool: [
     "IT'S RAINING DATA!",

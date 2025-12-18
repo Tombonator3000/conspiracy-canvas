@@ -3,7 +3,6 @@ import burgerKingSighting from "./evidence/burger_king_sighting.jpg";
 import area51Badge from "./evidence/area51_badge.jpg";
 import elvisImpersonator from "./evidence/elvis_impersonator.jpg";
 import blueSuedeShoes from "./evidence/blue_suede_shoes.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case009: CaseData = {
   id: "case_009_elvis",
@@ -177,10 +176,7 @@ export const case009: CaseData = {
       tags: ["DNA", "HAIR"],
       position: { x: 280, y: 500 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_009_elvis")
+    }
   ],
   scribblePool: [
     "THE KING LIVES!",
