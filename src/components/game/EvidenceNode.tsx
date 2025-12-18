@@ -3,6 +3,7 @@ import { Handle, Position } from "@xyflow/react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { EvidenceNode as EvidenceNodeType, NodeScribble } from "@/types/game";
 import { Camera, FileText, StickyNote, Eye, Zap, Bird, Cat, ShoppingBag, Cpu } from "lucide-react";
+import { useResponsive } from "@/hooks/useResponsive";
 
 // Handwriting font variants for varied note styles
 const HANDWRITING_FONTS = [
@@ -243,15 +244,23 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
   const pinColor = getPinColor(data.id);
   const useTape = hasTape(data.id);
   const tapeAngle = getTapeAngle(data.id);
+  const { isMobile, isTablet } = useResponsive();
+
+  // Responsive sizing
+  const photoWidth = isMobile ? 'w-32' : isTablet ? 'w-40' : 'w-44';
+  const photoHeight = isMobile ? 'h-24' : isTablet ? 'h-28' : 'h-32';
+  const padding = isMobile ? '6px 6px 24px 6px' : '8px 8px 32px 8px';
+  const titleSize = isMobile ? 'text-[10px]' : 'text-xs';
+  const descSize = isMobile ? 'text-[8px]' : 'text-[9px]';
 
   // Polaroid-style white border
   return (
     <div
-      className="cursor-grab active:cursor-grabbing relative"
+      className="cursor-grab active:cursor-grabbing relative evidence-card-responsive"
       style={{
         "--rotation": `${rotation}deg`,
         background: 'linear-gradient(to bottom, #fefefe 0%, #f5f5f5 100%)',
-        padding: '8px 8px 32px 8px',
+        padding: padding,
         boxShadow: '0 3px 12px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05)',
         borderRadius: '2px',
       } as React.CSSProperties}
@@ -275,8 +284,8 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         <PushPin color={pinColor} isDesktop={data.isDesktop} />
       )}
 
-      {/* Photo area */}
-      <div className="bg-ink/10 w-44 h-32 flex items-center justify-center relative overflow-hidden">
+      {/* Photo area - responsive */}
+      <div className={`bg-ink/10 ${photoWidth} ${photoHeight} flex items-center justify-center relative overflow-hidden`}>
         {data.contentUrl ? (
           <img
             src={data.contentUrl}
@@ -288,7 +297,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         ) : (
           <>
             <div className="absolute inset-0 bg-gradient-to-br from-paper-aged/50 to-transparent" />
-            <Camera className="w-12 h-12 text-ink/30" />
+            <Camera className={`${isMobile ? 'w-8 h-8' : 'w-12 h-12'} text-ink/30`} />
           </>
         )}
         {getNodeIcon(data.tags) && !data.contentUrl && (
@@ -299,7 +308,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         {/* UV Hidden Content */}
         {data.hiddenText && data.isUVEnabled && (
           <div className="absolute inset-0 bg-ink/90 flex items-center justify-center">
-            <p className="text-[#7fff00] font-mono text-xs text-center px-2 uppercase tracking-wider"
+            <p className={`text-[#7fff00] font-mono ${isMobile ? 'text-[10px]' : 'text-xs'} text-center px-2 uppercase tracking-wider`}
                style={{ textShadow: "0 0 10px rgba(127,255,0,0.8)" }}>
               {data.hiddenText}
             </p>
@@ -307,16 +316,16 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         )}
       </div>
 
-      {/* Polaroid caption area */}
+      {/* Polaroid caption area - responsive */}
       <div className="mt-2 text-center">
         <p
-          className="text-xs text-ink font-bold tracking-tight"
+          className={`${titleSize} text-ink font-bold tracking-tight`}
           style={{ fontFamily: getHandwritingFont(data.id) }}
         >
           {data.title}
         </p>
         <p
-          className="text-[9px] text-ink/60 mt-0.5 leading-tight"
+          className={`${descSize} text-ink/60 mt-0.5 leading-tight`}
           style={{ fontFamily: "'Special Elite', monospace" }}
         >
           {data.description}
@@ -332,6 +341,16 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
   const showCoffeeStain = hasCoffeeStain(data.id);
   const useTape = hasTape(data.id);
   const tapeAngle = getTapeAngle(data.id);
+  const { isMobile, isTablet } = useResponsive();
+
+  // Responsive sizing
+  const docWidth = isMobile ? 'w-40' : isTablet ? 'w-48' : 'w-52';
+  const padding = isMobile ? '10px' : '12px';
+  const paddingTop = isMobile ? '20px' : '24px';
+  const titleSize = isMobile ? 'text-xs' : 'text-sm';
+  const descSize = isMobile ? 'text-[10px]' : 'text-xs';
+  const tagSize = isMobile ? 'text-[7px]' : 'text-[8px]';
+  const iconSize = isMobile ? 'w-4 h-4' : 'w-5 h-5';
 
   // Determine paper type based on node ID
   const hash = data.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -363,12 +382,12 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
 
   return (
     <div
-      className="w-52 cursor-grab active:cursor-grabbing relative"
+      className={`${docWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive`}
       style={{
         "--rotation": `${rotation}deg`,
         ...paperStyles[paperType],
-        padding: '12px',
-        paddingTop: '24px',
+        padding: padding,
+        paddingTop: paddingTop,
         borderLeft: '3px solid hsl(350, 70%, 45%)',
         borderRadius: '1px 3px 3px 1px',
         boxShadow: '2px 4px 12px rgba(0, 0, 0, 0.35), 1px 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)',
@@ -379,8 +398,8 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
         <div
           className="absolute pointer-events-none"
           style={{
-            width: '50px',
-            height: '50px',
+            width: isMobile ? '40px' : '50px',
+            height: isMobile ? '40px' : '50px',
             borderRadius: '50%',
             background: 'radial-gradient(ellipse at center, transparent 35%, rgba(139, 90, 43, 0.12) 50%, rgba(139, 90, 43, 0.08) 60%, transparent 75%)',
             top: '15%',
@@ -400,9 +419,9 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
       )}
 
       <div className="flex items-start gap-2 mb-2">
-        <FileText className="w-5 h-5 text-primary flex-shrink-0" />
+        <FileText className={`${iconSize} text-primary flex-shrink-0`} />
         <h3
-          className="text-sm font-bold text-ink tracking-tight"
+          className={`${titleSize} font-bold text-ink tracking-tight`}
           style={{ fontFamily: "'Special Elite', 'Courier Prime', monospace" }}
         >
           {data.title}
@@ -410,7 +429,7 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
       </div>
       <div className="border-t border-ink/20 pt-2">
         <p
-          className="text-xs text-ink/80 leading-relaxed"
+          className={`${descSize} text-ink/80 leading-relaxed`}
           style={{
             fontFamily: "'Courier Prime', monospace",
             letterSpacing: '-0.02em',
@@ -425,7 +444,7 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
           return (
             <span
               key={tag}
-              className={`text-[8px] px-1 py-0.5 rounded font-mono ${
+              className={`${tagSize} px-1 py-0.5 rounded font-mono ${
                 isRevealed
                   ? "bg-green-500/30 text-green-700 border border-green-500/50"
                   : "bg-ink/10 text-ink/50"
@@ -445,6 +464,15 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
   const rotation = data.rotation || (Math.random() * 8 - 4);
   const pinColor = getPinColor(data.id);
   const handwritingFont = getHandwritingFont(data.id);
+  const { isMobile, isTablet } = useResponsive();
+
+  // Responsive sizing
+  const stickyWidth = isMobile ? 'w-28' : isTablet ? 'w-32' : 'w-36';
+  const padding = isMobile ? '8px' : '10px';
+  const paddingTop = isMobile ? '16px' : '20px';
+  const titleSize = isMobile ? 'text-xs' : 'text-sm';
+  const descSize = isMobile ? 'text-[10px]' : 'text-xs';
+  const iconSize = isMobile ? 'w-3 h-3' : 'w-4 h-4';
 
   // Sticky note color variants
   const hash = data.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -477,12 +505,12 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
 
   return (
     <div
-      className="w-36 cursor-grab active:cursor-grabbing relative"
+      className={`${stickyWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive`}
       style={{
         "--rotation": `${rotation}deg`,
         background: colors.bg,
-        padding: '10px',
-        paddingTop: '20px',
+        padding: padding,
+        paddingTop: paddingTop,
         borderRadius: '0 0 3px 3px',
         boxShadow: `1px 8px 16px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 -1px 0 ${colors.shadow}`,
       } as React.CSSProperties}
@@ -506,16 +534,16 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
       <PushPin color={pinColor} isDesktop={data.isDesktop} />
 
       <div className="flex items-start gap-1 mb-1">
-        <StickyNote className="w-4 h-4 text-ink/40 flex-shrink-0" />
+        <StickyNote className={`${iconSize} text-ink/40 flex-shrink-0`} />
         <h3
-          className="text-sm text-ink"
+          className={`${titleSize} text-ink`}
           style={{ fontFamily: handwritingFont }}
         >
           {data.title}
         </h3>
       </div>
       <p
-        className="text-xs text-ink/80 leading-relaxed"
+        className={`${descSize} text-ink/80 leading-relaxed`}
         style={{
           fontFamily: handwritingFont,
           transform: 'rotate(-0.5deg)',

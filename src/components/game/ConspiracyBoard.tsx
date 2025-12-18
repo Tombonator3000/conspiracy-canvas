@@ -29,6 +29,7 @@ import { FlashlightOverlay } from "./FlashlightOverlay";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useSettings } from "@/contexts/SettingsContext";
+import { useResponsive } from "@/hooks/useResponsive";
 
 import type { CaseData, CredibilityStats } from "@/types/game";
 
@@ -95,6 +96,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Settings for effects
   const { settings } = useSettings();
+
+  // Responsive detection for mobile/tablet/desktop optimization
+  const { isMobile, isTablet, isDesktop, isTouch, isLandscape } = useResponsive();
 
   // Dynamic connection line style based on thread color
   const connectionLineStyle = useMemo(() => ({
@@ -354,13 +358,30 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
+  // Responsive ReactFlow settings based on device type
+  const responsiveFlowConfig = useMemo(() => ({
+    // Smaller minZoom on mobile to see more of the board
+    minZoom: isMobile ? 0.15 : isTablet ? 0.2 : 0.2,
+    maxZoom: isMobile ? 1.5 : 2,
+    // More padding on mobile fitView for better thumb navigation
+    fitViewPadding: isMobile ? 0.5 : isTablet ? 0.4 : 0.3,
+    // Adjust pan behavior for touch devices
+    panOnDrag: isTouch ? [0, 1, 2] : [1, 2],
+    // Enable/disable features based on device
+    zoomOnPinch: true,
+    zoomOnScroll: !isTouch, // Disable scroll zoom on touch (can interfere with page scroll)
+    zoomOnDoubleClick: isTouch, // Enable double-tap zoom on touch
+    // Connection radius larger on touch devices
+    connectionRadius: isTouch ? 70 : 50,
+  }), [isMobile, isTablet, isTouch]);
+
   // Game over is now handled by Index.tsx's GameOverScreen
   // No early return here - let the board fade out naturally
 
   return (
-    <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden ${isVictory ? 'victory-glow' : ''}`}>
+    <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden safe-area-all ${isVictory ? 'victory-glow' : ''}`}>
       {/* HUD - Left side */}
-      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex flex-col gap-2 sm:gap-3">
+      <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex flex-col gap-2 sm:gap-3 safe-area-top safe-area-left">
         <CaseHeader
           title={caseData.title}
           description={caseData.description}
@@ -370,31 +391,43 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       </div>
 
       {/* HUD - Right side */}
-      <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-50 flex flex-col gap-2 sm:gap-3 max-w-[140px] sm:max-w-none">
-        <SanityMeter sanity={sanity} />
+      <div className={`absolute z-50 flex flex-col gap-2 sm:gap-3 safe-area-top safe-area-right ${
+        isMobile ? 'top-2 right-2 max-w-[120px]' : 'top-2 sm:top-4 right-2 sm:right-4'
+      }`}>
+        <div className="sanity-meter-responsive">
+          <SanityMeter sanity={sanity} />
+        </div>
       </div>
 
-      {/* Thread Mode Toggle */}
-      <div className="absolute top-20 right-4 z-50 flex flex-col gap-2 bg-black/50 p-2 rounded border border-white/10">
-        <span className="text-[10px] text-white font-mono uppercase">Thread Mode</span>
+      {/* Thread Mode Toggle - repositioned for mobile */}
+      <div className={`absolute z-50 flex flex-col gap-2 bg-black/50 p-2 rounded border border-white/10 touch-target ${
+        isMobile
+          ? 'bottom-[180px] right-2 thread-toggle-mobile'
+          : 'top-20 right-4'
+      }`}>
+        <span className="text-[10px] text-white font-mono uppercase hidden sm:block">Thread Mode</span>
         <div className="flex gap-2">
           <button
             onClick={() => setThreadColor('red')}
-            className={`w-8 h-8 rounded-full border-2 transition-all ${threadColor === 'red' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
+            className={`w-8 h-8 sm:w-8 sm:h-8 rounded-full border-2 transition-all touch-target ${threadColor === 'red' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
             style={{ backgroundColor: '#e11d48' }}
             title="Red Thread"
           />
           <button
             onClick={() => setThreadColor('blue')}
-            className={`w-8 h-8 rounded-full border-2 transition-all ${threadColor === 'blue' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
+            className={`w-8 h-8 sm:w-8 sm:h-8 rounded-full border-2 transition-all touch-target ${threadColor === 'blue' ? 'border-white scale-110' : 'border-transparent opacity-50'}`}
             style={{ backgroundColor: '#3b82f6' }}
             title="Blue Thread"
           />
         </div>
       </div>
 
-      {/* UV Light Toggle */}
-      <div className="absolute top-44 right-4 z-50">
+      {/* UV Light Toggle - repositioned for mobile */}
+      <div className={`absolute z-50 ${
+        isMobile
+          ? 'bottom-[120px] right-2 uv-toggle-mobile'
+          : 'top-44 right-4'
+      }`}>
         <UVLightToggle isEnabled={isUVEnabled} onToggle={toggleUV} />
       </div>
 
@@ -416,17 +449,22 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         edgeTypes={edgeTypes}
         proOptions={proOptions}
         fitView
-        fitViewOptions={{ padding: 0.3, minZoom: 0.2, maxZoom: 2 }}
+        fitViewOptions={{
+          padding: responsiveFlowConfig.fitViewPadding,
+          minZoom: responsiveFlowConfig.minZoom,
+          maxZoom: responsiveFlowConfig.maxZoom
+        }}
         className="!bg-transparent"
-        minZoom={0.2}
-        maxZoom={2}
+        minZoom={responsiveFlowConfig.minZoom}
+        maxZoom={responsiveFlowConfig.maxZoom}
         connectionLineStyle={connectionLineStyle}
         connectionLineType={ConnectionLineType.Straight}
-        connectionRadius={50}
-        panOnDrag={[1, 2]}
+        connectionRadius={responsiveFlowConfig.connectionRadius}
+        panOnDrag={responsiveFlowConfig.panOnDrag as (0 | 1 | 2)[]}
         connectOnClick={true}
-        zoomOnPinch={true}
-        zoomOnScroll={true}
+        zoomOnPinch={responsiveFlowConfig.zoomOnPinch}
+        zoomOnScroll={responsiveFlowConfig.zoomOnScroll}
+        zoomOnDoubleClick={responsiveFlowConfig.zoomOnDoubleClick}
         selectNodesOnDrag={false}
         elementsSelectable={false}
         nodesDraggable={true}
@@ -435,12 +473,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       >
         <Background
           variant={BackgroundVariant.Dots}
-          gap={20}
+          gap={isMobile ? 15 : 20}
           size={1}
           color="hsl(30, 20%, 25%)"
         />
         <Controls
-          className="!bg-secondary !border-border !rounded-lg overflow-hidden [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted !bottom-20 sm:!bottom-4"
+          className={`!bg-secondary !border-border !rounded-lg overflow-hidden [&>button]:!bg-secondary [&>button]:!border-border [&>button]:!text-foreground [&>button:hover]:!bg-muted ${
+            isMobile
+              ? '!bottom-[70px] !left-1/2 !-translate-x-1/2 !right-auto !flex-row'
+              : '!bottom-4 !right-4 !left-auto'
+          }`}
           showInteractive={false}
         />
       </ReactFlow>

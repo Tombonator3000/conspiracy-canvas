@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Lock, CheckCircle } from "lucide-react";
 import type { CaseData } from "@/types/game";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useResponsive } from "@/hooks/useResponsive";
 
 interface FilingCabinetProps {
   cases: CaseData[];
@@ -30,6 +31,7 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
   const [isLoading, setIsLoading] = useState(true);
   const [bootSequence, setBootSequence] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const { isMobile, isTablet } = useResponsive();
 
   const isCaseUnlocked = (index: number) => {
     if (index === 0) return true;
@@ -186,15 +188,17 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
 
                         {/* File listing - scrollable */}
                         <div className="flex-1 overflow-y-auto min-h-0 border border-[#00ff00]/30 bg-black/30 rounded">
-                          <div className="p-3 md:p-4">
-                            {/* Table header */}
-                            <div className="terminal-text text-xs md:text-sm text-[#00aa00] border-b border-[#00aa00]/50 pb-2 mb-3 grid grid-cols-12 gap-2">
-                              <span className="col-span-2">FILE</span>
-                              <span className="col-span-4">CODENAME</span>
-                              <span className="col-span-2">CLEARANCE</span>
-                              <span className="col-span-2">EVIDENCE</span>
-                              <span className="col-span-2">STATUS</span>
-                            </div>
+                          <div className="p-2 sm:p-3 md:p-4">
+                            {/* Table header - hidden on mobile */}
+                            {!isMobile && (
+                              <div className="terminal-text text-xs md:text-sm text-[#00aa00] border-b border-[#00aa00]/50 pb-2 mb-3 grid grid-cols-12 gap-2">
+                                <span className="col-span-2">FILE</span>
+                                <span className="col-span-4">CODENAME</span>
+                                <span className="col-span-2">CLEARANCE</span>
+                                <span className="col-span-2">EVIDENCE</span>
+                                <span className="col-span-2">STATUS</span>
+                              </div>
+                            )}
 
                             {/* File entries */}
                             {cases.map((caseData, index) => {
@@ -202,6 +206,59 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                               const completed = isCaseCompleted(caseData.id);
                               const isSelected = selectedIndex === index;
 
+                              // Mobile layout
+                              if (isMobile) {
+                                return (
+                                  <motion.button
+                                    key={caseData.id}
+                                    className={`
+                                      w-full text-left py-3 px-3 rounded mb-2
+                                      transition-all duration-100 touch-target
+                                      ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}
+                                      ${isSelected ? 'bg-[#00ff00] text-black' : 'border border-[#00ff00]/20'}
+                                      ${unlocked && !isSelected ? 'active:bg-[#00ff00]/30' : ''}
+                                    `}
+                                    onClick={() => handleSelectCase(caseData, index)}
+                                    disabled={!unlocked}
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: index * 0.05 }}
+                                  >
+                                    {/* Mobile: Top row with file number and status */}
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className={`font-mono text-[10px] ${isSelected ? 'text-black' : 'terminal-text'}`}>
+                                        {String(index + 1).padStart(3, '0')}.DAT
+                                      </span>
+                                      <span className="flex items-center gap-1">
+                                        {!unlocked ? (
+                                          <Lock className="w-3 h-3 text-[#ff3333]" />
+                                        ) : completed ? (
+                                          <CheckCircle className="w-3 h-3 text-[#00ff00]" />
+                                        ) : (
+                                          <span className={`text-[10px] ${isSelected ? 'text-black' : 'text-[#ffff00]'}`}>OPEN</span>
+                                        )}
+                                      </span>
+                                    </div>
+
+                                    {/* Mobile: Codename */}
+                                    <div className={`font-mono text-sm font-bold mb-1 ${isSelected ? 'text-black' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                      {unlocked ? caseData.title.toUpperCase() : "██████████"}
+                                    </div>
+
+                                    {/* Mobile: Meta row */}
+                                    <div className="flex justify-between items-center">
+                                      <span className={`font-mono text-[10px] ${isSelected ? 'text-black' : unlocked ? 'text-[#ffff00]' : 'text-[#444400]'}`}>
+                                        {unlocked ? getDifficultyIndicator(caseData.difficulty) : "[□□□□□]"}
+                                      </span>
+                                      <span className={`font-mono text-[10px] ${isSelected ? 'text-black' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                        {unlocked ? `${caseData.nodes.length} ITEMS` : "??"}
+                                      </span>
+                                    </div>
+                                  </motion.button>
+                                );
+                              }
+
+                              // Desktop/tablet layout
                               return (
                                 <motion.button
                                   key={caseData.id}

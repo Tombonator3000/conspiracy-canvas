@@ -4,6 +4,7 @@ import { Volume2, VolumeX } from "lucide-react";
 import { Printer } from "./Printer";
 import { SettingsModal } from "./SettingsModal";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useResponsive } from "@/hooks/useResponsive";
 import { allCases } from "@/data/cases";
 import type { CaseData } from "@/types/game";
 import desktopBg from "@/assets/desktop_bg.jpeg";
@@ -20,8 +21,9 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
   const [showCredits, setShowCredits] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPrinter, setShowPrinter] = useState(false);
-  
+
   const { initialize, isInitialized, playSFX, isMuted, toggleMute } = useAudioContext();
+  const { isMobile, isTablet, isLandscape } = useResponsive();
 
   // Calculate the next available case
   const nextCase = nextUnlockedCase || allCases[0];
@@ -99,17 +101,17 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
           />
         )}
 
-        {/* Terminal Menu - positioned to fit inside the monitor */}
+        {/* Terminal Menu - positioned to fit inside the monitor, responsive */}
         <div
           className="absolute flex items-center justify-center z-10"
           style={{
-            top: '18%',
+            top: isMobile ? '15%' : '18%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '20%',
-            height: '36%',
-            minWidth: '240px',
-            maxWidth: '340px',
+            width: isMobile ? '85%' : isTablet ? '40%' : '20%',
+            height: isMobile ? '50%' : '36%',
+            minWidth: isMobile ? '280px' : '240px',
+            maxWidth: isMobile ? '360px' : '340px',
           }}
         >
           {/* CRT Scanline Overlay - reduced opacity for better readability */}
@@ -163,22 +165,27 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
               </p>
             </motion.div>
 
-            {/* Menu options */}
+            {/* Menu options - responsive touch targets */}
             <div className="flex-1 flex flex-col justify-center space-y-1 sm:space-y-2">
               {menuOptions.map((option, index) => (
                 <motion.button
                   key={option.label}
-                  className={`text-left font-mono text-[10px] sm:text-sm py-1 px-2 transition-colors rounded-sm ${
+                  className={`text-left font-mono text-[11px] sm:text-sm py-2 sm:py-1 px-2 transition-colors rounded-sm touch-target ${
                     selectedOption === index
                       ? 'text-[hsl(120,100%,5%)] bg-[hsl(120,100%,50%)]'
-                      : 'text-[hsl(120,100%,50%)] hover:bg-[hsl(120,100%,50%)]/20'
+                      : 'text-[hsl(120,100%,50%)] hover:bg-[hsl(120,100%,50%)]/20 active:bg-[hsl(120,100%,50%)]/30'
                   }`}
                   style={{
                     textShadow: selectedOption === index ? 'none' : '0 0 2px hsl(120,100%,50%)',
+                    minHeight: isMobile ? '44px' : 'auto',
                   }}
-                  onMouseEnter={() => setSelectedOption(index)}
-                  onClick={option.action}
-                  whileHover={{ x: 4 }}
+                  onMouseEnter={() => !isMobile && setSelectedOption(index)}
+                  onClick={() => {
+                    setSelectedOption(index);
+                    option.action();
+                  }}
+                  whileHover={!isMobile ? { x: 4 } : {}}
+                  whileTap={{ scale: 0.98 }}
                 >
                   {selectedOption === index ? '►' : ' '} {option.label}
                 </motion.button>
