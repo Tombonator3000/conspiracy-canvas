@@ -521,7 +521,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       ...(allowedPairMatch || [])
     ]));
 
-    if (matchedTags.length === 0) {
+    const validatedAdjacency = buildValidatedAdjacency(edges);
+    const sourceCluster = collectComponentNodes(params.source || source.id, validatedAdjacency);
+    const targetCluster = collectComponentNodes(params.target || target.id, validatedAdjacency);
+
+    const sourceClusterTags = collectTruthTagsForNodes(sourceCluster, nodes);
+    const targetClusterTags = collectTruthTagsForNodes(targetCluster, nodes);
+
+    const tagsGainedBySource = requiredTags.filter(tag => !sourceClusterTags.has(tag) && targetClusterTags.has(tag));
+    const tagsGainedByTarget = requiredTags.filter(tag => !targetClusterTags.has(tag) && sourceClusterTags.has(tag));
+    const newlyCoveredTags = Array.from(new Set([...tagsGainedBySource, ...tagsGainedByTarget]));
+
+    const advancesRequired = newlyCoveredTags.length > 0;
+
+    // If the connection neither shares/allowed tags nor advances required coverage, treat as a failure
+    if (matchedTags.length === 0 && newlyCoveredTags.length === 0) {
       set(state => ({
         sanity: Math.max(0, state.sanity - 6),
         mistakes: state.mistakes + 1,
@@ -535,19 +549,6 @@ export const useGameStore = create<GameState>((set, get) => ({
       );
       return;
     }
-
-    const validatedAdjacency = buildValidatedAdjacency(edges);
-    const sourceCluster = collectComponentNodes(params.source || source.id, validatedAdjacency);
-    const targetCluster = collectComponentNodes(params.target || target.id, validatedAdjacency);
-
-    const sourceClusterTags = collectTruthTagsForNodes(sourceCluster, nodes);
-    const targetClusterTags = collectTruthTagsForNodes(targetCluster, nodes);
-
-    const tagsGainedBySource = requiredTags.filter(tag => !sourceClusterTags.has(tag) && targetClusterTags.has(tag));
-    const tagsGainedByTarget = requiredTags.filter(tag => !targetClusterTags.has(tag) && sourceClusterTags.has(tag));
-    const newlyCoveredTags = Array.from(new Set([...tagsGainedBySource, ...tagsGainedByTarget]));
-
-    const advancesRequired = newlyCoveredTags.length > 0;
 
     if (isValidConnection) {
       const isSupportingConnection = !advancesRequired;
