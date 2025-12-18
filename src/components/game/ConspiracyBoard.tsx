@@ -28,6 +28,8 @@ import { FlashlightOverlay } from "./FlashlightOverlay";
 import { ConspiracyWeb } from "./ConspiracyWeb";
 import { StarPrediction } from "./StarPrediction";
 import { HintPanel } from "./HintPanel";
+import { TheoryMode } from "./TheoryMode";
+import { ModifierIndicators } from "./ModifierIndicators";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
@@ -80,6 +82,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     isUVEnabled,
     shakingNodeIds,
     bursts,
+    theoryModeActive,
+    selectedTheoryNodes,
     setNodes,
     setEdges,
     setRequiredTags,
@@ -96,6 +100,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     toggleUV,
     triggerParanoiaMovement,
     revealNode,
+    selectTheoryNode,
+    deselectTheoryNode,
   } = useGameStore();
 
   // React Flow instance for camera control and coordinate conversion
@@ -310,6 +316,19 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     setIsBinHighlighted(overBin);
   }, [isNodeOverBin]);
 
+  // Handle node click - for Theory Mode selection
+  const handleNodeClick = useCallback((event: React.MouseEvent, node: { id: string }) => {
+    // Only handle clicks in Theory Mode
+    if (!theoryModeActive) return;
+
+    // Toggle selection
+    if (selectedTheoryNodes.includes(node.id)) {
+      deselectTheoryNode(node.id);
+    } else {
+      selectTheoryNode(node.id);
+    }
+  }, [theoryModeActive, selectedTheoryNodes, selectTheoryNode, deselectTheoryNode]);
+
   // Handle node drag stop - update store and check for combinations
   const handleNodeDragStop = useCallback((event: React.MouseEvent | React.TouchEvent, node: { id: string; position: { x: number; y: number } }) => {
     // Check if dropped on bin - use both event position AND highlighted state
@@ -345,13 +364,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   }, [isBinHighlighted, isNodeOverBin, nodes, startTrashAnimation, onNodeDragStop, findOverlappingNode, caseData.combinations, checkCombine]);
 
   // GLITCH TEXT & NODE TRANSFORMATION
-  // Map nodes with shake, UV state, and hallucination effects for visual feedback
+  // Map nodes with shake, UV state, theory mode, and hallucination effects for visual feedback
   const visibleNodes = useMemo(() => nodes.map(node => {
     const nodeData: EvidenceNodeData = { ...(node.data as EvidenceNodeData) };
 
     // Add base states
     nodeData.isUVEnabled = isUVEnabled;
     nodeData.isShaking = shakingNodeIds.includes(node.id);
+
+    // Theory Mode selection state
+    const isTheorySelected = theoryModeActive && selectedTheoryNodes.includes(node.id);
+    (nodeData as EvidenceNodeData & { isTheorySelected?: boolean }).isTheorySelected = isTheorySelected;
 
     // GLITCH TEXT: If sanity is VERY low (under 30), 10% chance to glitch text
     if (sanity < 30 && Math.random() < 0.1) {
@@ -363,9 +386,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
     return {
       ...node,
-      data: nodeData
+      data: nodeData,
+      // Add visual selection class for theory mode
+      className: isTheorySelected ? 'theory-selected' : '',
     };
-  }), [nodes, isUVEnabled, shakingNodeIds, sanity]);
+  }), [nodes, isUVEnabled, shakingNodeIds, sanity, theoryModeActive, selectedTheoryNodes]);
 
   const proOptions = useMemo(() => ({ hideAttribution: true }), []);
 
@@ -414,6 +439,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
             <ConspiracyWeb />
             <StarPrediction />
             <HintPanel />
+            <TheoryMode />
+            <ModifierIndicators />
           </>
         )}
       </div>
@@ -424,6 +451,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
           <ConspiracyWeb className="text-[9px]" />
           <StarPrediction className="text-[9px]" />
           <HintPanel className="text-[9px]" />
+          <TheoryMode className="text-[9px]" />
+        </div>
+      )}
+
+      {/* Mobile modifier indicators - top left */}
+      {isMobile && (
+        <div className="absolute top-[100px] left-2 z-50">
+          <ModifierIndicators className="text-[9px]" />
         </div>
       )}
 
@@ -473,6 +508,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         onConnect={onConnect}
         onNodeDrag={handleNodeDrag}
         onNodeDragStop={handleNodeDragStop}
+        onNodeClick={handleNodeClick}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         proOptions={proOptions}

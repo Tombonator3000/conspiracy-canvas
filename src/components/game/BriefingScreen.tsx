@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { CaseData } from "@/types/game";
+import type { CaseData, ModifierId } from "@/types/game";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useGameStore } from "@/store/gameStore";
+import { ModifierSelector } from "./ModifierSelector";
 
 interface BriefingScreenProps {
   caseData: CaseData;
@@ -54,9 +56,11 @@ const useTypewriter = (text: string, speed: number = 30, startDelay: number = 0)
 
 export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenProps) => {
   const { playSFX, initialize, isInitialized } = useAudioContext();
+  const { setActiveModifiers } = useGameStore();
   const [isLoading, setIsLoading] = useState(true);
   const [showContent, setShowContent] = useState(false);
   const [bootSequence, setBootSequence] = useState(0);
+  const [selectedModifiers, setSelectedModifiers] = useState<ModifierId[]>([]);
 
   // Typewriter effects for each section
   const headerText = useTypewriter(
@@ -122,9 +126,11 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
 
   const handleExecute = useCallback(() => {
     playSFX("access_granted");
+    // Set the active modifiers in the game store before starting
+    setActiveModifiers(selectedModifiers);
     // Small delay for the sound to play
     setTimeout(onExecute, 400);
-  }, [onExecute, playSFX]);
+  }, [onExecute, playSFX, setActiveModifiers, selectedModifiers]);
 
   const handleAbort = useCallback(() => {
     playSFX("button_click");
@@ -265,6 +271,21 @@ export const BriefingScreen = ({ caseData, onExecute, onAbort }: BriefingScreenP
                         </div>
                       </div>
                     </div>
+
+                    {/* Challenge Modifiers */}
+                    {objectiveText.isComplete && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.3, duration: 0.3 }}
+                        className="mb-4"
+                      >
+                        <ModifierSelector
+                          selectedModifiers={selectedModifiers}
+                          onModifiersChange={setSelectedModifiers}
+                        />
+                      </motion.div>
+                    )}
 
                     {/* Action Buttons */}
                     <motion.div

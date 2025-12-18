@@ -201,3 +201,58 @@ export interface ConnectionResult {
   matchingTag?: string;
   scribbleText?: string;
 }
+
+// Game Modifiers for challenge modes
+export type ModifierId = 'deadline' | 'blackout' | 'paranoid' | 'minimalist';
+
+export interface GameModifier {
+  id: ModifierId;
+  name: string;
+  description: string;
+  effect: string;
+  bonus: number;
+  icon: string;
+}
+
+export const GAME_MODIFIERS: GameModifier[] = [
+  {
+    id: 'deadline',
+    name: 'DEADLINE',
+    description: '5 minute time limit',
+    effect: 'Race against the clock',
+    bonus: 500,
+    icon: '⏱️',
+  },
+  {
+    id: 'blackout',
+    name: 'BLACKOUT',
+    description: 'UV light: 30 sec total',
+    effect: 'Limited UV usage',
+    bonus: 300,
+    icon: '🔦',
+  },
+  {
+    id: 'paranoid',
+    name: 'PARANOID',
+    description: 'Start at 50 sanity',
+    effect: 'Reduced starting sanity',
+    bonus: 400,
+    icon: '😰',
+  },
+  {
+    id: 'minimalist',
+    name: 'MINIMALIST',
+    description: 'Max 10 connections',
+    effect: 'Limited connections allowed',
+    bonus: 250,
+    icon: '🔗',
+  },
+];
+
+// Theory Mode - hypothesis testing
+export interface TheoryResult {
+  correctCount: number;
+  totalNodes: number;
+  message: string;
+  variant: 'success' | 'partial' | 'failure';
+}
