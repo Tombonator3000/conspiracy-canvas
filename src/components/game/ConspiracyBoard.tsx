@@ -31,7 +31,14 @@ import { useAudioContext } from "@/contexts/AudioContext";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useResponsive } from "@/hooks/useResponsive";
 
-import type { CaseData, CredibilityStats } from "@/types/game";
+import type { CaseData, CredibilityStats, EvidenceNodeData } from "@/types/game";
+
+// Development-only logging helper
+const devLog = (message: string, ...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.log(message, ...args);
+  }
+};
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -165,7 +172,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   useEffect(() => {
     if (isUVEnabled) {
       nodes.forEach(n => {
-        if ((n.data as any).requiresUV && !(n.data as any).isRevealed) {
+        const nodeData = n.data as EvidenceNodeData;
+        if (nodeData.requiresUV && !nodeData.isRevealed) {
           revealNode(n.id);
         }
       });
@@ -233,7 +241,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const victory = isVictory;
 
       // Trigger game end immediately
-      console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
+      devLog(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
       onGameEnd(victory, finalSanity, finalScore, {
         credibility: victory ? 100 : 0,
         cleanupBonus: finalJunkBinned * 100,
@@ -312,7 +320,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         const isJunk = truthTags.length === 0;
         // Start trash animation - node will be removed after animation completes
         startTrashAnimation(node.id, isJunk);
-        console.log(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}, wasHighlighted: ${isBinHighlighted}`);
+        devLog(`🗑️ Dropped ${node.id} to bin - isJunk: ${isJunk}, wasHighlighted: ${isBinHighlighted}`);
       }
       setIsBinHighlighted(false);
       draggedNodeRef.current = null;
@@ -336,7 +344,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // GLITCH TEXT & NODE TRANSFORMATION
   // Map nodes with shake, UV state, and hallucination effects for visual feedback
   const visibleNodes = useMemo(() => nodes.map(node => {
-    const nodeData = { ...node.data } as any;
+    const nodeData: EvidenceNodeData = { ...(node.data as EvidenceNodeData) };
 
     // Add base states
     nodeData.isUVEnabled = isUVEnabled;

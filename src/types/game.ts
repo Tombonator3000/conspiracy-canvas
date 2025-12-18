@@ -33,6 +33,52 @@ export interface EvidenceNode {
   isRevealed?: boolean; // Set to true when UV light reveals the hidden content
 }
 
+// Extended node data for React Flow rendering (includes runtime properties)
+export interface EvidenceNodeData extends EvidenceNode {
+  rotation?: number;
+  isDesktop?: boolean;
+  isSpawning?: boolean;
+  isTrashing?: boolean;
+  isUVEnabled?: boolean;
+  isShaking?: boolean;
+  isGlitching?: boolean;
+  label?: string; // Glitch override for title
+}
+
+// Achievement definitions
+export type AchievementId =
+  | 'first_case'
+  | 'perfect_sanity'
+  | 'no_mistakes'
+  | 'speed_demon'
+  | 'junk_master'
+  | 'combo_king'
+  | 'all_cases'
+  | 'paranoid_survivor'
+  | 'uv_detective'
+  | 'chain_combo';
+
+export interface Achievement {
+  id: AchievementId;
+  title: string;
+  description: string;
+  icon: string;
+  unlockedAt?: number; // Timestamp when unlocked
+}
+
+export interface AchievementProgress {
+  unlockedAchievements: AchievementId[];
+  stats: {
+    totalCasesCompleted: number;
+    perfectSanityCases: number;
+    noMistakeCases: number;
+    fastestCaseTime: number;
+    totalJunkBinned: number;
+    totalCombosPerformed: number;
+    chainCombosPerformed: number;
+  };
+}
+
 export type ScribbleVariant = 'error' | 'success' | 'insight' | 'paranoia';
 
 export interface Scribble {

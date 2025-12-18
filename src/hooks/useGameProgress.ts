@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
+// Development-only logging helper
+const devError = (message: string, ...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.error(message, ...args);
+  }
+};
+
 const STORAGE_KEY = "apophenia_progress";
 
 // Detailed stats for a completed case
@@ -43,7 +50,7 @@ export const useGameProgress = () => {
         });
       }
     } catch (e) {
-      console.error("Failed to load game progress:", e);
+      devError("Failed to load game progress:", e);
     }
   }, []);
 
@@ -53,7 +60,7 @@ export const useGameProgress = () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(newProgress));
       setProgress(newProgress);
     } catch (e) {
-      console.error("Failed to save game progress:", e);
+      devError("Failed to save game progress:", e);
     }
   }, []);
 

@@ -50,6 +50,7 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
   const [countdown, setCountdown] = useState(5);
   const [message, setMessage] = useState("");
   const [callerName, setCallerName] = useState("");
+  const [chatDismissedManually, setChatDismissedManually] = useState(false);
 
   const triggerEvent = useCallback((type: EventType) => {
     if (type === "phone_call") {
@@ -155,16 +156,23 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
     return () => clearInterval(timer);
   }, [activeEvent, onSanityChange, isGameActive, sanity]);
 
-  // Auto-dismiss chat bubble after 4 seconds
+  // Auto-dismiss chat bubble after 4 seconds - with sanity penalty if not dismissed manually
   useEffect(() => {
-    if (activeEvent !== "chat_bubble") return;
+    if (activeEvent !== "chat_bubble") {
+      setChatDismissedManually(false);
+      return;
+    }
 
     const timer = setTimeout(() => {
+      // If user didn't dismiss manually, they lose sanity for "reading the threatening message"
+      if (!chatDismissedManually && sanity > 0) {
+        onSanityChange(-5);
+      }
       setActiveEvent(null);
     }, 4000);
 
     return () => clearTimeout(timer);
-  }, [activeEvent]);
+  }, [activeEvent, chatDismissedManually, onSanityChange, sanity]);
 
   // Phone ring toast event - triggers when sanity < 50
   useEffect(() => {
@@ -188,6 +196,7 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
   };
 
   const handleDismissChat = () => {
+    setChatDismissedManually(true);
     setActiveEvent(null);
   };
 
@@ -270,17 +279,17 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
           exit={{ x: 100, opacity: 0 }}
           transition={{ type: "spring", damping: 20 }}
         >
-          <div 
-            className="bg-secondary/95 backdrop-blur-md border border-border rounded-lg shadow-xl overflow-hidden cursor-pointer"
+          <div
+            className="bg-secondary/95 backdrop-blur-md border border-destructive rounded-lg shadow-xl overflow-hidden cursor-pointer"
             onClick={handleDismissChat}
           >
             {/* Fake OS notification header */}
-            <div className="bg-muted/50 px-3 py-1.5 flex items-center gap-2 border-b border-border">
+            <div className="bg-destructive/20 px-3 py-1.5 flex items-center gap-2 border-b border-destructive/30">
               <MessageSquare className="w-4 h-4 text-destructive" />
-              <span className="text-xs font-mono text-muted-foreground">System Message</span>
-              <span className="ml-auto text-[10px] text-muted-foreground">now</span>
+              <span className="text-xs font-mono text-destructive">THREAT DETECTED</span>
+              <span className="ml-auto text-[10px] text-destructive/70">tap to dismiss</span>
             </div>
-            
+
             <div className="p-3">
               <motion.p
                 className="font-mono text-sm text-destructive font-bold"
@@ -289,9 +298,12 @@ export const ParanoiaEvents = ({ sanity, isGameActive, onSanityChange, playSFX }
               >
                 {message}
               </motion.p>
+              <p className="text-[10px] text-muted-foreground mt-2 italic">
+                Reading costs -5 Sanity... Click to dismiss!
+              </p>
             </div>
 
-            {/* Glitchy bottom bar */}
+            {/* Glitchy bottom bar - countdown */}
             <motion.div
               className="h-1 bg-destructive"
               initial={{ width: "100%" }}

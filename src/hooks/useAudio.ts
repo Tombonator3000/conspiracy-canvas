@@ -1,6 +1,13 @@
 import { useState, useCallback, useRef, useEffect } from "react";
 import { SOUNDS, SFX_ALIASES, type SoundName, type SFXAlias } from "@/utils/sounds";
 
+// Development-only logging helpers
+const devWarn = (message: string, ...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.warn(message, ...args);
+  }
+};
+
 interface AudioState {
   isInitialized: boolean;
   isMuted: boolean;
@@ -108,7 +115,7 @@ export const useAudio = () => {
 
       setState(prev => ({ ...prev, isInitialized: true }));
     } catch (error) {
-      console.warn("Audio initialization failed:", error);
+      devWarn("Audio initialization failed:", error);
     }
   }, [state.isInitialized, preloadAudio]);
 
@@ -196,7 +203,7 @@ export const useAudio = () => {
     }
 
     audio.play().catch(err => {
-      console.warn(`Failed to play sound ${soundName}:`, err);
+      devWarn(`Failed to play sound ${soundName}:`, err);
     });
   }, [state.isMuted]);
 

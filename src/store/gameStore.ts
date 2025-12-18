@@ -1,8 +1,21 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
-import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
+import { EvidenceNode, EvidenceNodeData, Combination, Scribble, ScribbleVariant } from '@/types/game';
 import { allCases } from '@/cases';
 import { getRandomJunkNodes } from '@/cases/shared/junk/junkNodes';
+
+// Development-only logging helper
+const devLog = (message: string, ...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.log(message, ...args);
+  }
+};
+
+const devWarn = (message: string, ...args: unknown[]) => {
+  if (import.meta.env.DEV) {
+    console.warn(message, ...args);
+  }
+};
 
 // Scribble text pools for different events
 const SUCCESS_CONNECTION_TEXTS = [
@@ -91,6 +104,9 @@ interface GameState {
 
   // TRASH ANIMATION
   trashingNodes: TrashingNode[];
+
+  // COMBO CHAIN TRACKING
+  comboChainCount: number;
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
@@ -192,6 +208,9 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Trash Animation
   trashingNodes: [],
 
+  // Combo Chain Tracking
+  comboChainCount: 0,
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
@@ -207,7 +226,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     scribbles: [],
     trashedNodes: [],
     bursts: [],
-    trashingNodes: []
+    trashingNodes: [],
+    comboChainCount: 0
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -243,7 +263,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   loadLevel: (index) => {
     const level = allCases[index];
     if (!level) {
-      console.warn(`Level ${index} not found`);
+      devWarn(`Level ${index} not found`);
       return;
     }
 
@@ -288,9 +308,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       trashedNodes: [],
       bursts: [],
       trashingNodes: [],
+      comboChainCount: 0,
     });
 
-    console.log(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items)`);
+    devLog(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items)`);
   },
 
   nextLevel: () => {
@@ -300,7 +321,7 @@ export const useGameStore = create<GameState>((set, get) => ({
     if (nextIndex < allCases.length) {
       get().loadLevel(nextIndex);
     } else {
-      console.log("🎉 ALL CASES SOLVED! No more levels.");
+      devLog("🎉 ALL CASES SOLVED! No more levels.");
     }
   },
 
@@ -327,8 +348,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const target = nodes.find(n => n.id === params.target);
     if (!source || !target) return;
 
-    const sourceData = source.data as any;
-    const targetData = target.data as any;
+    const sourceData = source.data as EvidenceNodeData;
+    const targetData = target.data as EvidenceNodeData;
 
     // --- 1. UV / ENCRYPTION CHECK ---
     // If a node requires UV, it must have been revealed OR UV must be currently ON
@@ -391,9 +412,11 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       } as Edge;
 
+      // SANITY REGENERATION: +5 sanity for correct connections (capped at 100)
       set(state => ({
         edges: [...state.edges, newEdge],
         score: state.score + 50,
+        sanity: Math.min(100, state.sanity + 5), // Regenerate sanity!
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
@@ -446,7 +469,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (!validCombo) {
       // INVALID COMBINATION - Show feedback
-      console.log(`❌ No valid combination: ${sourceId} + ${targetId}`);
+      devLog(`❌ No valid combination: ${sourceId} + ${targetId}`);
 
       // Calculate center position for scribble
       const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
@@ -466,7 +489,11 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     if (validCombo) {
-      console.log(`🧪 COMBINE SUCCESS: ${sourceId} + ${targetId}`);
+      devLog(`🧪 COMBINE SUCCESS: ${sourceId} + ${targetId}`);
+
+      // Track combo chain count
+      const currentChainCount = get().comboChainCount;
+      const newChainCount = currentChainCount + 1;
 
       // --- FIRE VISUAL EFFECT ---
       const centerX = (sourceNode.position.x + targetNode.position.x) / 2;
@@ -475,12 +502,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         bursts: [
           ...state.bursts,
           { id: `burst-${Date.now()}`, x: centerX, y: centerY }
-        ]
+        ],
+        comboChainCount: newChainCount
       }));
 
-      // SUCCESS SCRIBBLE - Use unlockText from combo or random insight text
-      const scribbleText = validCombo.unlockText ||
-        SUCCESS_COMBINE_TEXTS[Math.floor(Math.random() * SUCCESS_COMBINE_TEXTS.length)];
+      // Check for chain combo (3+ combinations in a row, or if this is a chain result)
+      const isChainCombo = validCombo.isChainResult || newChainCount >= 3;
+
+      // SUCCESS SCRIBBLE - Show chain bonus for chain combos
+      let scribbleText: string;
+      if (isChainCombo) {
+        scribbleText = `⛓️ CHAIN COMBO x${newChainCount}!`;
+        // Bonus points for chain combos
+        const chainBonus = validCombo.bonusCredibility || (newChainCount * 100);
+        set(state => ({ score: state.score + chainBonus }));
+        devLog(`⛓️ Chain Combo Bonus: +${chainBonus} points! (Chain: ${newChainCount})`);
+      } else {
+        scribbleText = validCombo.unlockText ||
+          SUCCESS_COMBINE_TEXTS[Math.floor(Math.random() * SUCCESS_COMBINE_TEXTS.length)];
+      }
       get().addScribble(scribbleText, centerX, centerY - 50, 'insight');
       // --------------------------
 
@@ -490,7 +530,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const targetTags = (targetNode.data as { truthTags?: string[] }).truthTags || [];
 
       const inheritedTags = new Set([...sourceTags, ...targetTags]);
-      console.log("🧬 Inherited Tags:", Array.from(inheritedTags));
+      devLog("🧬 Inherited Tags:", Array.from(inheritedTags));
 
       // 4. PREPARE NEW NODES
       const newNodes = validCombo.resultNodes.map((blueprint: EvidenceNode, index: number) => {
@@ -559,17 +599,17 @@ export const useGameStore = create<GameState>((set, get) => ({
       const trashedEdges = state.edges.filter(e => e.source === id || e.target === id);
 
       if (!trashedNode) {
-        console.log(`⚠️ trashNode: Node ${id} not found in state`);
+        devLog(`⚠️ trashNode: Node ${id} not found in state`);
         return {};
       }
 
-      console.log(`🗑️ trashNode: Removing node ${id} from ${state.nodes.length} nodes`);
+      devLog(`🗑️ trashNode: Removing node ${id} from ${state.nodes.length} nodes`);
 
       // 1. Remove Node
       const newNodes = state.nodes.filter(n => n.id !== id);
       const newEdges = state.edges.filter(e => e.source !== id && e.target !== id);
 
-      console.log(`🗑️ trashNode: ${state.nodes.length} -> ${newNodes.length} nodes`);
+      devLog(`🗑️ trashNode: ${state.nodes.length} -> ${newNodes.length} nodes`);
 
       // 2. Calculate Penalty/Reward
       let newSanity = state.sanity;
@@ -581,13 +621,13 @@ export const useGameStore = create<GameState>((set, get) => ({
         // Good job!
         newScore += 100;
         newJunkCount += 1;
-        console.log('🗑️ Junk binned! +100 points');
+        devLog('🗑️ Junk binned! +100 points');
       } else {
         // Oh no, deleted evidence!
         newSanity -= 20;
         newScore -= 200;
         newMistakes += 1;
-        console.log('❌ Evidence destroyed! -200 points, -20 sanity');
+        devLog('❌ Evidence destroyed! -200 points, -20 sanity');
       }
 
       // Check for game over
@@ -629,13 +669,13 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Check if there's anything to undo
     if (trashedNodes.length === 0) {
-      console.log('⚠️ Nothing to undo');
+      devLog('⚠️ Nothing to undo');
       return;
     }
 
     // Check if player has enough sanity (costs 20)
     if (sanity < 20) {
-      console.log('⚠️ Not enough sanity to undo (need 20)');
+      devLog('⚠️ Not enough sanity to undo (need 20)');
       addScribble("TOO TIRED...", 300 + Math.random() * 200, 150 + Math.random() * 100);
       return;
     }
@@ -672,7 +712,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       };
 
-      console.log(`↩️ Undo: Restored ${lastTrashed.node.id}, cost 20 sanity`);
+      devLog(`↩️ Undo: Restored ${lastTrashed.node.id}, cost 20 sanity`);
 
       return {
         nodes: [...state.nodes, restoredNode],
@@ -722,6 +762,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       trashedNodes: [],
       bursts: [],
       trashingNodes: [],
+      comboChainCount: 0,
     });
   },
 
@@ -783,18 +824,18 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Prevent double-trashing
     if (state.trashingNodes.some(t => t.nodeId === nodeId)) {
-      console.log(`⚠️ Node ${nodeId} is already being trashed`);
+      devLog(`⚠️ Node ${nodeId} is already being trashed`);
       return;
     }
 
     // Check if node exists
     const nodeToTrash = state.nodes.find(n => n.id === nodeId);
     if (!nodeToTrash) {
-      console.log(`⚠️ Node ${nodeId} not found for trashing`);
+      devLog(`⚠️ Node ${nodeId} not found for trashing`);
       return;
     }
 
-    console.log(`🗑️ Starting trash animation for ${nodeId}`);
+    devLog(`🗑️ Starting trash animation for ${nodeId}`);
 
     // Mark node as trashing (for animation)
     set(state => ({
@@ -812,7 +853,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     // Store isJunk for when animation completes
     const completeTrash = () => {
-      console.log(`🗑️ Completing trash animation for ${nodeId}`);
+      devLog(`🗑️ Completing trash animation for ${nodeId}`);
       get().completeTrashAnimation(nodeId);
       get().trashNode(nodeId, isJunk);
     };
@@ -870,7 +911,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       const missing = requiredTags.filter(t => !clusterTags.has(t));
       if (missing.length === 0) {
         victory = true;
-        console.log("🏆 WINNER! Tags found:", Array.from(clusterTags));
+        devLog("🏆 WINNER! Tags found:", Array.from(clusterTags));
       }
     }
 
@@ -881,7 +922,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       // + Junk * 100
       // - Mistakes * 200
       const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
-      console.log(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
+      devLog(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
       set({
         isVictory: true,
         score: finalScore,
