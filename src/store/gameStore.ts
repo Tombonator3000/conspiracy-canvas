@@ -77,6 +77,12 @@ interface GameState {
   score: number;
   junkBinned: number;
   mistakes: number;
+  initialJunkCount: number;
+  maxJunkAllowed: number;
+  junkRewardValue: number;
+  junkPenaltyValue: number;
+  junkPenaltyPerRemaining: number;
+  cleanupPenalty: number;
   startTime: number;
   successfulConnections: number;
 
@@ -211,6 +217,71 @@ const collectTruthTagsForNodes = (ids: Set<string>, nodes: Node[]) => {
   return tags;
 };
 
+type CleanupDifficulty = 'tutorial' | 'easy' | 'medium' | 'hard';
+
+interface CleanupSettings {
+  junkReward: number;
+  wrongTrashPenalty: number;
+  leftoverPenalty: number;
+  maxJunkRatio: number;
+}
+
+const CLEANUP_SETTINGS: Record<CleanupDifficulty, CleanupSettings> = {
+  tutorial: {
+    junkReward: 80,
+    wrongTrashPenalty: 140,
+    leftoverPenalty: 35,
+    maxJunkRatio: 0.6,
+  },
+  easy: {
+    junkReward: 100,
+    wrongTrashPenalty: 180,
+    leftoverPenalty: 55,
+    maxJunkRatio: 0.5,
+  },
+  medium: {
+    junkReward: 130,
+    wrongTrashPenalty: 230,
+    leftoverPenalty: 75,
+    maxJunkRatio: 0.35,
+  },
+  hard: {
+    junkReward: 170,
+    wrongTrashPenalty: 280,
+    leftoverPenalty: 110,
+    maxJunkRatio: 0.2,
+  }
+};
+
+const normalizeDifficulty = (difficulty?: string): CleanupDifficulty => {
+  const key = difficulty?.toLowerCase() as CleanupDifficulty | undefined;
+  if (key === 'tutorial' || key === 'easy' || key === 'medium' || key === 'hard') {
+    return key;
+  }
+  return 'medium';
+};
+
+const getCleanupSettings = (difficulty?: string) => CLEANUP_SETTINGS[normalizeDifficulty(difficulty)];
+
+const countJunkNodes = (nodes: Node[]) => nodes.filter(n => {
+  const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
+  return truthTags.length === 0;
+}).length;
+
+const deriveCleanupTargets = (nodes: Node[], difficulty?: string) => {
+  const settings = getCleanupSettings(difficulty);
+  const initialJunkCount = countJunkNodes(nodes);
+  const maxJunkAllowed = Math.max(0, Math.floor(initialJunkCount * settings.maxJunkRatio));
+
+  return {
+    initialJunkCount,
+    maxJunkAllowed,
+    junkRewardValue: settings.junkReward,
+    junkPenaltyValue: settings.wrongTrashPenalty,
+    junkPenaltyPerRemaining: settings.leftoverPenalty,
+  };
+};
+
 export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -231,6 +302,12 @@ export const useGameStore = create<GameState>((set, get) => ({
   score: 0,
   junkBinned: 0,
   mistakes: 0,
+  initialJunkCount: 0,
+  maxJunkAllowed: 0,
+  junkRewardValue: CLEANUP_SETTINGS.tutorial.junkReward,
+  junkPenaltyValue: CLEANUP_SETTINGS.tutorial.wrongTrashPenalty,
+  junkPenaltyPerRemaining: CLEANUP_SETTINGS.tutorial.leftoverPenalty,
+  cleanupPenalty: 0,
   startTime: Date.now(),
   successfulConnections: 0,
 
@@ -247,23 +324,30 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Trash Animation
   trashingNodes: [],
 
-  setNodes: (nodes) => set({
-    nodes,
-    startTime: Date.now(),
-    isVictory: false,
-    isGameOver: false,
-    score: 0,
-    junkBinned: 0,
-    mistakes: 0,
-    sanity: 100,
-    successfulConnections: 0,
-    lastAction: null,
-    isUVEnabled: false,
-    shakingNodeIds: [],
-    scribbles: [],
-    trashedNodes: [],
-    bursts: [],
-    trashingNodes: []
+  setNodes: (nodes) => set(() => {
+    const { difficulty } = get().getCurrentCase() || {};
+    const cleanupTargets = deriveCleanupTargets(nodes, difficulty);
+
+    return {
+      nodes,
+      startTime: Date.now(),
+      isVictory: false,
+      isGameOver: false,
+      score: 0,
+      junkBinned: 0,
+      mistakes: 0,
+      sanity: 100,
+      successfulConnections: 0,
+      lastAction: null,
+      isUVEnabled: false,
+      shakingNodeIds: [],
+      scribbles: [],
+      trashedNodes: [],
+      bursts: [],
+      trashingNodes: [],
+      cleanupPenalty: 0,
+      ...cleanupTargets
+    };
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -305,6 +389,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const initialNodes = createNodesFromCase(level);
 
+    const cleanupTargets = deriveCleanupTargets(initialNodes, level.difficulty);
+
     set({
       currentLevelIndex: index,
       nodes: initialNodes,
@@ -323,6 +409,8 @@ export const useGameStore = create<GameState>((set, get) => ({
       trashedNodes: [],
       bursts: [],
       trashingNodes: [],
+      cleanupPenalty: 0,
+      ...cleanupTargets,
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -674,18 +762,21 @@ export const useGameStore = create<GameState>((set, get) => ({
       let newScore = state.score;
       let newJunkCount = state.junkBinned;
       let newMistakes = state.mistakes;
+      const junkReward = state.junkRewardValue;
+      const junkPenalty = state.junkPenaltyValue;
+      const sanityPenalty = Math.max(10, Math.round(junkPenalty / 12));
 
       if (isJunk) {
         // Good job!
-        newScore += 100;
+        newScore += junkReward;
         newJunkCount += 1;
-        console.log('🗑️ Junk binned! +100 points');
+        console.log(`🗑️ Junk binned! +${junkReward} points`);
       } else {
         // Oh no, deleted evidence!
-        newSanity -= 20;
-        newScore -= 200;
+        newSanity -= sanityPenalty;
+        newScore -= junkPenalty;
         newMistakes += 1;
-        console.log('❌ Evidence destroyed! -200 points, -20 sanity');
+        console.log(`❌ Evidence destroyed! -${junkPenalty} points, -${sanityPenalty} sanity`);
       }
 
       // Check for game over
@@ -749,11 +840,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       if (lastTrashed.wasJunk) {
         // Undo junk deletion - remove the bonus
-        newScore -= 100;
+        newScore -= state.junkRewardValue;
         newJunkCount -= 1;
       } else {
         // Undo evidence deletion - remove the penalty
-        newScore += 200;
+        newScore += state.junkPenaltyValue;
         newMistakes -= 1;
       }
 
@@ -805,6 +896,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       score: 0,
       junkBinned: 0,
       mistakes: 0,
+      initialJunkCount: 0,
+      maxJunkAllowed: 0,
+      junkRewardValue: CLEANUP_SETTINGS.tutorial.junkReward,
+      junkPenaltyValue: CLEANUP_SETTINGS.tutorial.wrongTrashPenalty,
+      junkPenaltyPerRemaining: CLEANUP_SETTINGS.tutorial.leftoverPenalty,
+      cleanupPenalty: 0,
       startTime: Date.now(),
       successfulConnections: 0,
       lastAction: null,
@@ -918,8 +1015,24 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   validateWin: () => {
-    const { nodes, edges, requiredTags, score, successfulConnections, junkBinned } = get();
+    const {
+      nodes,
+      edges,
+      requiredTags,
+      score,
+      successfulConnections,
+      junkBinned,
+      maxJunkAllowed,
+      junkPenaltyPerRemaining,
+      junkRewardValue,
+      isVictory
+    } = get();
+
+    if (isVictory) return;
     if (!requiredTags || requiredTags.length === 0) return;
+
+    const remainingJunk = countJunkNodes(nodes);
+    const cleanupPenalty = remainingJunk * junkPenaltyPerRemaining;
 
     // 1. Build Bidirectional Graph using only validated connections
     const adj = buildValidatedAdjacency(edges);
@@ -943,15 +1056,24 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
+    if (victory && remainingJunk > maxJunkAllowed) {
+      console.log(`🚮 Cleanup incomplete: ${remainingJunk} junk remaining (max allowed: ${maxJunkAllowed}).`);
+      set({ cleanupPenalty });
+      return;
+    }
+
     if (victory) {
       const connectionScore = successfulConnections * 50;
-      const cleanupBonus = junkBinned * 100;
+      const cleanupBonus = junkBinned * junkRewardValue;
       const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - score);
-      console.log(`🎯 Final Credibility: ${score} (Connections: ${connectionScore}, Junk: ${cleanupBonus}, Penalties: ${mistakePenalty})`);
+      console.log(`🎯 Final Credibility (pre-penalty): ${score} (Connections: ${connectionScore}, Junk: ${cleanupBonus}, Penalties: ${mistakePenalty}, Cleanup Penalty: ${cleanupPenalty})`);
       set({
         isVictory: true,
+        cleanupPenalty,
         lastAction: { type: 'VICTORY', id: Date.now() }
       });
+    } else {
+      set({ cleanupPenalty });
     }
   }
 }));

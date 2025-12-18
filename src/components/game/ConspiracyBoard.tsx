@@ -72,6 +72,12 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     isGameOver,
     score,
     junkBinned,
+    initialJunkCount,
+    maxJunkAllowed,
+    junkRewardValue,
+    junkPenaltyValue,
+    junkPenaltyPerRemaining,
+    cleanupPenalty,
     threadColor,
     lastAction,
     successfulConnections,
@@ -109,6 +115,27 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
     strokeWidth: 3,
     strokeLinecap: 'round' as const,
   }), [threadColor]);
+
+  const cleanupStats = useMemo(() => {
+    const remaining = nodes.filter(n => {
+      const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
+      return truthTags.length === 0;
+    }).length;
+    const total = initialJunkCount;
+    const cleared = Math.max(0, total - remaining);
+    const progress = total === 0 ? 1 : Math.min(1, cleared / Math.max(1, total));
+    const requiredClears = Math.max(0, total - maxJunkAllowed);
+
+    return {
+      remaining,
+      cleared,
+      progress,
+      overCap: remaining > maxJunkAllowed,
+      requiredClears,
+    };
+  }, [nodes, initialJunkCount, maxJunkAllowed]);
+
+  const cleanupPenaltyPreview = cleanupStats.remaining * junkPenaltyPerRemaining;
 
   // Bin state
   const [isBinHighlighted, setIsBinHighlighted] = useState(false);
@@ -232,14 +259,16 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
       // Capture current values to avoid stale closures
       const finalSanity = sanity;
-      const finalScore = score;
+      const baseScore = score;
       const finalConnections = successfulConnections;
       const finalJunkBinned = junkBinned;
       const victory = isVictory;
 
       const connectionScore = finalConnections * 50;
-      const cleanupBonus = finalJunkBinned * 100;
-      const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - finalScore);
+      const cleanupBonus = finalJunkBinned * junkRewardValue;
+      const cleanupPenaltyValue = cleanupPenalty || (remainingJunk * junkPenaltyPerRemaining);
+      const finalScore = baseScore - cleanupPenaltyValue;
+      const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - baseScore);
 
       // Trigger game end immediately
       console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
@@ -247,12 +276,27 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         credibility: finalScore,
         connectionScore,
         cleanupBonus,
+        cleanupPenalty: cleanupPenaltyValue,
         mistakePenalty,
         trashedJunkCount: finalJunkBinned,
-        junkRemaining: remainingJunk
+        junkRemaining: remainingJunk,
+        maxJunkAllowed
       });
     }
-  }, [isVictory, isGameOver, sanity, score, successfulConnections, junkBinned, nodes, onGameEnd]);
+  }, [
+    isVictory,
+    isGameOver,
+    sanity,
+    score,
+    successfulConnections,
+    junkBinned,
+    nodes,
+    onGameEnd,
+    cleanupPenalty,
+    junkPenaltyPerRemaining,
+    junkRewardValue,
+    maxJunkAllowed
+  ]);
 
   // Reset the trigger ref when starting a new game
   useEffect(() => {
@@ -387,6 +431,36 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       {/* HUD - Right side */}
       <div className="absolute top-2 sm:top-4 right-2 sm:right-4 z-50 flex flex-col gap-2 sm:gap-3 max-w-[140px] sm:max-w-none">
         <SanityMeter sanity={sanity} />
+        <div className={`bg-secondary/80 backdrop-blur-sm rounded-lg border p-2 sm:p-3 ${cleanupStats.overCap ? 'border-destructive/70 shadow-[0_0_10px_rgba(239,68,68,0.35)]' : 'border-border'}`}>
+          <div className="flex items-center justify-between text-[10px] font-mono uppercase text-foreground">
+            <span>Cleanup</span>
+            <span className={cleanupStats.overCap ? 'text-destructive' : 'text-primary'}>
+              {cleanupStats.remaining} left / max {maxJunkAllowed}
+            </span>
+          </div>
+          <div className="w-full h-2 bg-black/30 rounded mt-1 overflow-hidden">
+            <div
+              className={`${cleanupStats.overCap ? 'bg-destructive' : 'bg-primary'} h-full transition-all duration-300`}
+              style={{ width: `${cleanupStats.progress * 100}%` }}
+            />
+          </div>
+          <div className="text-[10px] text-muted-foreground mt-1.5 space-y-0.5">
+            <div className="flex items-center justify-between">
+              <span>Clear {cleanupStats.requiredClears} junk to win</span>
+              <span className="text-foreground">+{junkRewardValue}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Wrong bin</span>
+              <span className="text-destructive">-{junkPenaltyValue}</span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span>Remaining penalty</span>
+              <span className={cleanupPenaltyPreview > 0 ? 'text-destructive' : 'text-foreground'}>
+                -{cleanupPenaltyPreview}
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Thread Mode Toggle */}

@@ -154,11 +154,21 @@ export const VictoryScreenModal = ({
   // Calculate scores
   const connectionScore = credibilityStats.connectionScore;
   const junkBinnedScore = credibilityStats.cleanupBonus;
+  const cleanupPenaltyScore = credibilityStats.cleanupPenalty || 0;
   const mistakesPenalty = credibilityStats.mistakePenalty;
   const totalScore = credibilityStats.credibility ?? score;
-  const finalLineIndex = mistakesPenalty > 0 ? 3 : 2;
+  const totalLinesBeforeFinal = 2 + (cleanupPenaltyScore > 0 ? 1 : 0) + (mistakesPenalty > 0 ? 1 : 0);
+  const finalLineIndex = totalLinesBeforeFinal;
   const starRating = getStarRating(totalScore);
   const rankTitle = RANK_TITLES[starRating];
+
+  const baseDelay = 500;
+  const junkDelay = baseDelay * 2;
+  const penaltyDelay = cleanupPenaltyScore > 0 ? baseDelay * 3 : 0;
+  const mistakesDelay = cleanupPenaltyScore > 0 ? baseDelay * 4 : baseDelay * 3;
+  const finalDelay = mistakesPenalty > 0
+    ? mistakesDelay + baseDelay
+    : (cleanupPenaltyScore > 0 ? penaltyDelay + baseDelay : junkDelay + baseDelay);
 
   // Animation sequence
   useEffect(() => {
@@ -392,25 +402,33 @@ export const VictoryScreenModal = ({
                       <ScoreLine
                         label={`CONNECTIONS (x${connectionsFound}):`}
                         value={connectionScore}
-                        delay={500}
+                        delay={baseDelay}
                       />
                       <ScoreLine
                         label={`JUNK BINNED (x${credibilityStats.trashedJunkCount}):`}
                         value={junkBinnedScore}
-                        delay={1000}
+                        delay={junkDelay}
                       />
+                      {cleanupPenaltyScore > 0 && (
+                        <ScoreLine
+                          label={`LEFTOVER JUNK (x${credibilityStats.junkRemaining}):`}
+                          value={cleanupPenaltyScore}
+                          isPositive={false}
+                          delay={penaltyDelay}
+                        />
+                      )}
                       {mistakesPenalty > 0 && (
                         <ScoreLine
                           label="CREDIBILITY LOST:"
                           value={mistakesPenalty}
                           isPositive={false}
-                          delay={1500}
+                          delay={mistakesDelay}
                         />
                       )}
                       <ScoreLine
                         label="FINAL CALCULATION:"
                         value={totalScore}
-                        delay={mistakesPenalty > 0 ? 2000 : 1500}
+                        delay={finalDelay}
                         onComplete={() => handleScoreTallyComplete(finalLineIndex)}
                       />
 
