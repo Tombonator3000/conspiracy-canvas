@@ -74,14 +74,90 @@ Conspiracy Canvas er et humoristisk puslespill som satiserer konspirasjonsteori-
   - r/conspiracy subreddit parodi
   - QAnon satire
 
-## 2.3 Spilleropplevelse
+## 2.3 Humorstil: Weekly World News møter X-Files
+
+### 2.3.1 Tonalt Konsept
+Spillet kombinerer den tabloid-absurde humoren fra **Weekly World News** med den paranoide, atmosfæriske spenningen fra **X-Files**. Resultatet er en unik blanding av:
+
+- **Tabloid-absurdisme**: Overskrifter som "BAT BOY FOUND IN CAVE" møter konspirasjonspuslespill
+- **Pseudo-seriøs presentasjon**: Alt presenteres med dønn alvorlig tone, selv når innholdet er latterlig
+- **90-talls internett-nostalgi**: GeoCities, blinkende GIFs, og "the truth is out there"-estetikk
+
+### 2.3.2 Humorprinsipper
+
+| Prinsipp | Beskrivelse | Eksempel |
+|----------|-------------|----------|
+| **Absurd + Seriøs** | Latterlige påstander presentert med fullstendig alvor | "Duer lader batteriene sine på strømledninger" |
+| **Overraskende Logikk** | "Beviser" som følger sin egen interne logikk | iPhone funnet i Titanic-vraket = tidsreise |
+| **Tabloid-overskrifter** | Weekly World News-stil sensasjonalisme | "MELK ER REGJERINGSKONTROLL!" |
+| **Paranoid Protagonist** | Spilleren ER konspirasjonsteoretikeren | Sanity-systemet forsterker paranoiaen |
+| **Selv-bevisst Satire** | Spillet vet at det er tull, men "committed to the bit" | Victory screen viser "viral blogg" |
+
+### 2.3.3 Weekly World News-elementer
+- **Bat Boy-aktig absurdisme**: Konspirasjoner som er så dumme at de er morsomme
+- **"Eksklusive" avsløringer**: Alt er "CLASSIFIED" og "EYES ONLY"
+- **Falske ekspertuttalelser**: "Ifølge eksperter ved Instituttet for Alternativ Vitenskap..."
+- **Dårlig Photoshop-estetikk**: Bevisbilder som ser ut som 90-talls tabloid-manipulasjoner
+
+### 2.3.4 X-Files-elementer
+- **"The Truth Is Out There"**: Spilleren søker sannheten, uansett hvor rar den er
+- **Mulder-mentalitet**: "I want to believe" - selv de sprøeste teoriene
+- **Paranoia og forfølgelse**: Telefonoppringninger, "WE CAN SEE YOU"-meldinger
+- **Regjeringsagenter**: FBI-razzia ved game over
+- **Skjulte bevis**: UV-lys avslører "hemmelig" informasjon
+
+### 2.3.5 Konspirasjonsteori-satire
+Spillet parodierer ekte konspirasjonskulturen:
+
+| Ekte Konspirasjon | Spill-parodi |
+|-------------------|--------------|
+| "Birds Aren't Real" | Case 001: Duer er droner som lader på strømledninger |
+| "Chemtrails" | Case 004: Skyer er faktisk datasentre |
+| "Mind Control" | Case 008: Mikrobølgeovner kontrollerer tankene |
+| "Titanic var planlagt" | Case 007: Tidsreisende saboterte Titanic |
+| "Reptilians" | Case 012: Øglemennesker styrer verden |
+
+### 2.3.6 Scribble-humor (Spillerens tanker)
+Scribbles representerer spillerens indre monolog med absurde observasjoner:
+
+**Suksess-scribbles:**
+- "EUREKA! THE PIECES FIT!"
+- "I KNEW IT ALL ALONG!"
+- "THEY CAN'T HIDE THE TRUTH!"
+- "THE PUZZLE REVEALS ITSELF!"
+
+**Feil-scribbles:**
+- "NO NO NO... OR MAYBE?"
+- "THAT'S WHAT THEY WANT ME TO THINK..."
+- "THE DISINFORMATION IS STRONG..."
+- "MY BRAIN... THE FLUORIDE..."
+
+**Paranoia-scribbles:**
+- "THEY'RE WATCHING..."
+- "THE WALLS HAVE EARS..."
+- "TRUST NO ONE..."
+- "WHO ELSE KNOWS?"
+
+### 2.3.7 Victory Screen-humor
+Når spilleren "løser" en sak, får de:
+- **Venstre panel**: "The Viral Truth" - en parodi på konspirasjonsblokker med grønn CRT-tekst, like-tellere, og kommentarer som "OMG THIS IS HUGE"
+- **Høyre panel**: "Official Debrief Report" - et 90-talls regjeringsformular med absurde rangeringer som "ILLUMINATI CONFIRMED"
+
+### 2.3.8 Red Herring-humor
+Søppelbevisene er også humoristiske:
+- Brukt tyggis-innpakning
+- Kaffekvittering fra "Starbucks" (eller er det STARGATE?)
+- Bussbillett til "AREA 51 TOURIST CENTER"
+- Visittkort fra "John Smith, Definitely Not CIA"
+
+## 2.4 Spilleropplevelse
 Spilleren skal føle seg som en paranoid detektiv som:
 1. Starter med "aha!"-øyeblikk når koblinger fungerer
 2. Opplever økende stress når sanity synker
 3. Ler av de absurde "sannhetene" de avdekker
 4. Føler mestringsfølelse når de løser en sak med høy stjernerate
 
-## 2.4 Emosjonell Bue
+## 2.5 Emosjonell Bue
 ```
 Start: Nysgjerrighet → Engasjement → Paranoia (lav sanity) → Seier/Nederlag
 ```
@@ -1326,25 +1402,195 @@ App
 
 ---
 
-# 20. FREMTIDIGE FUNKSJONER (Backlog)
+# 20. IMPLEMENTASJONSSTATUS
 
-## 20.1 Potensielle Tillegg
-- [ ] Multiplayer "rival conspiracy theorist" mode
-- [ ] Daily challenge med leaderboard
-- [ ] Custom case builder
-- [ ] Achievement system
-- [ ] Collectible "conspiracy badges"
-- [ ] Alternativ sanity-boost mekanikk
-- [ ] Mer avanserte kombinasjoner (3+ items)
-- [ ] Animated cutscenes mellom saker
-- [ ] Mobile-optimalisert versjon
-- [ ] Steam release med achievements
+## 20.1 Implementerte Funksjoner (Komplett Liste)
 
-## 20.2 Balansering Notater
-- Vurder sanity-regenerering ved korrekt handlinger
-- Test HARD-sakene for rettferdig vanskelighetsgrad
-- Finjuster combo-bonuser
-- A/B-test UV-mekanikken for brukervennlighet
+### Kjernespillmekanikker
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Dra-og-slipp noder | ✅ Ferdig | Flytt bevisnoder fritt på korktavlen |
+| Rød tråd-kobling | ✅ Ferdig | Koble bevis for å finne sammenhenger |
+| Blå tråd (tidslinje) | ✅ Ferdig | Kronologisk ordning av bevis |
+| UV-lys system | ✅ Ferdig | Avslør skjult tekst med UV-spotlight |
+| Kombinasjonssystem | ✅ Ferdig | Slå sammen bevis til nye funn |
+| Søppelkasse (Evidence Bin) | ✅ Ferdig | Kast red herrings for poeng |
+| Angre-funksjon (Undo) | ✅ Ferdig | Gjenopprett slettet bevis (-20 sanity) |
+| Seiersbetingelse (BFS) | ✅ Ferdig | Cluster-validering av sannhets-tags |
+| Tap ved sanity = 0 | ✅ Ferdig | FBI-razzia game over |
+
+### Sanity og Madness System
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Sanity-meter | ✅ Ferdig | EKG-stil display med CRT-estetikk |
+| Vignette-effekt | ✅ Ferdig | Mørklegging fra kantene ved lav sanity |
+| Progressiv blur | ✅ Ferdig | Uskarphet ved kritisk sanity |
+| Rød puls-overlay | ✅ Ferdig | Pulserende rød effekt |
+| Screen shake | ✅ Ferdig | Tilfeldig jitter ved ekstrem lav sanity |
+| Screen glitch | ✅ Ferdig | Horisontale røde linjer flimrer |
+| Chromatic aberration | ✅ Ferdig | RGB-splitting ved sanity < 40 |
+| Sanity-basert ambient | ✅ Ferdig | Stress-lyd øker ved lav sanity |
+
+### Paranoia-hendelser
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Telefon-oppringning | ✅ Ferdig | Mystisk telefon med nedtelling |
+| Chat-bobler | ✅ Ferdig | Truende meldinger ("WE CAN SEE YOU") |
+| Screen glitch events | ✅ Ferdig | Tilfeldige visuelle forstyrrelser |
+| Toast-varsler | ✅ Ferdig | Skumle notifikasjoner |
+
+### Visuelle Effekter
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| CRT scanlines | ✅ Ferdig | Horisontale linjer for retro-look |
+| Film grain | ✅ Ferdig | 90-talls VHS-estetikk |
+| Flimring/flicker | ✅ Ferdig | Subtil monitor-flimring |
+| Particle bursts | ✅ Ferdig | Eksplosjon ved kombinasjoner |
+| Floating scores | ✅ Ferdig | Animerte poengtekster |
+| Scribbles | ✅ Ferdig | Håndskrevne feedback-meldinger |
+| Node shake | ✅ Ferdig | Risting ved feil kobling |
+| Typewriter-effekt | ✅ Ferdig | Tekst-avdekking i briefings |
+| Analog filters | ✅ Ferdig | Støvpartikler, vignette, grain |
+
+### Lommelykt/UV Modus
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| UV spotlight | ✅ Ferdig | Radial gradient følger mus/touch |
+| Flashlight mode | ✅ Ferdig | Mørke rundt spotlight |
+| Støvpartikler i lys | ✅ Ferdig | Animerte dust motes |
+| Spotlight-shrink | ✅ Ferdig | Spotlight krymper ved lav sanity |
+| UV reveal tekst | ✅ Ferdig | Lime-grønn skjult tekst |
+
+### Skjermer og UI
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| MainMenu (CRT terminal) | ✅ Ferdig | ASCII-art og retro-meny |
+| FilingCabinet | ✅ Ferdig | Sakvelger med boot-sekvens |
+| BriefingScreen | ✅ Ferdig | Klassifisert dokument-stil |
+| ConspiracyBoard | ✅ Ferdig | Hovedspill med React Flow |
+| VictoryScreen (dual panel) | ✅ Ferdig | Blogg + rapport-visning |
+| GameOverScreen (FBI) | ✅ Ferdig | Dramatisk razzia-sekvens |
+| Case Archive | ✅ Ferdig | Se fullførte saker |
+| SettingsModal | ✅ Ferdig | Lyd og tilgjengelighet |
+| Printer-animasjon | ✅ Ferdig | Dot matrix-stil output |
+
+### Poeng og Progresjon
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Poengsystem | ✅ Ferdig | Base + bonus + straff |
+| Combo-bonuser | ✅ Ferdig | Tier 1-3 for streaks |
+| Chain combo multiplier | ✅ Ferdig | Bonus for kjede-kombinasjoner |
+| Stjernerating 1-5 | ✅ Ferdig | Basert på endelig score |
+| Rang-titler | ✅ Ferdig | SHEEP → ILLUMINATI CONFIRMED |
+| Sak-opplåsing | ✅ Ferdig | Progressiv tilgang |
+| Completion tracking | ✅ Ferdig | Lagret i localStorage |
+
+### Achievement System
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| First Steps | ✅ Ferdig | Fullfør første sak |
+| Cool as Ice | ✅ Ferdig | 100% sanity ved fullføring |
+| Flawless Logic | ✅ Ferdig | Ingen feil i en sak |
+| Speed Demon | ✅ Ferdig | Fullfør på < 60 sek |
+| Declutter Expert | ✅ Ferdig | Kast 50 junk items |
+| Combo King | ✅ Ferdig | 10 vellykkede kombinasjoner |
+| Master Investigator | ✅ Ferdig | Fullfør alle saker |
+| Paranoid Survivor | ✅ Ferdig | Fullfør med < 20 sanity |
+| UV Detective | ✅ Ferdig | Avslør 10 skjulte ledetråder |
+| Chain Reaction | ✅ Ferdig | 3+ kjedekombinasjon |
+
+### Lydsystem
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Ambient room tone | ✅ Ferdig | Looping bakgrunnslyd |
+| Stress ambient | ✅ Ferdig | Skalerer med sanity |
+| Paper drag SFX | ✅ Ferdig | Node-flytting |
+| Pin thud SFX | ✅ Ferdig | Kobling laget |
+| Paper crumple SFX | ✅ Ferdig | Node slettet |
+| Success/fail SFX | ✅ Ferdig | Prosedurelle lyder |
+| Phone ring SFX | ✅ Ferdig | Paranoia-events |
+| HDD seek SFX | ✅ Ferdig | Boot-sekvenser |
+| Volumkontroller | ✅ Ferdig | Master, SFX, Ambient |
+
+### Saker (Cases)
+| Sak | Status | Tema |
+|-----|--------|------|
+| Case 001: Feathered Battery | ✅ Ferdig | Fugler er droner |
+| Case 002: Sock Mystery | ✅ Ferdig | Forsvunne sokker |
+| Case 003: Milk Conspiracy | ✅ Ferdig | Melk-kontroll |
+| Case 004: Cloud Computing | ✅ Ferdig | Skyer = datamaskiner |
+| Case 005: Cat Surveillance | ✅ Ferdig | Katter spionerer |
+| Case 006: Eclipse Cover-up | ✅ Ferdig | Formørkelse = dekning |
+| Case 007: Titanic Tourism | ✅ Ferdig | Titanic var planlagt |
+| Case 008: Microwave Control | ✅ Ferdig | Mikrobølger kontrollerer |
+| Case 009: Elvis Lives | ✅ Ferdig | Elvis lever |
+| Case 010: UFO Files | ✅ Ferdig | UFO-konspirasjon |
+| Case 011: Bigfoot Evidence | ✅ Ferdig | Bigfoot eksisterer |
+| Case 012: Reptilians | ✅ Ferdig | Øglemennesker |
+| Case 013: Anchor Theory | ✅ Ferdig | Anker-konspirasjon |
+
+### Junk/Red Herring System
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| 11+ junk-bilder | ✅ Ferdig | Burnt match, bus ticket, etc. |
+| Tilfeldig junk-tildeling | ✅ Ferdig | Varierer per spill |
+| Junk-poeng (+100) | ✅ Ferdig | Bonus for riktig kast |
+| Junk-straff (-50) | ✅ Ferdig | Straff for gjenværende |
+
+### Tilgjengelighet
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Reduce Motion | ✅ Ferdig | Reduserer animasjoner |
+| High Contrast | ✅ Ferdig | Økt kontrast for synlighet |
+| Tutorial hints | ✅ Ferdig | Hjelpetekster for nye spillere |
+| Touch-støtte | ✅ Ferdig | Mobile/tablet interaksjon |
+
+---
+
+## 20.2 Manglende Funksjoner / Planlagte Forbedringer
+
+### Høy Prioritet (Bør implementeres)
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Sanity regenerering | ❌ Mangler | +5 sanity ved korrekt kobling? |
+| Pause-meny | ⚠️ Delvis | Tilgang til innstillinger midt i spill |
+| Tutorial-modus | ⚠️ Delvis | Guidet første sak med tips |
+| Scratch-to-reveal | ❌ Mangler | Skrape av sladdet tekst |
+
+### Medium Prioritet (Nice to have)
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Node jitter (paranoia) | ❌ Mangler | Noder beveger seg ved lav sanity |
+| Flere kombinasjoner | ⚠️ Delvis | 3+ item kombinasjoner |
+| Mer innhold | ⚠️ Pågår | Flere saker (mål: 15-20) |
+| Vanskelighetsbalansering | ⚠️ Pågår | HARD-saker trenger testing |
+
+### Lav Prioritet (Fremtidig)
+| Funksjon | Status | Beskrivelse |
+|----------|--------|-------------|
+| Multiplayer modus | ❌ Planlagt | "Rival conspiracy theorist" |
+| Daily challenge | ❌ Planlagt | Daglig utfordring med leaderboard |
+| Custom case builder | ❌ Planlagt | Lag egne saker |
+| Collectible badges | ❌ Planlagt | Samleobjekter |
+| Animated cutscenes | ❌ Planlagt | Mellomsekvenser |
+| Steam release | ❌ Planlagt | Med achievements |
+| Mobile app | ❌ Planlagt | Native iOS/Android |
+
+---
+
+## 20.3 Kjente Bugs / Teknisk Gjeld
+
+| Problem | Alvorlighet | Beskrivelse |
+|---------|-------------|-------------|
+| chaosLevel ubrukt | Lav | Property i boardState brukes ikke |
+| Enkelte edge cases | Medium | Kombinasjoner ved kant av tavlen |
+| Mobil UX | Medium | Touch-interaksjon kan forbedres |
+
+## 20.4 Balansering Notater
+- Sanity-regenerering ved korrekte handlinger bør vurderes (+5?)
+- HARD-saker trenger spilltesting for rettferdig vanskelighetsgrad
+- Combo-bonuser kan justeres basert på feedback
+- UV-mekanikken kan A/B-testes for brukervennlighet
 
 ---
 
@@ -1371,6 +1617,12 @@ App
 
 ---
 
-**Dokument sist oppdatert:** Desember 2025
-**Versjon:** 1.0
+**Dokument sist oppdatert:** 18. Desember 2025
+**Versjon:** 2.0
 **Forfatter:** Generert med Claude AI
+
+### Endringslogg
+| Versjon | Dato | Endringer |
+|---------|------|-----------|
+| 1.0 | Des 2025 | Første versjon av GDD |
+| 2.0 | 18. Des 2025 | Lagt til humorstil-seksjon (Weekly World News meets X-Files), komplett implementasjonsstatus med 100+ funksjoner, oppdatert manglende funksjoner |
