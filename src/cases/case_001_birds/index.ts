@@ -4,7 +4,6 @@ import powerlinesBirds from "./evidence/powerlines_birds.jpg";
 import catSuspicious from "./evidence/cat_suspicious.jpg";
 import weatherBalloon from "./evidence/weather_balloon.jpg";
 import blurryThumb from "./evidence/blurry_thumb.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case001: CaseData = {
   id: "case_001_birds",
@@ -189,10 +188,7 @@ export const case001: CaseData = {
       tags: ["TRANSPORT", "TICKET"],
       position: { x: 280, y: 520 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_001_birds")
+    }
   ],
   scribblePool: [
     "BIRDS AREN'T REAL!",

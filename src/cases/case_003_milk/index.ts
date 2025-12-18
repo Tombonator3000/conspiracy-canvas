@@ -3,7 +3,6 @@ import bodybuilderMilk from "./evidence/bodybuilder_milk.jpg";
 import oatMilk from "./evidence/oat_milk.jpg";
 import cowSuspicious from "./evidence/cow_suspicious.jpg";
 import spilledMilk from "./evidence/spilled_milk.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case003: CaseData = {
   id: "case_003_milk",
@@ -179,10 +178,7 @@ export const case003: CaseData = {
       tags: ["MAGNET", "SLOGAN"],
       position: { x: 180, y: 180 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_003_milk")
+    }
   ],
   scribblePool: [
     "DRINK THE CHUNKS!",

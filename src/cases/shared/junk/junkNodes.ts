@@ -146,3 +146,38 @@ export function getJunkNodes(caseId: string, count?: number): EvidenceNode[] {
 export function getAllJunkNodes(caseId: string): EvidenceNode[] {
   return getJunkNodes(caseId, junkItems.length);
 }
+
+/**
+ * Get truly random junk nodes - different each time called
+ * @param count - Number of junk items (default: random 2-4)
+ * @returns Array of EvidenceNode objects with unique IDs and random positions
+ */
+export function getRandomJunkNodes(count?: number): EvidenceNode[] {
+  // Random count between 2-4 if not specified
+  const itemCount = count ?? (2 + Math.floor(Math.random() * 3));
+
+  // Shuffle array using Fisher-Yates
+  const shuffled = [...junkItems];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  // Select the items
+  const selected = shuffled.slice(0, Math.min(itemCount, junkItems.length));
+
+  // Convert to EvidenceNodes with random positions and unique IDs
+  return selected.map((item, index): EvidenceNode => ({
+    id: `${item.id}_${Date.now()}_${index}`, // Unique ID each time
+    type: "photo",
+    title: item.title,
+    contentUrl: item.contentUrl,
+    description: item.description,
+    tags: item.tags,
+    position: {
+      x: 50 + Math.floor(Math.random() * 650),
+      y: 80 + Math.floor(Math.random() * 420)
+    },
+    isRedHerring: true
+  }));
+}

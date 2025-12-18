@@ -4,7 +4,6 @@ import awkwardCeo from "./evidence/awkward_ceo.jpg";
 import indoorSunglasses from "./evidence/indoor_sunglasses.jpg";
 import bodyguard from "./evidence/bodyguard.jpg";
 import unblinkingStare from "./evidence/unblinking_stare.jpg";
-import { getJunkNodes } from "../shared/junk";
 
 export const case012: CaseData = {
   id: "case_012_reptilians",
@@ -201,10 +200,7 @@ export const case012: CaseData = {
       tags: ["BLOOD", "MEDICAL"],
       position: { x: 450, y: 180 },
       isRedHerring: true
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_012_reptilians")
+    }
   ],
   scribblePool: [
     "THEY'RE NOT HUMAN!",

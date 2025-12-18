@@ -1,5 +1,4 @@
 import type { CaseData } from "@/types/game";
-import { getJunkNodes } from "../shared/junk";
 
 // Assets placeholders - images to be added later
 const imgShipInField = "/assets/case_013/ship_cornfield.jpg";
@@ -158,11 +157,8 @@ export const case013: CaseData = {
       description: "Says he saw 'Little Green Men' stealing his tractor.",
       tags: ["ALIEN", "WITNESS"],
       position: { x: 50, y: 300 },
-      isRedHerring: true,
-    },
-
-    // ===== JUNK IMAGES FOR ATMOSPHERE =====
-    ...getJunkNodes("case_013_anchor")
+      isRedHerring: true
+    }
   ],
 
   // --- COMBINATIONS ---
