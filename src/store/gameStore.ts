@@ -640,10 +640,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       const newSanity = Math.max(0, state.sanity - 20);
       const isGameOver = newSanity <= 0;
 
+      // Restore the node - IMPORTANT: Clear the isTrashing flag so it's visible
+      const restoredNode = {
+        ...lastTrashed.node,
+        data: {
+          ...lastTrashed.node.data,
+          isTrashing: false,
+        }
+      };
+
       console.log(`↩️ Undo: Restored ${lastTrashed.node.id}, cost 20 sanity`);
 
       return {
-        nodes: [...state.nodes, lastTrashed.node],
+        nodes: [...state.nodes, restoredNode],
         edges: [...state.edges, ...lastTrashed.edges],
         trashedNodes: newTrashedNodes,
         sanity: newSanity,

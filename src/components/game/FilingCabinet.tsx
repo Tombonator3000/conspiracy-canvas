@@ -92,16 +92,16 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
   }, [onBack, playSFX]);
 
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center p-4 z-50">
-      {/* CRT Monitor Frame */}
+    <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
+      {/* CRT Monitor Frame - Fullscreen */}
       <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="crt-monitor w-full max-w-4xl aspect-[4/3] p-1 relative"
+        className="crt-monitor w-full h-full relative"
       >
         {/* Monitor bezel */}
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-4">
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-2 md:p-4">
           {/* Power LED */}
           <div className="absolute bottom-3 right-6 flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full ${isLoading ? 'hdd-activity' : 'bg-green-500'}`} />
@@ -115,13 +115,13 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
           </div>
 
           {/* Screen area */}
-          <div className="crt-monitor w-full h-full rounded relative overflow-hidden crt-flicker">
+          <div className="crt-monitor w-full h-full rounded-sm relative overflow-hidden crt-flicker">
             {/* CRT Effects */}
             <div className="crt-scanlines" />
             <div className="crt-glow" />
 
             {/* Screen content */}
-            <div className="relative z-[1] w-full h-full p-4 md:p-6 flex flex-col">
+            <div className="relative z-[1] w-full h-full p-4 md:p-8 lg:p-12 flex flex-col">
               <AnimatePresence mode="wait">
                 {isLoading ? (
                   /* Boot Sequence */
@@ -158,37 +158,37 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                     className="h-full flex flex-col"
                   >
                     {/* DOS Window Header */}
-                    <div className="dos-window flex-1 flex flex-col min-h-0">
-                      <div className="bg-[#00aa00] px-2 py-1 flex items-center justify-between shrink-0">
-                        <span className="pixel-font text-[8px] md:text-[10px] text-black">
+                    <div className="dos-window flex-1 flex flex-col min-h-0 max-w-6xl mx-auto w-full">
+                      <div className="bg-[#00aa00] px-3 py-1.5 flex items-center justify-between shrink-0">
+                        <span className="pixel-font text-[10px] md:text-xs text-black">
                           CASE_FILE_BROWSER.EXE
                         </span>
-                        <div className="flex gap-1">
-                          <span className="text-black text-xs">─</span>
-                          <span className="text-black text-xs">□</span>
-                          <span className="text-black text-xs">×</span>
+                        <div className="flex gap-2">
+                          <span className="text-black text-sm">─</span>
+                          <span className="text-black text-sm">□</span>
+                          <span className="text-black text-sm">×</span>
                         </div>
                       </div>
 
-                      <div className="p-3 md:p-4 flex-1 flex flex-col min-h-0">
+                      <div className="p-4 md:p-6 flex-1 flex flex-col min-h-0">
                         {/* Header */}
-                        <div className="text-center mb-4 shrink-0">
+                        <div className="text-center mb-6 shrink-0">
                           <motion.div
-                            className="terminal-text pixel-font text-xs md:text-sm classified-flash"
+                            className="terminal-text pixel-font text-sm md:text-lg classified-flash"
                             style={{ color: '#ff3333', textShadow: '0 0 10px rgba(255, 0, 0, 0.8)' }}
                           >
                             *** CASE FILES // SELECT INVESTIGATION ***
                           </motion.div>
-                          <div className="terminal-text text-xs text-[#00aa00] mt-2">
+                          <div className="terminal-text text-sm md:text-base text-[#00aa00] mt-3">
                             {'>'} STATUS: {completedCases.length}/{cases.length} CASES SOLVED
                           </div>
                         </div>
 
                         {/* File listing - scrollable */}
                         <div className="flex-1 overflow-y-auto min-h-0 border border-[#00ff00]/30 bg-black/30 rounded">
-                          <div className="p-2">
+                          <div className="p-3 md:p-4">
                             {/* Table header */}
-                            <div className="terminal-text text-[10px] md:text-xs text-[#00aa00] border-b border-[#00aa00]/50 pb-1 mb-2 grid grid-cols-12 gap-1">
+                            <div className="terminal-text text-xs md:text-sm text-[#00aa00] border-b border-[#00aa00]/50 pb-2 mb-3 grid grid-cols-12 gap-2">
                               <span className="col-span-2">FILE</span>
                               <span className="col-span-4">CODENAME</span>
                               <span className="col-span-2">CLEARANCE</span>
@@ -206,7 +206,7 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                                 <motion.button
                                   key={caseData.id}
                                   className={`
-                                    w-full text-left grid grid-cols-12 gap-1 py-2 px-1 rounded
+                                    w-full text-left grid grid-cols-12 gap-2 py-3 px-2 rounded
                                     transition-all duration-100
                                     ${unlocked ? 'cursor-pointer' : 'cursor-not-allowed'}
                                     ${isSelected ? 'bg-[#00ff00] text-black' : ''}
@@ -220,38 +220,38 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                                   whileHover={unlocked ? { x: 4 } : {}}
                                 >
                                   {/* File number */}
-                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : 'terminal-text'}`}>
+                                  <span className={`col-span-2 font-mono text-xs md:text-sm ${isSelected ? 'text-black' : 'terminal-text'}`}>
                                     {String(index + 1).padStart(3, '0')}.DAT
                                   </span>
 
                                   {/* Codename */}
-                                  <span className={`col-span-4 font-mono text-[10px] md:text-xs truncate ${isSelected ? 'text-black font-bold' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                  <span className={`col-span-4 font-mono text-xs md:text-sm truncate ${isSelected ? 'text-black font-bold' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
                                     {unlocked ? caseData.title.toUpperCase() : "██████████████"}
                                   </span>
 
                                   {/* Clearance */}
-                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : unlocked ? 'text-[#ffff00]' : 'text-[#444400]'}`}
+                                  <span className={`col-span-2 font-mono text-xs md:text-sm ${isSelected ? 'text-black' : unlocked ? 'text-[#ffff00]' : 'text-[#444400]'}`}
                                     style={!isSelected && unlocked ? { textShadow: '0 0 5px rgba(255, 255, 0, 0.5)' } : {}}>
                                     {unlocked ? getDifficultyIndicator(caseData.difficulty) : "[□□□□□]"}
                                   </span>
 
                                   {/* Evidence count */}
-                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs ${isSelected ? 'text-black' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
+                                  <span className={`col-span-2 font-mono text-xs md:text-sm ${isSelected ? 'text-black' : unlocked ? 'terminal-text' : 'text-[#004400]'}`}>
                                     {unlocked ? `${caseData.nodes.length} ITEMS` : "?? ITEMS"}
                                   </span>
 
                                   {/* Status */}
-                                  <span className={`col-span-2 font-mono text-[10px] md:text-xs flex items-center gap-1`}>
+                                  <span className={`col-span-2 font-mono text-xs md:text-sm flex items-center gap-1`}>
                                     {!unlocked ? (
                                       <>
-                                        <Lock className="w-3 h-3 text-[#ff3333]" />
+                                        <Lock className="w-4 h-4 text-[#ff3333]" />
                                         <span className={isSelected ? 'text-black' : 'text-[#ff3333]'} style={!isSelected ? { textShadow: '0 0 5px rgba(255, 0, 0, 0.5)' } : {}}>
                                           LOCKED
                                         </span>
                                       </>
                                     ) : completed ? (
                                       <>
-                                        <CheckCircle className="w-3 h-3 text-[#00ff00]" />
+                                        <CheckCircle className="w-4 h-4 text-[#00ff00]" />
                                         <span className={isSelected ? 'text-black' : 'terminal-text'}>
                                           SOLVED
                                         </span>
@@ -273,22 +273,22 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                           <motion.div
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="mt-3 p-2 border border-[#00ff00]/50 bg-black/50 shrink-0"
+                            className="mt-4 p-3 md:p-4 border border-[#00ff00]/50 bg-black/50 shrink-0"
                           >
-                            <div className="terminal-text text-xs">
+                            <div className="terminal-text text-sm md:text-base">
                               {'>'} SELECTED: {cases[selectedIndex].title.toUpperCase()}
                             </div>
-                            <div className="terminal-text text-[10px] text-[#00aa00] mt-1 line-clamp-2">
+                            <div className="terminal-text text-xs md:text-sm text-[#00aa00] mt-2 line-clamp-2">
                               {cases[selectedIndex].description}
                             </div>
-                            <div className="terminal-text text-[10px] text-[#ffff00] mt-1">
+                            <div className="terminal-text text-xs md:text-sm text-[#ffff00] mt-2">
                               {'>'} OBJECTIVE: Establish {cases[selectedIndex].boardState.maxConnectionsNeeded} connection(s)
                             </div>
                           </motion.div>
                         )}
 
                         {/* Hint text */}
-                        <div className="mt-3 terminal-text text-[10px] text-[#006600] text-center shrink-0">
+                        <div className="mt-4 terminal-text text-xs md:text-sm text-[#006600] text-center shrink-0">
                           COMPLETE CASES IN SEQUENCE TO UNLOCK CLASSIFIED FILES
                         </div>
                       </div>
@@ -299,11 +299,11 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.3 }}
-                      className="mt-4 flex flex-col sm:flex-row gap-3 justify-center shrink-0"
+                      className="mt-6 flex flex-col sm:flex-row gap-4 justify-center shrink-0"
                     >
                       <button
                         onClick={handleBack}
-                        className="dos-button text-sm md:text-base px-4 py-2"
+                        className="dos-button text-base md:text-lg px-6 py-3"
                         style={{
                           color: '#ff6666',
                           borderColor: '#ff6666',
@@ -319,12 +319,12 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 0.5 }}
-                      className="mt-3 text-center shrink-0"
+                      className="mt-4 text-center shrink-0"
                     >
-                      <div className="terminal-text text-[10px] text-[#006600]">
+                      <div className="terminal-text text-xs md:text-sm text-[#006600]">
                         THE DEEPER YOU GO, THE STRANGER IT GETS
                       </div>
-                      <div className="terminal-text text-[10px] text-[#006600]">
+                      <div className="terminal-text text-xs md:text-sm text-[#006600]">
                         © 1997 DEEP_STATE_OS v3.14
                       </div>
                     </motion.div>
