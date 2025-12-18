@@ -146,7 +146,9 @@ export interface FloatingScore {
 
 export interface CredibilityStats {
   credibility: number;
+  connectionScore: number;
   cleanupBonus: number;
+  mistakePenalty: number;
   trashedJunkCount: number;
   junkRemaining: number;
 }

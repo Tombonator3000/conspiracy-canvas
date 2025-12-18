@@ -37,10 +37,10 @@ export const ResultScreen = ({
   const [comments, setComments] = useState<Comment[]>([]);
 
   // Calculate scores using new Credibility Engine
-  const investigationScore = connectionsFound * 100; // Points from connections
+  const investigationScore = credibilityStats.connectionScore; // Points from connections
   const cleanupBonus = credibilityStats.cleanupBonus; // Points from trashing junk
-  const hoarderPenalty = credibilityStats.junkRemaining * 50; // -50 per junk left
-  const totalCredibility = Math.max(0, score - hoarderPenalty);
+  const credibilityLost = credibilityStats.mistakePenalty;
+  const totalCredibility = credibilityStats.credibility ?? score;
 
   // Legacy scores for backward compatibility with comments
   const madnessScore = Math.min(100, Math.round(100 - sanityRemaining + (connectionsFound * 10)));
@@ -136,10 +136,10 @@ export const ResultScreen = ({
                   <span className="text-[#333]">Cleanup Bonus:</span>
                   <span className="font-bold text-[#008000]">+{cleanupBonus}</span>
                 </div>
-                {hoarderPenalty > 0 && (
+                {credibilityLost > 0 && (
                   <div className="flex justify-between items-center">
-                    <span className="text-[#333]">Hoarder Penalty:</span>
-                    <span className="font-bold text-[#ff0000]">-{hoarderPenalty}</span>
+                    <span className="text-[#333]">Credibility Lost:</span>
+                    <span className="font-bold text-[#ff0000]">-{credibilityLost}</span>
                   </div>
                 )}
                 <div className="border-t border-[#999] pt-2 mt-2 flex justify-between items-center">

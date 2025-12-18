@@ -152,11 +152,11 @@ export const VictoryScreenModal = ({
   const { playSFX } = useAudioContext();
 
   // Calculate scores
-  const baseScore = 1000 + Math.floor(sanityRemaining * 10) + (credibilityStats.trashedJunkCount * 100);
-  const mistakesPenalty = Math.max(0, baseScore - score);
-  const sanityBonus = Math.floor(sanityRemaining * 10);
-  const junkBinnedScore = credibilityStats.trashedJunkCount * 100;
-  const totalScore = score;
+  const connectionScore = credibilityStats.connectionScore;
+  const junkBinnedScore = credibilityStats.cleanupBonus;
+  const mistakesPenalty = credibilityStats.mistakePenalty;
+  const totalScore = credibilityStats.credibility ?? score;
+  const finalLineIndex = mistakesPenalty > 0 ? 3 : 2;
   const starRating = getStarRating(totalScore);
   const rankTitle = RANK_TITLES[starRating];
 
@@ -182,12 +182,12 @@ export const VictoryScreenModal = ({
 
   // Handle score tallying completion
   const handleScoreTallyComplete = useCallback((lineIndex: number) => {
-    if (lineIndex === 4) { // After final score line
+    if (lineIndex === finalLineIndex) { // After final score line
       setTimeout(() => setShowFinalScore(true), 300);
       setTimeout(() => setShowStars(true), 800);
       setTimeout(() => setShowRank(true), 2200);
     }
-  }, []);
+  }, [finalLineIndex]);
 
   return (
     <div className="fixed inset-0 bg-gradient-to-b from-[#1a1510] to-[#0d0a08] z-50 overflow-auto">
@@ -390,33 +390,28 @@ export const VictoryScreenModal = ({
                     {/* Animated score tallying */}
                     <div className="space-y-2 border-l-4 border-[#8b0000] pl-3 py-2 bg-white/50">
                       <ScoreLine
-                        label="CASE RESOLVED:"
-                        value={1000}
+                        label={`CONNECTIONS (x${connectionsFound}):`}
+                        value={connectionScore}
                         delay={500}
-                      />
-                      <ScoreLine
-                        label={`SANITY BONUS:`}
-                        value={sanityBonus}
-                        delay={1000}
                       />
                       <ScoreLine
                         label={`JUNK BINNED (x${credibilityStats.trashedJunkCount}):`}
                         value={junkBinnedScore}
-                        delay={1500}
+                        delay={1000}
                       />
                       {mistakesPenalty > 0 && (
                         <ScoreLine
-                          label="MISTAKES PENALTY:"
+                          label="CREDIBILITY LOST:"
                           value={mistakesPenalty}
                           isPositive={false}
-                          delay={2000}
+                          delay={1500}
                         />
                       )}
                       <ScoreLine
                         label="FINAL CALCULATION:"
                         value={totalScore}
-                        delay={2500}
-                        onComplete={() => handleScoreTallyComplete(4)}
+                        delay={mistakesPenalty > 0 ? 2000 : 1500}
+                        onComplete={() => handleScoreTallyComplete(finalLineIndex)}
                       />
 
                       {/* Divider line */}
