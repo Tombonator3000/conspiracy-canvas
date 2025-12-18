@@ -1,7 +1,10 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, Gamepad2, Eye, RotateCcw, Sparkles } from "lucide-react";
+import { X, Volume2, Gamepad2, Eye, RotateCcw } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -21,210 +24,139 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 bg-black/95 z-[100] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-background/95 backdrop-blur-md z-[100] flex items-center justify-center p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
         >
-          {/* CRT Monitor Frame */}
           <motion.div
-            initial={{ scale: 0.9, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.9, opacity: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="crt-monitor w-full max-w-2xl aspect-[4/3] p-1 relative"
+            className="w-full max-w-lg bg-secondary border-2 border-border rounded-lg shadow-2xl overflow-hidden"
+            initial={{ scale: 0.9, y: 20 }}
+            animate={{ scale: 1, y: 0 }}
+            exit={{ scale: 0.9, y: 20 }}
           >
-            {/* Monitor bezel */}
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-4">
-              {/* Power LED */}
-              <div className="absolute bottom-3 right-6 flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-green-500" />
-                <span className="text-[8px] text-gray-500 font-mono">PWR</span>
+            {/* Header */}
+            <div className="bg-primary/20 border-b border-border px-4 py-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full bg-destructive" />
+                <div className="w-3 h-3 rounded-full bg-accent" />
+                <div className="w-3 h-3 rounded-full bg-sanity-green" />
               </div>
+              <h2 className="font-mono text-sm text-foreground tracking-widest uppercase">
+                System Configuration
+              </h2>
+              <button
+                onClick={handleClose}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
-              {/* Screen area */}
-              <div className="crt-monitor w-full h-full rounded relative overflow-hidden crt-flicker">
-                {/* CRT Effects */}
-                <div className="crt-scanlines" />
-                <div className="crt-glow" />
-
-                {/* Screen content */}
-                <div className="relative z-[1] w-full h-full p-4 md:p-6 flex flex-col">
-                  {/* DOS Window */}
-                  <div className="dos-window flex-1 flex flex-col min-h-0">
-                    {/* DOS Window Header */}
-                    <div className="bg-[#00aa00] px-2 py-1 flex items-center justify-between shrink-0">
-                      <span className="pixel-font text-[8px] md:text-[10px] text-black">
-                        SYSTEM_CONFIG.EXE
-                      </span>
-                      <div className="flex gap-1">
-                        <span className="text-black text-xs">─</span>
-                        <span className="text-black text-xs">□</span>
-                        <button
-                          onClick={handleClose}
-                          className="text-black text-xs hover:bg-[#00ff00]/50 px-1"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Content - Scrollable */}
-                    <div className="flex-1 overflow-y-auto min-h-0 p-3 md:p-4">
-                      {/* Header */}
-                      <div className="text-center mb-4 shrink-0">
-                        <motion.div
-                          className="terminal-text pixel-font text-xs md:text-sm classified-flash"
-                          style={{ color: '#ff3333', textShadow: '0 0 10px rgba(255, 0, 0, 0.8)' }}
-                        >
-                          *** SYSTEM CONFIGURATION ***
-                        </motion.div>
-                      </div>
-
-                      <div className="space-y-4">
-                        {/* Audio Section */}
-                        <section className="space-y-3">
-                          <div className="flex items-center gap-2 terminal-text">
-                            <Volume2 className="w-4 h-4" />
-                            <h3 className="text-sm uppercase tracking-wider">{'>'} AUDIO</h3>
-                          </div>
-                          <div className="space-y-3 pl-6 border-l border-[#00ff00]/30">
-                            <CRTSlider
-                              label="MASTER VOLUME"
-                              value={settings.masterVolume}
-                              onChange={(v) => updateSetting("masterVolume", v)}
-                            />
-                            <CRTSlider
-                              label="SOUND EFFECTS"
-                              value={settings.sfxVolume}
-                              onChange={(v) => updateSetting("sfxVolume", v)}
-                            />
-                            <CRTSlider
-                              label="AMBIENT SOUNDS"
-                              value={settings.ambientVolume}
-                              onChange={(v) => updateSetting("ambientVolume", v)}
-                            />
-                          </div>
-                        </section>
-
-                        <div className="border-t border-[#00ff00]/30" />
-
-                        {/* Effects Section */}
-                        <section className="space-y-3">
-                          <div className="flex items-center gap-2 terminal-text">
-                            <Sparkles className="w-4 h-4" />
-                            <h3 className="text-sm uppercase tracking-wider">{'>'} EFFECTS</h3>
-                          </div>
-                          <div className="space-y-3 pl-6 border-l border-[#00ff00]/30">
-                            <CRTSlider
-                              label="FILM GRAIN"
-                              value={settings.filmGrainIntensity}
-                              onChange={(v) => updateSetting("filmGrainIntensity", v)}
-                            />
-                            <CRTSlider
-                              label="VIGNETTE"
-                              value={settings.vignetteIntensity}
-                              onChange={(v) => updateSetting("vignetteIntensity", v)}
-                            />
-                            <CRTSlider
-                              label="SCANLINES"
-                              value={settings.scanlineIntensity}
-                              onChange={(v) => updateSetting("scanlineIntensity", v)}
-                            />
-                            <CRTToggle
-                              label="CRT FLICKER"
-                              checked={settings.crtFlicker}
-                              onChange={(v) => updateSetting("crtFlicker", v)}
-                            />
-                          </div>
-                        </section>
-
-                        <div className="border-t border-[#00ff00]/30" />
-
-                        {/* Gameplay Section */}
-                        <section className="space-y-3">
-                          <div className="flex items-center gap-2 terminal-text">
-                            <Gamepad2 className="w-4 h-4" />
-                            <h3 className="text-sm uppercase tracking-wider">{'>'} GAMEPLAY</h3>
-                          </div>
-                          <div className="space-y-3 pl-6 border-l border-[#00ff00]/30">
-                            <CRTSlider
-                              label="UV LIGHT SIZE"
-                              value={settings.uvLightSize}
-                              onChange={(v) => updateSetting("uvLightSize", v)}
-                              min={50}
-                              max={200}
-                            />
-                            <CRTSlider
-                              label="EVIDENCE SCALE"
-                              value={settings.nodeScale}
-                              onChange={(v) => updateSetting("nodeScale", v)}
-                              min={50}
-                              max={150}
-                            />
-                            <CRTToggle
-                              label="SHOW TUTORIAL HINTS"
-                              checked={settings.showTutorialHints}
-                              onChange={(v) => updateSetting("showTutorialHints", v)}
-                            />
-                          </div>
-                        </section>
-
-                        <div className="border-t border-[#00ff00]/30" />
-
-                        {/* Accessibility Section */}
-                        <section className="space-y-3">
-                          <div className="flex items-center gap-2 terminal-text">
-                            <Eye className="w-4 h-4" />
-                            <h3 className="text-sm uppercase tracking-wider">{'>'} ACCESSIBILITY</h3>
-                          </div>
-                          <div className="space-y-3 pl-6 border-l border-[#00ff00]/30">
-                            <CRTToggle
-                              label="REDUCE MOTION"
-                              description="Minimize animations"
-                              checked={settings.reduceMotion}
-                              onChange={(v) => updateSetting("reduceMotion", v)}
-                            />
-                            <CRTToggle
-                              label="HIGH CONTRAST"
-                              description="Increase visual contrast"
-                              checked={settings.highContrast}
-                              onChange={(v) => updateSetting("highContrast", v)}
-                            />
-                          </div>
-                        </section>
-                      </div>
-                    </div>
-
-                    {/* Footer */}
-                    <div className="border-t border-[#00ff00]/50 px-3 py-2 flex justify-between items-center shrink-0 bg-black/30">
-                      <button
-                        onClick={() => {
-                          playSFX("button_click");
-                          resetSettings();
-                        }}
-                        className="dos-button text-xs px-3 py-1"
-                        style={{
-                          color: '#ff6666',
-                          borderColor: '#ff6666',
-                          textShadow: '0 0 5px rgba(255, 100, 100, 0.8)',
-                        }}
-                      >
-                        <span className="flex items-center gap-1">
-                          <RotateCcw className="w-3 h-3" />
-                          RESET
-                        </span>
-                      </button>
-                      <button
-                        onClick={handleClose}
-                        className="dos-button text-xs px-3 py-1"
-                      >
-                        [ SAVE & CLOSE ]
-                      </button>
-                    </div>
-                  </div>
+            {/* Content - Scrollable */}
+            <div className="max-h-[70vh] overflow-y-auto p-4 space-y-6">
+              {/* Audio Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Volume2 className="w-5 h-5" />
+                  <h3 className="font-mono text-sm uppercase tracking-wider">Audio</h3>
                 </div>
-              </div>
+                <div className="space-y-4 pl-7">
+                  <SettingSlider
+                    label="Master Volume"
+                    value={settings.masterVolume}
+                    onChange={(v) => updateSetting("masterVolume", v)}
+                  />
+                  <SettingSlider
+                    label="Sound Effects"
+                    value={settings.sfxVolume}
+                    onChange={(v) => updateSetting("sfxVolume", v)}
+                  />
+                  <SettingSlider
+                    label="Ambient Sounds"
+                    value={settings.ambientVolume}
+                    onChange={(v) => updateSetting("ambientVolume", v)}
+                  />
+                </div>
+              </section>
+
+              <div className="border-t border-border" />
+
+              {/* Gameplay Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Gamepad2 className="w-5 h-5" />
+                  <h3 className="font-mono text-sm uppercase tracking-wider">Gameplay</h3>
+                </div>
+                <div className="space-y-4 pl-7">
+                  <SettingSlider
+                    label="UV Light Size"
+                    value={settings.uvLightSize}
+                    onChange={(v) => updateSetting("uvLightSize", v)}
+                    min={50}
+                    max={200}
+                  />
+                  <SettingSlider
+                    label="Evidence Scale"
+                    value={settings.nodeScale}
+                    onChange={(v) => updateSetting("nodeScale", v)}
+                    min={50}
+                    max={150}
+                  />
+                  <SettingToggle
+                    label="Show Tutorial Hints"
+                    checked={settings.showTutorialHints}
+                    onChange={(v) => updateSetting("showTutorialHints", v)}
+                  />
+                </div>
+              </section>
+
+              <div className="border-t border-border" />
+
+              {/* Accessibility Section */}
+              <section className="space-y-4">
+                <div className="flex items-center gap-2 text-primary">
+                  <Eye className="w-5 h-5" />
+                  <h3 className="font-mono text-sm uppercase tracking-wider">Accessibility</h3>
+                </div>
+                <div className="space-y-4 pl-7">
+                  <SettingToggle
+                    label="Reduce Motion"
+                    description="Minimize animations and effects"
+                    checked={settings.reduceMotion}
+                    onChange={(v) => updateSetting("reduceMotion", v)}
+                  />
+                  <SettingToggle
+                    label="High Contrast"
+                    description="Increase visual contrast"
+                    checked={settings.highContrast}
+                    onChange={(v) => updateSetting("highContrast", v)}
+                  />
+                </div>
+              </section>
+            </div>
+
+            {/* Footer */}
+            <div className="bg-muted/50 border-t border-border px-4 py-3 flex justify-between items-center">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  playSFX("button_click");
+                  resetSettings();
+                }}
+                className="text-muted-foreground hover:text-destructive gap-2"
+              >
+                <RotateCcw className="w-4 h-4" />
+                Reset Defaults
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                onClick={handleClose}
+              >
+                Save & Close
+              </Button>
             </div>
           </motion.div>
         </motion.div>
@@ -233,8 +165,8 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
   );
 };
 
-// CRT-styled slider component
-interface CRTSliderProps {
+// Setting components
+interface SettingSliderProps {
   label: string;
   value: number;
   onChange: (value: number) => void;
@@ -242,88 +174,38 @@ interface CRTSliderProps {
   max?: number;
 }
 
-const CRTSlider = ({ label, value, onChange, min = 0, max = 100 }: CRTSliderProps) => {
-  const percentage = ((value - min) / (max - min)) * 100;
-  const blocks = Math.round(percentage / 10);
-
-  return (
-    <div className="space-y-1">
-      <div className="flex justify-between items-center">
-        <span className="terminal-text text-[10px] md:text-xs">{label}</span>
-        <span className="terminal-text text-[10px] md:text-xs text-[#00aa00]">{value}%</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="flex-1 h-4 bg-black/50 border border-[#00ff00]/50 rounded-sm overflow-hidden">
-          <div
-            className="h-full transition-all duration-100"
-            style={{
-              width: `${percentage}%`,
-              background: 'linear-gradient(to right, #004400, #00ff00)',
-              boxShadow: '0 0 10px rgba(0, 255, 0, 0.5)',
-            }}
-          />
-        </div>
-        <span className="terminal-text text-[8px] md:text-[10px] text-[#00aa00] w-20 text-right font-mono">
-          [{'█'.repeat(blocks)}{'░'.repeat(10 - blocks)}]
-        </span>
-      </div>
-      <input
-        type="range"
-        min={min}
-        max={max}
-        step={5}
-        value={value}
-        onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full h-2 appearance-none bg-transparent cursor-pointer opacity-0 absolute"
-        style={{ marginTop: '-20px' }}
-      />
-      <div className="relative">
-        <input
-          type="range"
-          min={min}
-          max={max}
-          step={5}
-          value={value}
-          onChange={(e) => onChange(Number(e.target.value))}
-          className="w-full h-1 appearance-none bg-transparent cursor-pointer"
-          style={{
-            background: 'transparent',
-          }}
-        />
-      </div>
+const SettingSlider = ({ label, value, onChange, min = 0, max = 100 }: SettingSliderProps) => (
+  <div className="space-y-2">
+    <div className="flex justify-between items-center">
+      <span className="text-sm text-foreground">{label}</span>
+      <span className="text-xs font-mono text-muted-foreground">{value}%</span>
     </div>
-  );
-};
+    <Slider
+      value={[value]}
+      onValueChange={([v]) => onChange(v)}
+      min={min}
+      max={max}
+      step={5}
+      className="w-full"
+    />
+  </div>
+);
 
-// CRT-styled toggle component
-interface CRTToggleProps {
+interface SettingToggleProps {
   label: string;
   description?: string;
   checked: boolean;
   onChange: (value: boolean) => void;
 }
 
-const CRTToggle = ({ label, description, checked, onChange }: CRTToggleProps) => (
-  <button
-    onClick={() => onChange(!checked)}
-    className="w-full flex items-center justify-between gap-4 py-1 hover:bg-[#00ff00]/10 px-2 -mx-2 rounded transition-colors"
-  >
-    <div className="text-left">
-      <span className="terminal-text text-[10px] md:text-xs block">{label}</span>
+const SettingToggle = ({ label, description, checked, onChange }: SettingToggleProps) => (
+  <div className="flex items-center justify-between gap-4">
+    <div>
+      <span className="text-sm text-foreground">{label}</span>
       {description && (
-        <span className="terminal-text text-[8px] md:text-[10px] text-[#006600] block">{description}</span>
+        <p className="text-xs text-muted-foreground">{description}</p>
       )}
     </div>
-    <span
-      className="font-mono text-xs"
-      style={{
-        color: checked ? '#00ff00' : '#ff3333',
-        textShadow: checked
-          ? '0 0 5px rgba(0, 255, 0, 0.8)'
-          : '0 0 5px rgba(255, 50, 50, 0.8)',
-      }}
-    >
-      [{checked ? 'ON ' : 'OFF'}]
-    </span>
-  </button>
+    <Switch checked={checked} onCheckedChange={onChange} />
+  </div>
 );

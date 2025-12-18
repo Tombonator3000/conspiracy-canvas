@@ -92,13 +92,13 @@ export const FilingCabinet = ({ cases, completedCases, onSelectCase, onBack }: F
   }, [onBack, playSFX]);
 
   return (
-    <div className="fixed inset-0 bg-black flex items-center justify-center z-50">
-      {/* CRT Monitor Frame - Full Screen */}
+    <div className="fixed inset-0 bg-black flex items-center justify-center p-4 z-50">
+      {/* CRT Monitor Frame */}
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className="crt-monitor w-full h-full relative"
+        className="crt-monitor w-full max-w-4xl aspect-[4/3] p-1 relative"
       >
         {/* Monitor bezel */}
         <div className="absolute inset-0 rounded-lg bg-gradient-to-b from-gray-700 via-gray-800 to-gray-900 p-4">

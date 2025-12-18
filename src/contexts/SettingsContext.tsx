@@ -5,23 +5,17 @@ interface Settings {
   masterVolume: number;
   sfxVolume: number;
   ambientVolume: number;
-
+  
   // Gameplay
   uvLightSize: number;
   nodeScale: number;
-
+  
   // Accessibility
   reduceMotion: boolean;
   highContrast: boolean;
-
+  
   // Display
   showTutorialHints: boolean;
-
-  // Effects
-  filmGrainIntensity: number;
-  vignetteIntensity: number;
-  scanlineIntensity: number;
-  crtFlicker: boolean;
 }
 
 const defaultSettings: Settings = {
@@ -33,10 +27,6 @@ const defaultSettings: Settings = {
   reduceMotion: false,
   highContrast: false,
   showTutorialHints: true,
-  filmGrainIntensity: 50,
-  vignetteIntensity: 50,
-  scanlineIntensity: 50,
-  crtFlicker: true,
 };
 
 interface SettingsContextType {

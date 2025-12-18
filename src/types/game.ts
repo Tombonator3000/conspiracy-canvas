@@ -98,7 +98,6 @@ export interface CaseData {
   scribblePool: string[];
   combinations?: Combination[];  // Optional combinations for adventure-style puzzles
   requiredTags?: string[]; // Tags that must ALL be present in a connected cluster to win
-  allowedTagPairs?: [string, string][]; // Optional pairs that count as a valid connection even without shared tags
 }
 
 export interface GameState {
@@ -146,13 +145,9 @@ export interface FloatingScore {
 
 export interface CredibilityStats {
   credibility: number;
-  connectionScore: number;
   cleanupBonus: number;
-  cleanupPenalty: number;
-  mistakePenalty: number;
   trashedJunkCount: number;
   junkRemaining: number;
-  maxJunkAllowed?: number;
 }
 
 export interface ConnectionResult {

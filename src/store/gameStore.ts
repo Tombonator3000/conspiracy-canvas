@@ -2,18 +2,12 @@ import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
 import { allCases } from '@/data/cases';
-import type { CaseData } from '@/types/game';
 
 // Scribble text pools for different events
 const SUCCESS_CONNECTION_TEXTS = [
   "YES!", "I KNEW IT!", "CONNECTED!", "THE PLOT THICKENS...",
   "FOLLOW THE THREAD!", "THEY'RE ALL LINKED!", "SEE?!",
   "IT ALL MAKES SENSE!", "I'M ONTO SOMETHING!", "GOTCHA!"
-];
-
-const SUPPORTING_CONNECTION_TEXTS = [
-  "MAKES SENSE...", "GOOD ENOUGH", "A PLAUSIBLE LINK", "WORTH TRACKING",
-  "KEEP IT PINNED", "FOLLOW THIS LEAD", "THIS COULD FIT", "HMM..."
 ];
 
 const SUCCESS_TRASH_TEXTS = [
@@ -82,14 +76,7 @@ interface GameState {
   score: number;
   junkBinned: number;
   mistakes: number;
-  initialJunkCount: number;
-  maxJunkAllowed: number;
-  junkRewardValue: number;
-  junkPenaltyValue: number;
-  junkPenaltyPerRemaining: number;
-  cleanupPenalty: number;
   startTime: number;
-  successfulConnections: number;
 
   // AUDIO/VISUAL SIGNAL (transient - for UI effects)
   lastAction: { type: string; id: number } | null;
@@ -169,124 +156,6 @@ const createNodesFromCase = (caseData: typeof allCases[number]) => {
   });
 };
 
-const getEdgeCoverageTags = (edge: Edge) => {
-  const data = edge.data as { newlyCoveredTags?: string[] } | undefined;
-  return data?.newlyCoveredTags ?? [];
-};
-
-const buildValidatedAdjacency = (edges: Edge[]) => {
-  const adj = new Map<string, string[]>();
-
-  edges.forEach(edge => {
-    const coverageTags = getEdgeCoverageTags(edge);
-    if (coverageTags.length === 0) return;
-
-    if (!adj.has(edge.source)) adj.set(edge.source, []);
-    if (!adj.has(edge.target)) adj.set(edge.target, []);
-
-    adj.get(edge.source)!.push(edge.target);
-    adj.get(edge.target)!.push(edge.source);
-  });
-
-  return adj;
-};
-
-const collectComponentNodes = (startId: string, adjacency: Map<string, string[]>) => {
-  const visited = new Set<string>();
-  const queue = [startId];
-  visited.add(startId);
-
-  while(queue.length > 0) {
-    const current = queue.shift()!;
-    const neighbors = adjacency.get(current) || [];
-
-    neighbors.forEach(neighbor => {
-      if (!visited.has(neighbor)) {
-        visited.add(neighbor);
-        queue.push(neighbor);
-      }
-    });
-  }
-
-  return visited;
-};
-
-const collectTruthTagsForNodes = (ids: Set<string>, nodes: Node[]) => {
-  const tags = new Set<string>();
-
-  ids.forEach(id => {
-    const node = nodes.find(n => n.id === id);
-    (node?.data as { truthTags?: string[] }).truthTags?.forEach(t => tags.add(t));
-  });
-
-  return tags;
-};
-
-type CleanupDifficulty = 'tutorial' | 'easy' | 'medium' | 'hard';
-
-interface CleanupSettings {
-  junkReward: number;
-  wrongTrashPenalty: number;
-  leftoverPenalty: number;
-  maxJunkRatio: number;
-}
-
-const CLEANUP_SETTINGS: Record<CleanupDifficulty, CleanupSettings> = {
-  tutorial: {
-    junkReward: 80,
-    wrongTrashPenalty: 140,
-    leftoverPenalty: 35,
-    maxJunkRatio: 0.6,
-  },
-  easy: {
-    junkReward: 100,
-    wrongTrashPenalty: 180,
-    leftoverPenalty: 55,
-    maxJunkRatio: 0.5,
-  },
-  medium: {
-    junkReward: 130,
-    wrongTrashPenalty: 230,
-    leftoverPenalty: 75,
-    maxJunkRatio: 0.35,
-  },
-  hard: {
-    junkReward: 170,
-    wrongTrashPenalty: 280,
-    leftoverPenalty: 110,
-    maxJunkRatio: 0.2,
-  }
-};
-
-const normalizeDifficulty = (difficulty?: string): CleanupDifficulty => {
-  const key = difficulty?.toLowerCase() as CleanupDifficulty | undefined;
-  if (key === 'tutorial' || key === 'easy' || key === 'medium' || key === 'hard') {
-    return key;
-  }
-  return 'medium';
-};
-
-const getCleanupSettings = (difficulty?: string) => CLEANUP_SETTINGS[normalizeDifficulty(difficulty)];
-
-const countJunkNodes = (nodes: Node[]) => nodes.filter(n => {
-  const truthTags = (n.data as { truthTags?: string[] }).truthTags || [];
-  return truthTags.length === 0;
-}).length;
-
-const deriveCleanupTargets = (nodes: Node[], difficulty?: string) => {
-  const settings = getCleanupSettings(difficulty);
-  const initialJunkCount = countJunkNodes(nodes);
-  const maxJunkAllowed = Math.max(0, Math.floor(initialJunkCount * settings.maxJunkRatio));
-
-  return {
-    initialJunkCount,
-    maxJunkAllowed,
-    junkRewardValue: settings.junkReward,
-    junkPenaltyValue: settings.wrongTrashPenalty,
-    junkPenaltyPerRemaining: settings.leftoverPenalty,
-  };
-};
-
 export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -307,14 +176,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   score: 0,
   junkBinned: 0,
   mistakes: 0,
-  initialJunkCount: 0,
-  maxJunkAllowed: 0,
-  junkRewardValue: CLEANUP_SETTINGS.tutorial.junkReward,
-  junkPenaltyValue: CLEANUP_SETTINGS.tutorial.wrongTrashPenalty,
-  junkPenaltyPerRemaining: CLEANUP_SETTINGS.tutorial.leftoverPenalty,
-  cleanupPenalty: 0,
   startTime: Date.now(),
-  successfulConnections: 0,
 
   // Audio/Visual Signal
   lastAction: null,
@@ -329,30 +191,22 @@ export const useGameStore = create<GameState>((set, get) => ({
   // Trash Animation
   trashingNodes: [],
 
-  setNodes: (nodes) => set(() => {
-    const { difficulty } = get().getCurrentCase() || {};
-    const cleanupTargets = deriveCleanupTargets(nodes, difficulty);
-
-    return {
-      nodes,
-      startTime: Date.now(),
-      isVictory: false,
-      isGameOver: false,
-      score: 0,
-      junkBinned: 0,
-      mistakes: 0,
-      sanity: 100,
-      successfulConnections: 0,
-      lastAction: null,
-      isUVEnabled: false,
-      shakingNodeIds: [],
-      scribbles: [],
-      trashedNodes: [],
-      bursts: [],
-      trashingNodes: [],
-      cleanupPenalty: 0,
-      ...cleanupTargets
-    };
+  setNodes: (nodes) => set({
+    nodes,
+    startTime: Date.now(),
+    isVictory: false,
+    isGameOver: false,
+    score: 0,
+    junkBinned: 0,
+    mistakes: 0,
+    sanity: 100,
+    lastAction: null,
+    isUVEnabled: false,
+    shakingNodeIds: [],
+    scribbles: [],
+    trashedNodes: [],
+    bursts: [],
+    trashingNodes: []
   }),
   setEdges: (edges) => set({ edges }),
   setRequiredTags: (tags) => set({ requiredTags: tags }),
@@ -394,8 +248,6 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const initialNodes = createNodesFromCase(level);
 
-    const cleanupTargets = deriveCleanupTargets(initialNodes, level.difficulty);
-
     set({
       currentLevelIndex: index,
       nodes: initialNodes,
@@ -407,15 +259,12 @@ export const useGameStore = create<GameState>((set, get) => ({
       junkBinned: 0,
       mistakes: 0,
       startTime: Date.now(),
-      successfulConnections: 0,
       requiredTags: level.requiredTags || [],
       lastAction: null,
       scribbles: [],
       trashedNodes: [],
       bursts: [],
       trashingNodes: [],
-      cleanupPenalty: 0,
-      ...cleanupTargets,
     });
 
     console.log(`📂 Loaded level ${index}: ${level.title}`);
@@ -442,7 +291,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled, requiredTags, getCurrentCase } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled } = get();
 
     // Prevent duplicate connections
     const exists = edges.some(e =>
@@ -455,8 +304,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const target = nodes.find(n => n.id === params.target);
     if (!source || !target) return;
 
-    const sourceData = source.data as EvidenceNode;
-    const targetData = target.data as EvidenceNode;
+    const sourceData = source.data as any;
+    const targetData = target.data as any;
 
     // --- 1. UV / ENCRYPTION CHECK ---
     // If a node requires UV, it must have been revealed OR UV must be currently ON
@@ -506,58 +355,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     // (Investigators link different facts to form a theory!)
     const isValidConnection = sourceIsReal && targetIsReal;
 
-    const sourceTags = new Set<string>(sourceData.truthTags || []);
-    const targetTags = new Set<string>(targetData.truthTags || []);
-    const sharedTags = Array.from(sourceTags).filter(tag => targetTags.has(tag));
-
-    const allowedPairs = (getCurrentCase() as CaseData | null)?.allowedTagPairs || [];
-    const allowedPairMatch = allowedPairs.find(([a, b]) =>
-      (sourceTags.has(a) && targetTags.has(b)) ||
-      (sourceTags.has(b) && targetTags.has(a))
-    );
-
-    const matchedTags = Array.from(new Set([
-      ...sharedTags,
-      ...(allowedPairMatch || [])
-    ]));
-
-    const validatedAdjacency = buildValidatedAdjacency(edges);
-    const sourceCluster = collectComponentNodes(params.source || source.id, validatedAdjacency);
-    const targetCluster = collectComponentNodes(params.target || target.id, validatedAdjacency);
-
-    const sourceClusterTags = collectTruthTagsForNodes(sourceCluster, nodes);
-    const targetClusterTags = collectTruthTagsForNodes(targetCluster, nodes);
-
-    const tagsGainedBySource = requiredTags.filter(tag => !sourceClusterTags.has(tag) && targetClusterTags.has(tag));
-    const tagsGainedByTarget = requiredTags.filter(tag => !targetClusterTags.has(tag) && sourceClusterTags.has(tag));
-    const newlyCoveredTags = Array.from(new Set([...tagsGainedBySource, ...tagsGainedByTarget]));
-
-    const advancesRequired = newlyCoveredTags.length > 0;
-
-    // If the connection neither shares/allowed tags nor advances required coverage, treat as a failure
-    if (matchedTags.length === 0 && newlyCoveredTags.length === 0) {
-      set(state => ({
-        sanity: Math.max(0, state.sanity - 6),
-        mistakes: state.mistakes + 1,
-        lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
-      }));
-      triggerShake(params.source);
-      triggerShake(params.target);
-      addScribble("NO SHARED LEADS!",
-        source.position.x,
-        source.position.y - 50
-      );
-      return;
-    }
-
     if (isValidConnection) {
-      const isSupportingConnection = !advancesRequired;
-      const coverageTags = isSupportingConnection ? matchedTags : newlyCoveredTags;
-      const scoreBonus = isSupportingConnection ? 30 : 50;
-      const scribblePool = isSupportingConnection ? SUPPORTING_CONNECTION_TEXTS : SUCCESS_CONNECTION_TEXTS;
-      const scribbleVariant = isSupportingConnection ? 'insight' : 'success';
-
-      // SUCCESS (progress or supporting)
+      // SUCCESS
       const newEdge = {
         ...params,
         id: `e-${params.source}-${params.target}`,
@@ -566,28 +365,22 @@ export const useGameStore = create<GameState>((set, get) => ({
         style: {
           stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48',
           strokeWidth: 3,
-        },
-        data: {
-          matchedTags,
-          newlyCoveredTags: coverageTags,
-          isSupportingConnection
         }
       } as Edge;
 
       set(state => ({
         edges: [...state.edges, newEdge],
-        score: state.score + scoreBonus,
-        successfulConnections: state.successfulConnections + 1,
+        score: state.score + 50,
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
       // SUCCESS SCRIBBLE - Handwritten feedback for valid connection
-      const successText = scribblePool[Math.floor(Math.random() * scribblePool.length)];
+      const successText = SUCCESS_CONNECTION_TEXTS[Math.floor(Math.random() * SUCCESS_CONNECTION_TEXTS.length)];
       const midX = (source.position.x + target.position.x) / 2;
       const midY = (source.position.y + target.position.y) / 2;
-      addScribble(successText, midX, midY - 30, scribbleVariant);
+      addScribble(successText, midX, midY - 30, 'success');
 
-      // Check win condition immediately (supporting links can bridge clusters)
+      // Check win condition immediately
       get().validateWin();
 
     } else {
@@ -760,21 +553,18 @@ export const useGameStore = create<GameState>((set, get) => ({
       let newScore = state.score;
       let newJunkCount = state.junkBinned;
       let newMistakes = state.mistakes;
-      const junkReward = state.junkRewardValue;
-      const junkPenalty = state.junkPenaltyValue;
-      const sanityPenalty = Math.max(10, Math.round(junkPenalty / 12));
 
       if (isJunk) {
         // Good job!
-        newScore += junkReward;
+        newScore += 100;
         newJunkCount += 1;
-        console.log(`🗑️ Junk binned! +${junkReward} points`);
+        console.log('🗑️ Junk binned! +100 points');
       } else {
         // Oh no, deleted evidence!
-        newSanity -= sanityPenalty;
-        newScore -= junkPenalty;
+        newSanity -= 20;
+        newScore -= 200;
         newMistakes += 1;
-        console.log(`❌ Evidence destroyed! -${junkPenalty} points, -${sanityPenalty} sanity`);
+        console.log('❌ Evidence destroyed! -200 points, -20 sanity');
       }
 
       // Check for game over
@@ -838,11 +628,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       if (lastTrashed.wasJunk) {
         // Undo junk deletion - remove the bonus
-        newScore -= state.junkRewardValue;
+        newScore -= 100;
         newJunkCount -= 1;
       } else {
         // Undo evidence deletion - remove the penalty
-        newScore += state.junkPenaltyValue;
+        newScore += 200;
         newMistakes -= 1;
       }
 
@@ -894,14 +684,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       score: 0,
       junkBinned: 0,
       mistakes: 0,
-      initialJunkCount: 0,
-      maxJunkAllowed: 0,
-      junkRewardValue: CLEANUP_SETTINGS.tutorial.junkReward,
-      junkPenaltyValue: CLEANUP_SETTINGS.tutorial.wrongTrashPenalty,
-      junkPenaltyPerRemaining: CLEANUP_SETTINGS.tutorial.leftoverPenalty,
-      cleanupPenalty: 0,
       startTime: Date.now(),
-      successfulConnections: 0,
       lastAction: null,
       scribbles: [],
       trashedNodes: [],
@@ -1013,27 +796,16 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   validateWin: () => {
-    const {
-      nodes,
-      edges,
-      requiredTags,
-      score,
-      successfulConnections,
-      junkBinned,
-      maxJunkAllowed,
-      junkPenaltyPerRemaining,
-      junkRewardValue,
-      isVictory
-    } = get();
-
-    if (isVictory) return;
+    const { nodes, edges, requiredTags, sanity, junkBinned, mistakes } = get();
     if (!requiredTags || requiredTags.length === 0) return;
 
-    const remainingJunk = countJunkNodes(nodes);
-    const cleanupPenalty = remainingJunk * junkPenaltyPerRemaining;
-
-    // 1. Build Bidirectional Graph using only validated connections
-    const adj = buildValidatedAdjacency(edges);
+    // 1. Build Bidirectional Graph
+    const adj = new Map<string, string[]>();
+    nodes.forEach(n => adj.set(n.id, []));
+    edges.forEach(e => {
+      adj.get(e.source)?.push(e.target);
+      adj.get(e.target)?.push(e.source);
+    });
 
     // 2. Find Clusters (Flood Fill)
     const visited = new Set<string>();
@@ -1042,9 +814,25 @@ export const useGameStore = create<GameState>((set, get) => ({
     for (const node of nodes) {
       if (visited.has(node.id)) continue;
 
-      const clusterNodes = collectComponentNodes(node.id, adj);
-      clusterNodes.forEach(id => visited.add(id));
-      const clusterTags = collectTruthTagsForNodes(clusterNodes, nodes);
+      const clusterTags = new Set<string>();
+      const queue = [node.id];
+      visited.add(node.id);
+
+      while(queue.length > 0) {
+        const currId = queue.shift()!;
+        const currNode = nodes.find(n => n.id === currId);
+
+        // Collect Tags
+        (currNode?.data as { truthTags?: string[] }).truthTags?.forEach((t: string) => clusterTags.add(t));
+
+        // Visit Neighbors
+        adj.get(currId)?.forEach(neighbor => {
+          if (!visited.has(neighbor)) {
+            visited.add(neighbor);
+            queue.push(neighbor);
+          }
+        });
+      }
 
       // 3. Check Logic
       const missing = requiredTags.filter(t => !clusterTags.has(t));
@@ -1054,24 +842,19 @@ export const useGameStore = create<GameState>((set, get) => ({
       }
     }
 
-    if (victory && remainingJunk > maxJunkAllowed) {
-      console.log(`🚮 Cleanup incomplete: ${remainingJunk} junk remaining (max allowed: ${maxJunkAllowed}).`);
-      set({ cleanupPenalty });
-      return;
-    }
-
     if (victory) {
-      const connectionScore = successfulConnections * 50;
-      const cleanupBonus = junkBinned * junkRewardValue;
-      const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - score);
-      console.log(`🎯 Final Credibility (pre-penalty): ${score} (Connections: ${connectionScore}, Junk: ${cleanupBonus}, Penalties: ${mistakePenalty}, Cleanup Penalty: ${cleanupPenalty})`);
+      // Calculate Final Score
+      // Base: 1000
+      // + Sanity * 10
+      // + Junk * 100
+      // - Mistakes * 200
+      const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
+      console.log(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
       set({
         isVictory: true,
-        cleanupPenalty,
+        score: finalScore,
         lastAction: { type: 'VICTORY', id: Date.now() }
       });
-    } else {
-      set({ cleanupPenalty });
     }
   }
 }));

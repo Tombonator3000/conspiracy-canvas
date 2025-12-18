@@ -17,7 +17,6 @@ interface GameResult {
   isVictory: boolean;
   sanityRemaining: number;
   connectionsFound: number;
-  score: number;
   credibilityStats: CredibilityStats;
 }
 
@@ -52,10 +51,9 @@ const Index = () => {
     isVictory: boolean,
     sanityRemaining: number,
     connectionsFound: number,
-    score: number,
     credibilityStats: CredibilityStats
   ) => {
-    setGameResult({ isVictory, sanityRemaining, connectionsFound, score, credibilityStats });
+    setGameResult({ isVictory, sanityRemaining, connectionsFound, credibilityStats });
 
     if (isVictory && selectedCase) {
       const followersGained = Math.floor(Math.random() * 500) + 100;
@@ -146,7 +144,6 @@ const Index = () => {
           isVictory={gameResult.isVictory}
           sanityRemaining={gameResult.sanityRemaining}
           connectionsFound={gameResult.connectionsFound}
-          score={gameResult.score}
           credibilityStats={gameResult.credibilityStats}
           onNextCase={handleNextCase}
           onRetry={handleRetry}
