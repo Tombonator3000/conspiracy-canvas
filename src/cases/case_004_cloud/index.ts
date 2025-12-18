@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { cloudDisk, serverSmoke, umbrella, airplaneClouds, puddleReflection } from "@/assets/evidence";
+import cloudDisk from "./evidence/cloud_disk.jpg";
+import serverSmoke from "./evidence/server_smoke.jpg";
+import umbrella from "./evidence/umbrella.jpg";
+import airplaneClouds from "./evidence/airplane_clouds.jpg";
+import puddleReflection from "./evidence/puddle_reflection.jpg";
 
 export const case004: CaseData = {
   id: "case_004_cloud",
@@ -74,7 +78,7 @@ export const case004: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_umbrella",

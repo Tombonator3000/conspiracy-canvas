@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
-import { allCases } from '@/data/cases';
+import { allCases } from '@/cases';
 
 // Scribble text pools for different events
 const SUCCESS_CONNECTION_TEXTS = [

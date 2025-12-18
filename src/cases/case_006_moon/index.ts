@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { lightbulbOff, eclipse, telescope, astronautSelfie, sundial } from "@/assets/evidence";
+import lightbulbOff from "./evidence/lightbulb_off.jpg";
+import eclipse from "./evidence/eclipse.jpg";
+import telescope from "./evidence/telescope.jpg";
+import astronautSelfie from "./evidence/astronaut_selfie.jpg";
+import sundial from "./evidence/sundial.jpg";
 
 export const case006: CaseData = {
   id: "case_006_moon",
@@ -87,7 +91,7 @@ export const case006: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_telescope",

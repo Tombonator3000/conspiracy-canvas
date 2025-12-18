@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { reptilianEye, awkwardCeo, indoorSunglasses, bodyguard, unblinkingStare } from "@/assets/evidence";
+import reptilianEye from "./evidence/reptilian_eye.jpg";
+import awkwardCeo from "./evidence/awkward_ceo.jpg";
+import indoorSunglasses from "./evidence/indoor_sunglasses.jpg";
+import bodyguard from "./evidence/bodyguard.jpg";
+import unblinkingStare from "./evidence/unblinking_stare.jpg";
 
 export const case012: CaseData = {
   id: "case_012_reptilians",
@@ -91,7 +95,7 @@ export const case012: CaseData = {
       id: "ev_lizard_meme",
       type: "photo",
       title: "Zucc Lizard Meme",
-      contentUrl: null,
+      contentUrl: awkwardCeo,
       description: "Famous tech CEO drinking water 'weird'. Internet says lizard. Doctors say 'just awkward'. We say: BOTH CAN BE TRUE.",
       tags: ["MEME", "TECH"],
       position: { x: 450, y: 60 },
@@ -111,7 +115,7 @@ export const case012: CaseData = {
       id: "ev_sunglasses",
       type: "photo",
       title: "Indoor Sunglasses Photo",
-      contentUrl: null,
+      contentUrl: indoorSunglasses,
       description: "Billionaire wearing sunglasses indoors. Hiding reptile eyes?! Or just being a douche. Probably the latter.",
       tags: ["SUNGLASSES", "INDOOR"],
       position: { x: 700, y: 180 },
@@ -151,7 +155,7 @@ export const case012: CaseData = {
       id: "ev_bodyguard",
       type: "photo",
       title: "Mysterious Bodyguard",
-      contentUrl: null,
+      contentUrl: bodyguard,
       description: "Same bodyguard appears with 7 different leaders. Suspicious! Also: he's from a security company. That's his job.",
       tags: ["BODYGUARD", "SECURITY"],
       position: { x: 380, y: 280 },
@@ -181,7 +185,7 @@ export const case012: CaseData = {
       id: "ev_blinking",
       type: "photo",
       title: "Non-Blinking Video Still",
-      contentUrl: null,
+      contentUrl: unblinkingStare,
       description: "CEO didn't blink for 4 minutes in interview. Reptilian trait! Or Botox side effect. Equally concerning, different reasons.",
       tags: ["BLINK", "VIDEO"],
       position: { x: 600, y: 240 },
