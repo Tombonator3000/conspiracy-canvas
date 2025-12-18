@@ -11,6 +11,11 @@ const SUCCESS_CONNECTION_TEXTS = [
   "IT ALL MAKES SENSE!", "I'M ONTO SOMETHING!", "GOTCHA!"
 ];
 
+const SUPPORTING_CONNECTION_TEXTS = [
+  "MAKES SENSE...", "GOOD ENOUGH", "A PLAUSIBLE LINK", "WORTH TRACKING",
+  "KEEP IT PINNED", "FOLLOW THIS LEAD", "THIS COULD FIT", "HMM..."
+];
+
 const SUCCESS_TRASH_TEXTS = [
   "GOOD RIDDANCE!", "DECLUTTER!", "RED HERRING!", "NICE TRY...",
   "NOT FOOLING ME!", "DISINFORMATION!", "PLANTED EVIDENCE!",
@@ -518,7 +523,7 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (matchedTags.length === 0) {
       set(state => ({
-        sanity: Math.max(0, state.sanity - 10),
+        sanity: Math.max(0, state.sanity - 6),
         mistakes: state.mistakes + 1,
         lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
       }));
@@ -545,22 +550,13 @@ export const useGameStore = create<GameState>((set, get) => ({
     const advancesRequired = newlyCoveredTags.length > 0;
 
     if (isValidConnection) {
-      if (!advancesRequired) {
-        set(state => ({
-          sanity: Math.max(0, state.sanity - 10),
-          mistakes: state.mistakes + 1,
-          lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
-        }));
-        triggerShake(params.source);
-        triggerShake(params.target);
-        addScribble("NO NEW CLUES!",
-          source.position.x,
-          source.position.y - 50
-        );
-        return;
-      }
+      const isSupportingConnection = !advancesRequired;
+      const coverageTags = isSupportingConnection ? matchedTags : newlyCoveredTags;
+      const scoreBonus = isSupportingConnection ? 30 : 50;
+      const scribblePool = isSupportingConnection ? SUPPORTING_CONNECTION_TEXTS : SUCCESS_CONNECTION_TEXTS;
+      const scribbleVariant = isSupportingConnection ? 'insight' : 'success';
 
-      // SUCCESS
+      // SUCCESS (progress or supporting)
       const newEdge = {
         ...params,
         id: `e-${params.source}-${params.target}`,
@@ -572,24 +568,25 @@ export const useGameStore = create<GameState>((set, get) => ({
         },
         data: {
           matchedTags,
-          newlyCoveredTags
+          newlyCoveredTags: coverageTags,
+          isSupportingConnection
         }
       } as Edge;
 
       set(state => ({
         edges: [...state.edges, newEdge],
-        score: state.score + 50,
+        score: state.score + scoreBonus,
         successfulConnections: state.successfulConnections + 1,
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
       // SUCCESS SCRIBBLE - Handwritten feedback for valid connection
-      const successText = SUCCESS_CONNECTION_TEXTS[Math.floor(Math.random() * SUCCESS_CONNECTION_TEXTS.length)];
+      const successText = scribblePool[Math.floor(Math.random() * scribblePool.length)];
       const midX = (source.position.x + target.position.x) / 2;
       const midY = (source.position.y + target.position.y) / 2;
-      addScribble(successText, midX, midY - 30, 'success');
+      addScribble(successText, midX, midY - 30, scribbleVariant);
 
-      // Check win condition immediately
+      // Check win condition immediately (supporting links can bridge clusters)
       get().validateWin();
 
     } else {
