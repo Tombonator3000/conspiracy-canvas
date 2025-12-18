@@ -3,6 +3,7 @@ import iphone1912 from "./evidence/iphone_1912.jpg";
 import fakeIceberg from "./evidence/fake_iceberg.jpg";
 import titanicMovie from "./evidence/titanic_movie.jpg";
 import vintageViolin from "./evidence/vintage_violin.jpg";
+import { getJunkNodes } from "../shared/junk";
 
 export const case007: CaseData = {
   id: "case_007_titanic",
@@ -203,7 +204,10 @@ export const case007: CaseData = {
       tags: ["SIGNAL", "HELP"],
       position: { x: 350, y: 250 },
       isRedHerring: true
-    }
+    },
+
+    // ===== JUNK IMAGES FOR ATMOSPHERE =====
+    ...getJunkNodes("case_007_titanic")
   ],
   scribblePool: [
     "88 MPH = ICEBERG SPEED",

@@ -4,6 +4,7 @@ import eclipse from "./evidence/eclipse.jpg";
 import telescope from "./evidence/telescope.jpg";
 import astronautSelfie from "./evidence/astronaut_selfie.jpg";
 import sundial from "./evidence/sundial.jpg";
+import { getJunkNodes } from "../shared/junk";
 
 export const case006: CaseData = {
   id: "case_006_moon",
@@ -204,7 +205,10 @@ export const case006: CaseData = {
       tags: ["TIME", "ANCIENT"],
       position: { x: 650, y: 480 },
       isRedHerring: true
-    }
+    },
+
+    // ===== JUNK IMAGES FOR ATMOSPHERE =====
+    ...getJunkNodes("case_006_moon")
   ],
   scribblePool: [
     "LOOK UP! OR DON'T!",

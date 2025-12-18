@@ -4,6 +4,7 @@ import pattersonFilm from "./evidence/patterson_film.jpg";
 import thermalForest from "./evidence/thermal_forest.jpg";
 import brokenBranches from "./evidence/broken_branches.jpg";
 import destroyedTent from "./evidence/destroyed_tent.jpg";
+import { getJunkNodes } from "../shared/junk";
 
 export const case011: CaseData = {
   id: "case_011_bigfoot",
@@ -200,7 +201,10 @@ export const case011: CaseData = {
       tags: ["SHOP", "TOURISM"],
       position: { x: 450, y: 170 },
       isRedHerring: true
-    }
+    },
+
+    // ===== JUNK IMAGES FOR ATMOSPHERE =====
+    ...getJunkNodes("case_011_bigfoot")
   ],
   scribblePool: [
     "THEY CREATED HIM!",

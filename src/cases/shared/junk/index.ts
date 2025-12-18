@@ -10,3 +10,6 @@ export { default as candyWrapper } from './candy_wrapper.png';
 export { default as lotteryTicket } from './lottery_ticket.png';
 export { default as businessCard } from './business_card.png';
 export { default as rubberBands } from './rubber_bands.png';
+
+// Utility functions for generating junk nodes
+export { getJunkNodes, getAllJunkNodes } from './junkNodes';
