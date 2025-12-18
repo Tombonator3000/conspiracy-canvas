@@ -6,7 +6,7 @@ import { BriefingScreen } from "@/components/game/BriefingScreen";
 import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
 import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
-import { allCases } from "@/data/cases";
+import { allCases } from "@/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
 import { useGameStore } from "@/store/gameStore";
 import type { CaseData, CredibilityStats } from "@/types/game";

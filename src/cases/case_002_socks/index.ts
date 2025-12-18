@@ -1,5 +1,6 @@
 import type { CaseData } from "@/types/game";
-import { lonelySock, tidePod } from "@/assets/evidence";
+import lonelySock from "./evidence/lonely_sock.jpg";
+import tidePod from "./evidence/tide_pod.jpg";
 
 export const case002: CaseData = {
   id: "case_002_socks",
@@ -73,7 +74,7 @@ export const case002: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_tide_pod",
@@ -115,7 +116,7 @@ export const case002: CaseData = {
       position: { x: 420, y: 250 },
       isRedHerring: true
     },
-    
+
     // Pure Trash
     {
       id: "ev_pizza_flyer",

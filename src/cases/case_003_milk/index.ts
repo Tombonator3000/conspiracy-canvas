@@ -1,5 +1,8 @@
 import type { CaseData } from "@/types/game";
-import { bodybuilderMilk, oatMilk, cowSuspicious, spilledMilk } from "@/assets/evidence";
+import bodybuilderMilk from "./evidence/bodybuilder_milk.jpg";
+import oatMilk from "./evidence/oat_milk.jpg";
+import cowSuspicious from "./evidence/cow_suspicious.jpg";
+import spilledMilk from "./evidence/spilled_milk.jpg";
 
 export const case003: CaseData = {
   id: "case_003_milk",
@@ -72,7 +75,7 @@ export const case003: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_oatmilk",

@@ -1,5 +1,8 @@
 import type { CaseData } from "@/types/game";
-import { iphone1912, fakeIceberg, titanicMovie, vintageViolin } from "@/assets/evidence";
+import iphone1912 from "./evidence/iphone_1912.jpg";
+import fakeIceberg from "./evidence/fake_iceberg.jpg";
+import titanicMovie from "./evidence/titanic_movie.jpg";
+import vintageViolin from "./evidence/vintage_violin.jpg";
 
 export const case007: CaseData = {
   id: "case_007_titanic",
@@ -87,7 +90,7 @@ export const case007: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_movie",

@@ -1,21 +1,9 @@
-import { case001 } from "./case_001";
-import { case002 } from "./case_002";
-import { case003 } from "./case_003";
-import { case004 } from "./case_004";
-import { case005 } from "./case_005";
-import { case006 } from "./case_006";
-import { case007 } from "./case_007";
-import { case008 } from "./case_008";
-import { case009 } from "./case_009";
-import { case010 } from "./case_010";
-import { case011 } from "./case_011";
-import { case012 } from "./case_012";
 import type { CaseData } from "@/types/game";
 
 // DEBUG TEST CASE - Testing the new Zustand engine
 // Win condition: Combine A+B to get THE TRUTH, then connect to Node C
 // NEW: Tests timeline (blue thread) and UV encryption features
-export const TEST_CASE: CaseData = {
+export const testCase: CaseData = {
   id: 'test-001',
   title: 'DEBUG PROTOCOL',
   description: 'Combine A+B, then connect the result to C. Test blue thread for timeline order!',
@@ -125,29 +113,3 @@ export const TEST_CASE: CaseData = {
   ],
   scribblePool: ['IT WORKS!', 'CONNECTED!', 'SUCCESS!', 'TIMELINE CORRECT!', 'UV REVEALED!']
 };
-
-export const allCases: CaseData[] = [
-  TEST_CASE,
-  case001,
-  case002,
-  case003,
-  case004,
-  case005,
-  case006,
-  case007,
-  case008,
-  case009,
-  case010,
-  case011,
-  case012,
-];
-
-export const getCaseById = (id: string): CaseData | undefined => {
-  return allCases.find((c) => c.id === id);
-};
-
-export const getCasesByDifficulty = (difficulty: string): CaseData[] => {
-  return allCases.filter((c) => c.difficulty === difficulty);
-};
-
-export { case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012 };

@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { bigfootFootprint, pattersonFilm, thermalForest, brokenBranches, destroyedTent } from "@/assets/evidence";
+import bigfootFootprint from "./evidence/bigfoot_footprint.jpg";
+import pattersonFilm from "./evidence/patterson_film.jpg";
+import thermalForest from "./evidence/thermal_forest.jpg";
+import brokenBranches from "./evidence/broken_branches.jpg";
+import destroyedTent from "./evidence/destroyed_tent.jpg";
 
 export const case011: CaseData = {
   id: "case_011_bigfoot",
@@ -91,7 +95,7 @@ export const case011: CaseData = {
       id: "ev_patterson_film",
       type: "photo",
       title: "Patterson Film Still",
-      contentUrl: null,
+      contentUrl: pattersonFilm,
       description: "The famous 1967 footage. 'Patty' walks across the clearing. Skeptics say costume. Costume makers say impossible. We say: both wrong.",
       tags: ["FILM", "CLASSIC"],
       position: { x: 450, y: 50 },
@@ -131,7 +135,7 @@ export const case011: CaseData = {
       id: "ev_thermal_image",
       type: "photo",
       title: "Thermal Camera Image",
-      contentUrl: null,
+      contentUrl: thermalForest,
       description: "Heat signature in forest. Could be Bigfoot. Could be drunk hunter. Heat doesn't lie, but it doesn't identify either.",
       tags: ["THERMAL", "IMAGE"],
       position: { x: 500, y: 480 },
@@ -141,7 +145,7 @@ export const case011: CaseData = {
       id: "ev_broken_branches",
       type: "photo",
       title: "Broken Branch Formation",
-      contentUrl: null,
+      contentUrl: brokenBranches,
       description: "'Bigfoot marker'. Or... wind. Or bear. Or bored teenager. Very inconclusive branch evidence.",
       tags: ["BRANCH", "MARKER"],
       position: { x: 150, y: 550 },
@@ -171,7 +175,7 @@ export const case011: CaseData = {
       id: "ev_camping_tent",
       type: "photo",
       title: "Destroyed Tent Photo",
-      contentUrl: null,
+      contentUrl: destroyedTent,
       description: "Torn to shreds near sighting area. Bear? Bigfoot? The owner's ex? All equally likely.",
       tags: ["TENT", "DAMAGE"],
       position: { x: 260, y: 520 },

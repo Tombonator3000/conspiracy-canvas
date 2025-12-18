@@ -5,7 +5,7 @@ import { Printer } from "./Printer";
 import { SettingsModal } from "./SettingsModal";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useResponsive } from "@/hooks/useResponsive";
-import { allCases } from "@/data/cases";
+import { allCases } from "@/cases";
 import type { CaseData } from "@/types/game";
 import desktopBg from "@/assets/desktop_bg.jpeg";
 

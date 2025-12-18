@@ -1,5 +1,8 @@
 import type { CaseData } from "@/types/game";
-import { burgerKingSighting, area51Badge, elvisImpersonator, blueSuedeShoes } from "@/assets/evidence";
+import burgerKingSighting from "./evidence/burger_king_sighting.jpg";
+import area51Badge from "./evidence/area51_badge.jpg";
+import elvisImpersonator from "./evidence/elvis_impersonator.jpg";
+import blueSuedeShoes from "./evidence/blue_suede_shoes.jpg";
 
 export const case009: CaseData = {
   id: "case_009_elvis",

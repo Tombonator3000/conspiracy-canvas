@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { pigeonSuspicious, powerlinesBirds, catSuspicious, weatherBalloon, blurryThumb } from "@/assets/evidence";
+import pigeonSuspicious from "./evidence/pigeon_suspicious.jpg";
+import powerlinesBirds from "./evidence/powerlines_birds.jpg";
+import catSuspicious from "./evidence/cat_suspicious.jpg";
+import weatherBalloon from "./evidence/weather_balloon.jpg";
+import blurryThumb from "./evidence/blurry_thumb.jpg";
 
 export const case001: CaseData = {
   id: "case_001_birds",
@@ -61,7 +65,7 @@ export const case001: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions (looks related but isn't)
     {
       id: "ev_cat_picture",

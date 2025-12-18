@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { catRouter, catPhone, goodDog, fiveGTower, scratchingPost } from "@/assets/evidence";
+import catRouter from "./evidence/cat_router.jpg";
+import catPhone from "./evidence/cat_phone.jpg";
+import goodDog from "./evidence/good_dog.jpg";
+import fiveGTower from "./evidence/5g_tower.jpg";
+import scratchingPost from "./evidence/scratching_post.jpg";
 
 export const case005: CaseData = {
   id: "case_005_cats",
@@ -74,7 +78,7 @@ export const case005: CaseData = {
     },
 
     // ===== RED HERRINGS & JUNK (70%) =====
-    
+
     // Distractions
     {
       id: "ev_dog",

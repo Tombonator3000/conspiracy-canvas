@@ -1,5 +1,9 @@
 import type { CaseData } from "@/types/game";
-import { microwaveGlow, popcornTime, rotatingPlate, tinFoil, powerCord } from "@/assets/evidence";
+import microwaveGlow from "./evidence/microwave_glow.jpg";
+import popcornTime from "./evidence/popcorn_time.jpg";
+import rotatingPlate from "./evidence/rotating_plate.jpg";
+import tinFoil from "./evidence/tin_foil.jpg";
+import powerCord from "./evidence/power_cord.jpg";
 
 export const case008: CaseData = {
   id: "case_008_microwave",

@@ -1,5 +1,12 @@
 import type { CaseData } from "@/types/game";
-import { roswellDebris, strangeCamera, blurryUfo, cropCircle, thermalForest, brokenBranches, menInBlack, destroyedTent } from "@/assets/evidence";
+import roswellDebris from "./evidence/roswell_debris.jpg";
+import strangeCamera from "./evidence/strange_camera.jpg";
+import blurryUfo from "./evidence/blurry_ufo.jpg";
+import cropCircle from "./evidence/crop_circle.jpg";
+import thermalForest from "./evidence/thermal_forest.jpg";
+import brokenBranches from "./evidence/broken_branches.jpg";
+import menInBlack from "./evidence/men_in_black.jpg";
+import destroyedTent from "./evidence/destroyed_tent.jpg";
 
 export const case010: CaseData = {
   id: "case_010_ufo",
@@ -111,7 +118,7 @@ export const case010: CaseData = {
       id: "ev_grainy_photo",
       type: "photo",
       title: "Classic Blurry UFO Photo",
-      contentUrl: null,
+      contentUrl: blurryUfo,
       description: "Could be alien craft. Could be frisbee. Could be hubcap. Definitely blurry.",
       tags: ["BLURRY", "CLASSIC"],
       position: { x: 680, y: 200 },
@@ -121,7 +128,7 @@ export const case010: CaseData = {
       id: "ev_crop_circle",
       type: "photo",
       title: "Crop Circle Photo",
-      contentUrl: null,
+      contentUrl: cropCircle,
       description: "Complex geometric pattern. Local farmer says 'it was Dave with a plank'. Dave denies knowing geometry.",
       tags: ["CROP", "CIRCLE"],
       position: { x: 280, y: 180 },
@@ -161,7 +168,7 @@ export const case010: CaseData = {
       id: "ev_mib_sighting",
       type: "photo",
       title: "Men in Black Photo",
-      contentUrl: null,
+      contentUrl: menInBlack,
       description: "Two men in suits near UFO site. Follow-up investigation: They were real estate agents.",
       tags: ["MIB", "SUITS"],
       position: { x: 720, y: 320 },
