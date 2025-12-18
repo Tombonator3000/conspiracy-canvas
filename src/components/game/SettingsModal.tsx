@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, Gamepad2, Eye, RotateCcw, Monitor } from "lucide-react";
+import { Volume2, Gamepad2, Eye, RotateCcw, Monitor, Flashlight } from "lucide-react";
 import { useSettings } from "@/contexts/SettingsContext";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { Slider } from "@/components/ui/slider";
@@ -141,6 +141,42 @@ export const SettingsModal = ({ isOpen, onClose }: SettingsModalProps) => {
                               checked={settings.vignette}
                               onChange={(v) => updateSetting("vignette", v)}
                             />
+                          </div>
+                        </section>
+
+                        <div className="border-t border-[#00ff00]/30" />
+
+                        {/* Flashlight Section */}
+                        <section className="space-y-3">
+                          <div className="flex items-center gap-2 terminal-text">
+                            <Flashlight className="w-4 h-4" />
+                            <h3 className="font-mono text-xs uppercase tracking-wider">{'>'} FLASHLIGHT MODE</h3>
+                          </div>
+                          <div className="space-y-3 pl-6 border-l border-[#00ff00]/30">
+                            <CRTToggle
+                              label="ENABLE FLASHLIGHT"
+                              description="Spotlight follows cursor (atmospheric!)"
+                              checked={settings.flashlightEnabled}
+                              onChange={(v) => updateSetting("flashlightEnabled", v)}
+                            />
+                            {settings.flashlightEnabled && (
+                              <>
+                                <CRTSlider
+                                  label="DARKNESS LEVEL"
+                                  value={settings.flashlightIntensity}
+                                  onChange={(v) => updateSetting("flashlightIntensity", v)}
+                                  min={20}
+                                  max={80}
+                                />
+                                <CRTSlider
+                                  label="SPOTLIGHT SIZE"
+                                  value={settings.flashlightSize}
+                                  onChange={(v) => updateSetting("flashlightSize", v)}
+                                  min={100}
+                                  max={400}
+                                />
+                              </>
+                            )}
                           </div>
                         </section>
 

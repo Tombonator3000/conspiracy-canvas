@@ -23,6 +23,11 @@ interface Settings {
   filmGrain: boolean;
   vignette: boolean;
   effectsIntensity: number;
+
+  // Flashlight effect
+  flashlightEnabled: boolean;
+  flashlightIntensity: number; // 0-100, controls darkness
+  flashlightSize: number; // Spotlight size in pixels
 }
 
 const defaultSettings: Settings = {
@@ -40,6 +45,10 @@ const defaultSettings: Settings = {
   filmGrain: true,
   vignette: true,
   effectsIntensity: 75,
+  // Flashlight defaults (off by default - can be intense)
+  flashlightEnabled: false,
+  flashlightIntensity: 40,
+  flashlightSize: 200,
 };
 
 interface SettingsContextType {
