@@ -164,3 +164,62 @@ export const getStarRating = (totalScore: number): number => {
 export const getRandomFromArray = <T>(array: readonly T[]): T => {
   return array[Math.floor(Math.random() * array.length)];
 };
+
+// ============================================
+// THEORY MODE CONSTANTS
+// ============================================
+
+/** Cost in sanity to test a theory */
+export const THEORY_TEST_COST = 5;
+
+/** Theory mode response messages based on correctness */
+export const THEORY_RESPONSES = {
+  ALL_CORRECT: [
+    "THE PATTERN EMERGES...",
+    "YOU SEE THE TRUTH!",
+    "EXACTLY RIGHT!",
+    "THE WEB REVEALS ITSELF!",
+  ],
+  TWO_CORRECT: [
+    "THE PATTERN EMERGES...",
+    "ALMOST THERE...",
+    "SO CLOSE TO THE TRUTH...",
+    "TWO PIECES FIT...",
+  ],
+  ONE_CORRECT: [
+    "YOU'RE ONTO SOMETHING...",
+    "A GLIMPSE OF TRUTH...",
+    "ONE THREAD CONNECTS...",
+    "KEEP DIGGING...",
+  ],
+  NONE_CORRECT: [
+    "THAT'S WHAT THEY WANT YOU TO THINK...",
+    "FALSE LEAD!",
+    "DISINFORMATION!",
+    "THE RABBIT HOLE GOES DEEPER...",
+  ],
+} as const;
+
+// ============================================
+// GAME MODIFIER CONSTANTS
+// ============================================
+
+/** Deadline modifier: time limit in seconds */
+export const DEADLINE_TIME_LIMIT = 300; // 5 minutes
+
+/** Blackout modifier: UV light limit in seconds */
+export const BLACKOUT_UV_LIMIT = 30; // 30 seconds total
+
+/** Paranoid modifier: starting sanity */
+export const PARANOID_STARTING_SANITY = 50;
+
+/** Minimalist modifier: max connections allowed */
+export const MINIMALIST_MAX_CONNECTIONS = 10;
+
+/** Modifier bonus points */
+export const MODIFIER_BONUSES = {
+  deadline: 500,
+  blackout: 300,
+  paranoid: 400,
+  minimalist: 250,
+} as const;

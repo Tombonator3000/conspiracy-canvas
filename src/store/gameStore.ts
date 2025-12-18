@@ -1,8 +1,18 @@
 import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
-import { EvidenceNode, EvidenceNodeData, Combination, Scribble, ScribbleVariant } from '@/types/game';
+import { EvidenceNode, EvidenceNodeData, Combination, Scribble, ScribbleVariant, ModifierId, TheoryResult } from '@/types/game';
 import { allCases } from '@/cases';
 import { getRandomJunkNodes } from '@/cases/shared/junk/junkNodes';
+import {
+  THEORY_TEST_COST,
+  THEORY_RESPONSES,
+  DEADLINE_TIME_LIMIT,
+  BLACKOUT_UV_LIMIT,
+  PARANOID_STARTING_SANITY,
+  MINIMALIST_MAX_CONNECTIONS,
+  MODIFIER_BONUSES,
+  getRandomFromArray,
+} from '@/constants/game';
 
 // Development-only logging helper
 const devLog = (message: string, ...args: unknown[]) => {
@@ -133,6 +143,18 @@ interface GameState {
   foundTags: string[];
   conspiracyWebPercent: number;
 
+  // THEORY MODE
+  theoryModeActive: boolean;
+  selectedTheoryNodes: string[];
+  lastTheoryResult: TheoryResult | null;
+
+  // GAME MODIFIERS
+  activeModifiers: ModifierId[];
+  deadlineTimeRemaining: number | null; // seconds remaining, null if not active
+  uvTimeRemaining: number | null; // seconds of UV time left (for blackout mode)
+  connectionCount: number; // for minimalist mode
+  maxConnections: number | null; // null if unlimited
+
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
   setEdges: (edges: Edge[]) => void;
@@ -186,6 +208,19 @@ interface GameState {
 
   // Internal helper
   validateWin: () => void;
+
+  // THEORY MODE ACTIONS
+  toggleTheoryMode: () => void;
+  selectTheoryNode: (nodeId: string) => void;
+  deselectTheoryNode: (nodeId: string) => void;
+  clearTheorySelection: () => void;
+  testTheory: () => TheoryResult | null;
+
+  // GAME MODIFIER ACTIONS
+  setActiveModifiers: (modifiers: ModifierId[]) => void;
+  tickDeadline: () => void; // Called every second to decrement timer
+  consumeUVTime: (seconds: number) => void; // Decrement UV time
+  getModifierBonus: () => number; // Calculate total bonus from active modifiers
 }
 
 // Helper to calculate the size of a connected cluster containing a node
@@ -286,6 +321,18 @@ export const useGameStore = create<GameState>((set, get) => ({
   foundTags: [],
   conspiracyWebPercent: 0,
 
+  // Theory Mode
+  theoryModeActive: false,
+  selectedTheoryNodes: [],
+  lastTheoryResult: null,
+
+  // Game Modifiers
+  activeModifiers: [],
+  deadlineTimeRemaining: null,
+  uvTimeRemaining: null,
+  connectionCount: 0,
+  maxConnections: null,
+
   setNodes: (nodes) => set({
     nodes,
     startTime: Date.now(),
@@ -367,14 +414,37 @@ export const useGameStore = create<GameState>((set, get) => ({
     const initialNodes = [...caseNodes, ...junkNodes];
 
     // Get initial sanity from case data or default to 100
-    const caseSanity = level.boardState?.sanity ?? 100;
+    let caseSanity = level.boardState?.sanity ?? 100;
+
+    // Get active modifiers from current state
+    const { activeModifiers } = get();
+
+    // Apply PARANOID modifier: reduce starting sanity
+    if (activeModifiers.includes('paranoid')) {
+      caseSanity = Math.min(caseSanity, PARANOID_STARTING_SANITY);
+    }
+
+    // Calculate max connections for MINIMALIST modifier
+    const maxConnections = activeModifiers.includes('minimalist')
+      ? MINIMALIST_MAX_CONNECTIONS
+      : null;
+
+    // Initialize deadline timer for DEADLINE modifier
+    const deadlineTime = activeModifiers.includes('deadline')
+      ? DEADLINE_TIME_LIMIT
+      : null;
+
+    // Initialize UV time for BLACKOUT modifier
+    const uvTime = activeModifiers.includes('blackout')
+      ? BLACKOUT_UV_LIMIT
+      : null;
 
     set({
       currentLevelIndex: index,
       nodes: initialNodes,
       edges: [],
       sanity: caseSanity,
-      initialSanity: caseSanity, // NEW: Track initial sanity for cap
+      initialSanity: caseSanity, // Track initial sanity for cap
       isVictory: false,
       isGameOver: false,
       score: 0,
@@ -388,13 +458,22 @@ export const useGameStore = create<GameState>((set, get) => ({
       bursts: [],
       trashingNodes: [],
       comboChainCount: 0,
-      consecutiveCorrect: 0, // NEW: Reset consecutive correct counter
-      hintsUsed: 0, // NEW: Reset hints
-      foundTags: [], // NEW: Reset found tags
-      conspiracyWebPercent: 0, // NEW: Reset progress
+      consecutiveCorrect: 0,
+      hintsUsed: 0,
+      foundTags: [],
+      conspiracyWebPercent: 0,
+      // Theory Mode reset
+      theoryModeActive: false,
+      selectedTheoryNodes: [],
+      lastTheoryResult: null,
+      // Modifier state
+      deadlineTimeRemaining: deadlineTime,
+      uvTimeRemaining: uvTime,
+      connectionCount: 0,
+      maxConnections: maxConnections,
     });
 
-    devLog(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items, sanity: ${caseSanity})`);
+    devLog(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items, sanity: ${caseSanity}, modifiers: ${activeModifiers.join(', ') || 'none'})`);
   },
 
   nextLevel: () => {
@@ -418,7 +497,13 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled, maxConnections, connectionCount } = get();
+
+    // Check MINIMALIST modifier: block connections if limit reached
+    if (maxConnections !== null && connectionCount >= maxConnections) {
+      addScribble("NO MORE CONNECTIONS ALLOWED!", 300, 200, 'error');
+      return;
+    }
 
     // Prevent duplicate connections
     const exists = edges.some(e =>
@@ -519,6 +604,7 @@ export const useGameStore = create<GameState>((set, get) => ({
         score: state.score + 50 + bonusScore,
         sanity: Math.min(state.initialSanity, state.sanity + sanityBonus), // Cap at initial!
         consecutiveCorrect: newConsecutive,
+        connectionCount: state.connectionCount + 1, // Track for MINIMALIST modifier
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
@@ -881,6 +967,16 @@ export const useGameStore = create<GameState>((set, get) => ({
       hintsUsed: 0,
       foundTags: [],
       conspiracyWebPercent: 0,
+      // Theory Mode
+      theoryModeActive: false,
+      selectedTheoryNodes: [],
+      lastTheoryResult: null,
+      // Modifiers
+      activeModifiers: [],
+      deadlineTimeRemaining: null,
+      uvTimeRemaining: null,
+      connectionCount: 0,
+      maxConnections: null,
     });
   },
 
@@ -1184,13 +1280,191 @@ export const useGameStore = create<GameState>((set, get) => ({
       // + Sanity * 10
       // + Junk * 100
       // - Mistakes * 200
-      const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
-      devLog(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
+      // + Modifier bonuses
+      const modifierBonus = get().getModifierBonus();
+      const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200) + modifierBonus;
+      devLog(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200, Modifiers: +${modifierBonus})`);
       set({
         isVictory: true,
         score: finalScore,
         lastAction: { type: 'VICTORY', id: Date.now() }
       });
     }
-  }
+  },
+
+  // ============================================
+  // THEORY MODE ACTIONS
+  // ============================================
+
+  toggleTheoryMode: () => {
+    set(state => ({
+      theoryModeActive: !state.theoryModeActive,
+      selectedTheoryNodes: [], // Clear selection when toggling
+      lastTheoryResult: null,
+    }));
+  },
+
+  selectTheoryNode: (nodeId: string) => {
+    set(state => {
+      // Max 3 nodes for theory
+      if (state.selectedTheoryNodes.length >= 3) {
+        return {}; // Don't add more
+      }
+      // Don't allow duplicate selection
+      if (state.selectedTheoryNodes.includes(nodeId)) {
+        return {};
+      }
+      return {
+        selectedTheoryNodes: [...state.selectedTheoryNodes, nodeId],
+      };
+    });
+  },
+
+  deselectTheoryNode: (nodeId: string) => {
+    set(state => ({
+      selectedTheoryNodes: state.selectedTheoryNodes.filter(id => id !== nodeId),
+    }));
+  },
+
+  clearTheorySelection: () => {
+    set({ selectedTheoryNodes: [], lastTheoryResult: null });
+  },
+
+  testTheory: () => {
+    const state = get();
+    const { selectedTheoryNodes, nodes, sanity, requiredTags, addScribble } = state;
+
+    // Need exactly 3 nodes to test
+    if (selectedTheoryNodes.length !== 3) {
+      addScribble("SELECT 3 NODES FIRST!", 300, 200, 'error');
+      return null;
+    }
+
+    // Check if enough sanity
+    if (sanity < THEORY_TEST_COST) {
+      addScribble("TOO EXHAUSTED TO THINK...", 300, 200, 'error');
+      return null;
+    }
+
+    // Count how many selected nodes have matching truth tags with requiredTags
+    let correctCount = 0;
+    for (const nodeId of selectedTheoryNodes) {
+      const node = nodes.find(n => n.id === nodeId);
+      if (node) {
+        const truthTags = (node.data as { truthTags?: string[] }).truthTags || [];
+        // Check if any of this node's truth tags are in the requiredTags
+        const hasMatchingTag = truthTags.some(tag => requiredTags.includes(tag));
+        if (hasMatchingTag) {
+          correctCount++;
+        }
+      }
+    }
+
+    // Generate result message
+    let message: string;
+    let variant: 'success' | 'partial' | 'failure';
+
+    if (correctCount === 3) {
+      message = getRandomFromArray(THEORY_RESPONSES.ALL_CORRECT);
+      variant = 'success';
+    } else if (correctCount === 2) {
+      message = getRandomFromArray(THEORY_RESPONSES.TWO_CORRECT);
+      variant = 'partial';
+    } else if (correctCount === 1) {
+      message = getRandomFromArray(THEORY_RESPONSES.ONE_CORRECT);
+      variant = 'partial';
+    } else {
+      message = getRandomFromArray(THEORY_RESPONSES.NONE_CORRECT);
+      variant = 'failure';
+    }
+
+    const result: TheoryResult = {
+      correctCount,
+      totalNodes: 3,
+      message,
+      variant,
+    };
+
+    // Apply sanity cost
+    set(state => ({
+      sanity: Math.max(0, state.sanity - THEORY_TEST_COST),
+      lastTheoryResult: result,
+      selectedTheoryNodes: [], // Clear selection after test
+      lastAction: { type: 'THEORY_TEST', id: Date.now() },
+    }));
+
+    // Show scribble feedback
+    const scribbleVariant = variant === 'success' ? 'insight' : variant === 'partial' ? 'success' : 'error';
+    addScribble(message, 300 + Math.random() * 200, 150 + Math.random() * 100, scribbleVariant);
+
+    devLog(`🔮 Theory Test: ${correctCount}/3 correct - "${message}"`);
+
+    // Check for game over
+    if (get().sanity <= 0) {
+      set({ isGameOver: true });
+    }
+
+    return result;
+  },
+
+  // ============================================
+  // GAME MODIFIER ACTIONS
+  // ============================================
+
+  setActiveModifiers: (modifiers: ModifierId[]) => {
+    set({ activeModifiers: modifiers });
+    devLog(`🎮 Active modifiers set: ${modifiers.join(', ') || 'none'}`);
+  },
+
+  tickDeadline: () => {
+    const { deadlineTimeRemaining, isVictory, isGameOver } = get();
+
+    // Only tick if deadline is active and game is ongoing
+    if (deadlineTimeRemaining === null || isVictory || isGameOver) {
+      return;
+    }
+
+    if (deadlineTimeRemaining <= 1) {
+      // Time's up!
+      set({
+        deadlineTimeRemaining: 0,
+        isGameOver: true,
+        lastAction: { type: 'DEADLINE_EXPIRED', id: Date.now() },
+      });
+      get().addScribble("TIME'S UP!", 300, 200, 'error');
+      devLog('⏱️ Deadline expired! Game Over.');
+    } else {
+      set({ deadlineTimeRemaining: deadlineTimeRemaining - 1 });
+    }
+  },
+
+  consumeUVTime: (seconds: number) => {
+    const { uvTimeRemaining, activeModifiers } = get();
+
+    // Only consume if blackout mode is active
+    if (!activeModifiers.includes('blackout') || uvTimeRemaining === null) {
+      return;
+    }
+
+    const newTime = Math.max(0, uvTimeRemaining - seconds);
+    set({ uvTimeRemaining: newTime });
+
+    if (newTime <= 0) {
+      // Force UV off when time runs out
+      set({ isUVEnabled: false });
+      get().addScribble("UV BATTERY DEPLETED!", 300, 200, 'error');
+      devLog('🔦 UV time depleted!');
+    }
+  },
+
+  getModifierBonus: () => {
+    const { activeModifiers } = get();
+    let totalBonus = 0;
+
+    for (const modifierId of activeModifiers) {
+      totalBonus += MODIFIER_BONUSES[modifierId] || 0;
+    }
+
+    return totalBonus;
+  },
 }));
