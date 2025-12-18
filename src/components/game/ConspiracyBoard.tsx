@@ -25,6 +25,9 @@ import { Scribble } from "./Scribble";
 import { ParticleBurst } from "./ParticleBurst";
 import { AnalogFilters } from "./AnalogFilters";
 import { FlashlightOverlay } from "./FlashlightOverlay";
+import { ConspiracyWeb } from "./ConspiracyWeb";
+import { StarPrediction } from "./StarPrediction";
+import { HintPanel } from "./HintPanel";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
@@ -405,7 +408,24 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         <div className="sanity-meter-responsive">
           <SanityMeter sanity={sanity} />
         </div>
+        {/* New UI Components */}
+        {!isMobile && (
+          <>
+            <ConspiracyWeb />
+            <StarPrediction />
+            <HintPanel />
+          </>
+        )}
       </div>
+
+      {/* Mobile-specific bottom HUD for new components */}
+      {isMobile && (
+        <div className="absolute bottom-[240px] left-2 z-50 flex flex-col gap-2 max-w-[150px]">
+          <ConspiracyWeb className="text-[9px]" />
+          <StarPrediction className="text-[9px]" />
+          <HintPanel className="text-[9px]" />
+        </div>
+      )}
 
       {/* Thread Mode Toggle - repositioned for mobile */}
       <div className={`absolute z-50 flex flex-col gap-2 bg-black/50 p-2 rounded border border-white/10 touch-target ${

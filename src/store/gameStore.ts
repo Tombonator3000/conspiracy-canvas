@@ -69,11 +69,27 @@ interface TrashedNode {
   wasJunk: boolean;
 }
 
+// Hint tier definition
+export interface HintTier {
+  level: 1 | 2 | 3;
+  cost: number;
+  type: 'vague' | 'specific' | 'direct';
+}
+
+// Desperation boost state (hidden from player)
+interface DesperationBoosts {
+  hintClarityBonus: number;
+  redHerringGlow: boolean;
+  combineRadiusBonus: number;
+  autoHintEnabled: boolean;
+}
+
 interface GameState {
   // DATA
   nodes: Node[];
   edges: Edge[];
   sanity: number;
+  initialSanity: number; // NEW: Track starting sanity for cap
   requiredTags: string[];
   isVictory: boolean;
   isGameOver: boolean;
@@ -107,6 +123,15 @@ interface GameState {
 
   // COMBO CHAIN TRACKING
   comboChainCount: number;
+  consecutiveCorrect: number; // NEW: Track consecutive correct connections
+
+  // HINT SYSTEM
+  hintsUsed: number;
+  maxHints: number;
+
+  // CONSPIRACY WEB PROGRESS
+  foundTags: string[];
+  conspiracyWebPercent: number;
 
   // ACTIONS
   setNodes: (nodes: Node[]) => void;
@@ -148,9 +173,49 @@ interface GameState {
   startTrashAnimation: (nodeId: string, isJunk: boolean) => void;
   completeTrashAnimation: (nodeId: string) => void;
 
+  // HINT SYSTEM ACTIONS
+  requestHint: (tier: 1 | 2 | 3) => string | null;
+  getHintForTag: (tag: string, tier: 1 | 2 | 3) => string;
+
+  // CONSPIRACY WEB ACTIONS
+  updateConspiracyWeb: () => void;
+  getFoundTags: () => string[];
+
+  // DESPERATION BOOST (hidden helper)
+  getDesperationBoosts: () => DesperationBoosts;
+
   // Internal helper
   validateWin: () => void;
 }
+
+// Helper to calculate the size of a connected cluster containing a node
+const getClusterSize = (nodeId: string, edges: Edge[], nodes: Node[]): number => {
+  // Build adjacency map
+  const adj = new Map<string, string[]>();
+  nodes.forEach(n => adj.set(n.id, []));
+  edges.forEach(e => {
+    adj.get(e.source)?.push(e.target);
+    adj.get(e.target)?.push(e.source);
+  });
+
+  // BFS to find all nodes in cluster
+  const visited = new Set<string>();
+  const queue = [nodeId];
+  visited.add(nodeId);
+
+  while (queue.length > 0) {
+    const current = queue.shift()!;
+    const neighbors = adj.get(current) || [];
+    for (const neighbor of neighbors) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    }
+  }
+
+  return visited.size;
+};
 
 // Helper to convert case data nodes to React Flow nodes
 const createNodesFromCase = (caseData: typeof allCases[number]) => {
@@ -177,6 +242,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
   sanity: 100,
+  initialSanity: 100, // NEW: Track starting sanity
   requiredTags: [],
   isVictory: false,
   isGameOver: false,
@@ -210,6 +276,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   // Combo Chain Tracking
   comboChainCount: 0,
+  consecutiveCorrect: 0, // NEW: Track consecutive correct connections
+
+  // Hint System
+  hintsUsed: 0,
+  maxHints: 5,
+
+  // Conspiracy Web Progress
+  foundTags: [],
+  conspiracyWebPercent: 0,
 
   setNodes: (nodes) => set({
     nodes,
@@ -291,11 +366,15 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     const initialNodes = [...caseNodes, ...junkNodes];
 
+    // Get initial sanity from case data or default to 100
+    const caseSanity = level.boardState?.sanity ?? 100;
+
     set({
       currentLevelIndex: index,
       nodes: initialNodes,
       edges: [],
-      sanity: 100,
+      sanity: caseSanity,
+      initialSanity: caseSanity, // NEW: Track initial sanity for cap
       isVictory: false,
       isGameOver: false,
       score: 0,
@@ -309,9 +388,13 @@ export const useGameStore = create<GameState>((set, get) => ({
       bursts: [],
       trashingNodes: [],
       comboChainCount: 0,
+      consecutiveCorrect: 0, // NEW: Reset consecutive correct counter
+      hintsUsed: 0, // NEW: Reset hints
+      foundTags: [], // NEW: Reset found tags
+      conspiracyWebPercent: 0, // NEW: Reset progress
     });
 
-    devLog(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items)`);
+    devLog(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items, sanity: ${caseSanity})`);
   },
 
   nextLevel: () => {
@@ -412,19 +495,47 @@ export const useGameStore = create<GameState>((set, get) => ({
         }
       } as Edge;
 
-      // SANITY REGENERATION: +5 sanity for correct connections (capped at 100)
+      // Calculate cluster size after this connection
+      const newEdges = [...get().edges, newEdge];
+      const clusterSize = getClusterSize(params.target, newEdges, nodes);
+
+      // Base sanity regeneration
+      let sanityBonus = 5;
+      let bonusScore = 0;
+
+      // EUREKA MOMENT: +15 extra sanity for connecting 3+ nodes in cluster
+      const isEurekaMoment = clusterSize >= 3;
+      if (isEurekaMoment) {
+        sanityBonus += 15;
+        bonusScore = 100; // Bonus score for Eureka
+      }
+
+      // Track consecutive correct connections
+      const newConsecutive = get().consecutiveCorrect + 1;
+
+      // SANITY REGENERATION: Capped at initialSanity (not 100)
       set(state => ({
-        edges: [...state.edges, newEdge],
-        score: state.score + 50,
-        sanity: Math.min(100, state.sanity + 5), // Regenerate sanity!
+        edges: newEdges,
+        score: state.score + 50 + bonusScore,
+        sanity: Math.min(state.initialSanity, state.sanity + sanityBonus), // Cap at initial!
+        consecutiveCorrect: newConsecutive,
         lastAction: { type: 'CONNECT_SUCCESS', id: Date.now() }
       }));
 
       // SUCCESS SCRIBBLE - Handwritten feedback for valid connection
-      const successText = SUCCESS_CONNECTION_TEXTS[Math.floor(Math.random() * SUCCESS_CONNECTION_TEXTS.length)];
       const midX = (source.position.x + target.position.x) / 2;
       const midY = (source.position.y + target.position.y) / 2;
-      addScribble(successText, midX, midY - 30, 'success');
+
+      if (isEurekaMoment) {
+        // Special Eureka scribble
+        addScribble("EUREKA! THE PIECES FIT!", midX, midY - 30, 'insight');
+      } else {
+        const successText = SUCCESS_CONNECTION_TEXTS[Math.floor(Math.random() * SUCCESS_CONNECTION_TEXTS.length)];
+        addScribble(successText, midX, midY - 30, 'success');
+      }
+
+      // Update conspiracy web progress
+      get().updateConspiracyWeb();
 
       // Check win condition immediately
       get().validateWin();
@@ -434,6 +545,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       set(state => ({
         sanity: Math.max(0, state.sanity - 10),
         mistakes: state.mistakes + 1,
+        consecutiveCorrect: 0, // Reset streak on failure
         lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
       }));
 
@@ -735,7 +847,8 @@ export const useGameStore = create<GameState>((set, get) => ({
 
   modifySanity: (delta) => {
     set(state => {
-      const newSanity = Math.max(0, Math.min(100, state.sanity + delta));
+      // Cap at initialSanity, not 100
+      const newSanity = Math.max(0, Math.min(state.initialSanity, state.sanity + delta));
       const isGameOver = newSanity <= 0;
       return {
         sanity: newSanity,
@@ -750,6 +863,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       nodes: [],
       edges: [],
       sanity: 100,
+      initialSanity: 100,
       requiredTags: [],
       isVictory: false,
       isGameOver: false,
@@ -763,6 +877,10 @@ export const useGameStore = create<GameState>((set, get) => ({
       bursts: [],
       trashingNodes: [],
       comboChainCount: 0,
+      consecutiveCorrect: 0,
+      hintsUsed: 0,
+      foundTags: [],
+      conspiracyWebPercent: 0,
     });
   },
 
@@ -866,6 +984,151 @@ export const useGameStore = create<GameState>((set, get) => ({
     set(state => ({
       trashingNodes: state.trashingNodes.filter(t => t.nodeId !== nodeId)
     }));
+  },
+
+  // HINT SYSTEM ACTIONS
+  requestHint: (tier: 1 | 2 | 3) => {
+    const state = get();
+    const { sanity, hintsUsed, maxHints, requiredTags, foundTags, addScribble } = state;
+
+    // Check if hints available
+    if (hintsUsed >= maxHints) {
+      addScribble("NO MORE LEADS...", 300, 200, 'error');
+      return null;
+    }
+
+    // Calculate cost based on tier
+    const costs = { 1: 5, 2: 10, 3: 15 };
+    const cost = costs[tier];
+
+    // Check if enough sanity
+    if (sanity < cost) {
+      addScribble("TOO EXHAUSTED...", 300, 200, 'error');
+      return null;
+    }
+
+    // Find missing tags
+    const missingTags = requiredTags.filter(tag => !foundTags.includes(tag));
+    if (missingTags.length === 0) {
+      addScribble("ALREADY FOUND EVERYTHING!", 300, 200, 'success');
+      return null;
+    }
+
+    // Pick a random missing tag to hint about
+    const hintTag = missingTags[Math.floor(Math.random() * missingTags.length)];
+    const hint = get().getHintForTag(hintTag, tier);
+
+    // Apply cost and increment hints used
+    set(state => ({
+      sanity: Math.max(0, state.sanity - cost),
+      hintsUsed: state.hintsUsed + 1,
+      lastAction: { type: 'HINT_USED', id: Date.now() }
+    }));
+
+    // Display hint as scribble
+    addScribble(hint, 300 + Math.random() * 200, 150 + Math.random() * 100, 'insight');
+
+    devLog(`💡 Hint (tier ${tier}): "${hint}" for tag "${hintTag}" (-${cost} sanity)`);
+    return hint;
+  },
+
+  getHintForTag: (tag: string, tier: 1 | 2 | 3): string => {
+    // Hint templates based on tier
+    const vagueHints: Record<string, string[]> = {
+      subject: ["Look at WHO...", "Someone is responsible...", "Find the culprit..."],
+      location: ["Consider WHERE...", "Place matters...", "Geography is key..."],
+      proof: ["You need EVIDENCE...", "Look for proof...", "Documents hold secrets..."],
+      motive: ["Think about WHY...", "What's the reason?", "Cui bono?"],
+      timeline: ["Check the DATES...", "Time reveals all...", "When did it happen?"],
+      evidence: ["Something's hidden...", "Look closer...", "Evidence awaits..."],
+      connection: ["Things are linked...", "Find the thread...", "It's all connected..."],
+      default: ["Keep searching...", "The truth is there...", "Don't give up..."]
+    };
+
+    const specificHints: Record<string, string[]> = {
+      subject: ["A PERSON is involved...", "Check the portraits...", "Who benefits?"],
+      location: ["A LOCATION is key...", "Map it out...", "Physical evidence..."],
+      proof: ["A DOCUMENT proves it...", "Written evidence...", "Paper trail..."],
+      motive: ["Follow the MONEY...", "Personal gain...", "Hidden agenda..."],
+      timeline: ["The DATE changes things...", "Check timestamps...", "Chronology matters..."],
+      evidence: ["PHOTO evidence exists...", "Visual proof...", "Captured on camera..."],
+      connection: ["Two items COMBINE...", "Merge the clues...", "Put pieces together..."],
+      default: ["Specific leads point...", "Focus your search...", "Narrowing down..."]
+    };
+
+    const directHints: Record<string, string[]> = {
+      subject: ["Find the SUBJECT node!", "The person node reveals...", "Identity confirmed!"],
+      location: ["LOCATION node needed!", "The place evidence...", "Geographic proof!"],
+      proof: ["Connect the PROOF!", "Hard evidence awaits!", "Undeniable proof exists!"],
+      motive: ["MOTIVE is clear!", "The reason why...", "Intent revealed!"],
+      timeline: ["TIMELINE shows truth!", "Dates don't lie!", "Chronological proof!"],
+      evidence: ["KEY EVIDENCE here!", "Critical proof found!", "This changes everything!"],
+      connection: ["COMBINE these items!", "Merge for truth!", "Two become one!"],
+      default: ["Direct lead found!", "Almost there!", "So close!"]
+    };
+
+    const hintPools = { 1: vagueHints, 2: specificHints, 3: directHints };
+    const pool = hintPools[tier];
+    const hints = pool[tag.toLowerCase()] || pool.default;
+
+    return hints[Math.floor(Math.random() * hints.length)];
+  },
+
+  // CONSPIRACY WEB ACTIONS
+  updateConspiracyWeb: () => {
+    const { nodes, edges, requiredTags } = get();
+
+    // Find all connected clusters and collect their tags
+    const foundTagsSet = new Set<string>();
+
+    // Build adjacency map
+    const adj = new Map<string, string[]>();
+    nodes.forEach(n => adj.set(n.id, []));
+    edges.forEach(e => {
+      adj.get(e.source)?.push(e.target);
+      adj.get(e.target)?.push(e.source);
+    });
+
+    // For each connected node, collect its truthTags
+    const visited = new Set<string>();
+    for (const node of nodes) {
+      // Only count nodes that are actually connected to something
+      const neighbors = adj.get(node.id) || [];
+      if (neighbors.length > 0 || visited.has(node.id)) {
+        const nodeTags = (node.data as { truthTags?: string[] }).truthTags || [];
+        nodeTags.forEach(tag => foundTagsSet.add(tag));
+      }
+    }
+
+    const foundTags = Array.from(foundTagsSet);
+    const relevantTags = foundTags.filter(tag => requiredTags.includes(tag));
+    const percent = requiredTags.length > 0
+      ? Math.round((relevantTags.length / requiredTags.length) * 100)
+      : 0;
+
+    set({
+      foundTags: relevantTags,
+      conspiracyWebPercent: percent
+    });
+
+    devLog(`🕸️ Conspiracy Web: ${percent}% (${relevantTags.length}/${requiredTags.length} tags found)`);
+  },
+
+  getFoundTags: () => {
+    return get().foundTags;
+  },
+
+  // DESPERATION BOOST (hidden helper system)
+  getDesperationBoosts: () => {
+    const { sanity } = get();
+
+    // Progressive boosts as sanity decreases (player doesn't know about these)
+    return {
+      hintClarityBonus: sanity < 40 ? 1 : 0,        // Hints become clearer
+      redHerringGlow: sanity < 30,                   // Red herrings get subtle glow
+      combineRadiusBonus: sanity < 25 ? 50 : 0,     // Easier to combine items
+      autoHintEnabled: sanity < 20                   // Periodic auto-hints
+    };
   },
 
   validateWin: () => {
