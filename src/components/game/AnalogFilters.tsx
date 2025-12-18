@@ -6,6 +6,7 @@ interface AnalogFiltersProps {
   enableVignette?: boolean;
   enableDust?: boolean;
   enableScanlines?: boolean;
+  intensity?: number; // 0-100 from settings
 }
 
 /**
@@ -22,11 +23,15 @@ export const AnalogFilters = memo(({
   enableVignette = true,
   enableDust = true,
   enableScanlines = false,
+  intensity: settingsIntensity = 75,
 }: AnalogFiltersProps) => {
-  // Intensify effects as sanity decreases
-  const intensity = Math.max(0, (100 - sanity) / 100);
-  const grainOpacity = 0.06 + (intensity * 0.08); // 0.06 - 0.14
-  const vignetteDarkness = 0.35 + (intensity * 0.25); // 0.35 - 0.6
+  // Base intensity from settings (0-1)
+  const baseIntensity = settingsIntensity / 100;
+
+  // Intensify effects as sanity decreases (scaled by settings intensity)
+  const sanityFactor = Math.max(0, (100 - sanity) / 100);
+  const grainOpacity = (0.04 + (sanityFactor * 0.1)) * baseIntensity; // Scaled by settings
+  const vignetteDarkness = (0.25 + (sanityFactor * 0.35)) * baseIntensity; // Scaled by settings
 
   // Generate dust particles with random properties
   const dustParticles = useMemo(() => {
@@ -70,7 +75,7 @@ export const AnalogFilters = memo(({
         <div
           className="crt-lines"
           style={{
-            '--scanline-opacity': 0.15 + (intensity * 0.1),
+            '--scanline-opacity': (0.15 + (sanityFactor * 0.1)) * baseIntensity,
           } as React.CSSProperties}
         />
       )}

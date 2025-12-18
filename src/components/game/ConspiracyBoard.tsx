@@ -27,6 +27,7 @@ import { AnalogFilters } from "./AnalogFilters";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
+import { useSettings } from "@/contexts/SettingsContext";
 
 import type { CaseData, CredibilityStats } from "@/types/game";
 
@@ -90,6 +91,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   // Audio context for sound effects
   const { playSFX, startAmbient, stopAmbient, updateSanity } = useAudioContext();
+
+  // Settings for effects
+  const { settings } = useSettings();
 
   // Dynamic connection line style based on thread color
   const connectionLineStyle = useMemo(() => ({
@@ -474,10 +478,11 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       {/* 90s Analog Aesthetic Filters - Film grain, vignette, dust */}
       <AnalogFilters
         sanity={sanity}
-        enableFilmGrain={true}
-        enableVignette={true}
-        enableDust={true}
-        enableScanlines={false}
+        enableFilmGrain={settings.filmGrain}
+        enableVignette={settings.vignette}
+        enableDust={settings.filmGrain}
+        enableScanlines={settings.crtScanlines}
+        intensity={settings.effectsIntensity}
       />
 
       {/* Madness Effects */}

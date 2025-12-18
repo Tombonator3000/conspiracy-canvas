@@ -128,7 +128,7 @@ const Index = () => {
         <ReactFlowProvider>
           <ConspiracyBoard
             caseData={selectedCase}
-            onBackToMenu={handleBackToFiles}
+            onBackToMenu={handleBackToMenu}
             onGameEnd={handleGameEnd}
           />
         </ReactFlowProvider>
@@ -147,17 +147,17 @@ const Index = () => {
           credibilityStats={gameResult.credibilityStats}
           onNextCase={handleNextCase}
           onRetry={handleRetry}
-          onBackToMenu={handleBackToFiles}
+          onBackToMenu={handleBackToMenu}
           hasNextCase={hasNextCase}
         />
       );
     }
-    
+
     case 'gameover':
       return (
         <GameOverScreen
           onRetry={handleRetry}
-          onBackToMenu={handleBackToFiles}
+          onBackToMenu={handleBackToMenu}
         />
       );
     
