@@ -39,6 +39,8 @@ export const ResultScreen = ({
   // Calculate scores using new Credibility Engine
   const investigationScore = credibilityStats.connectionScore; // Points from connections
   const cleanupBonus = credibilityStats.cleanupBonus; // Points from trashing junk
+  const cleanupPenalty = credibilityStats.cleanupPenalty || 0; // Points lost for leaving junk
+  const cleanupNet = cleanupBonus - cleanupPenalty;
   const credibilityLost = credibilityStats.mistakePenalty;
   const totalCredibility = credibilityStats.credibility ?? score;
 
@@ -136,6 +138,18 @@ export const ResultScreen = ({
                   <span className="text-[#333]">Cleanup Bonus:</span>
                   <span className="font-bold text-[#008000]">+{cleanupBonus}</span>
                 </div>
+                {cleanupPenalty > 0 && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-[#333]">Leftover Junk:</span>
+                    <span className="font-bold text-[#ff0000]">-{cleanupPenalty}</span>
+                  </div>
+                )}
+                <div className="flex justify-between items-center">
+                  <span className="text-[#333]">Cleanup Net:</span>
+                  <span className={`font-bold ${cleanupNet >= 0 ? 'text-[#008000]' : 'text-[#ff0000]'}`}>
+                    {cleanupNet >= 0 ? '+' : ''}{cleanupNet}
+                  </span>
+                </div>
                 {credibilityLost > 0 && (
                   <div className="flex justify-between items-center">
                     <span className="text-[#333]">Credibility Lost:</span>
@@ -158,6 +172,7 @@ export const ResultScreen = ({
                 <div className="font-marker text-2xl text-[#008000]">
                   {credibilityStats.trashedJunkCount}
                 </div>
+                <div className="text-[10px] text-muted-foreground">Remaining: {credibilityStats.junkRemaining}</div>
               </div>
               <div className="bg-white border-2 border-[#808080] p-3">
                 <div className="font-mono text-[10px] text-[#666] uppercase">Madness</div>

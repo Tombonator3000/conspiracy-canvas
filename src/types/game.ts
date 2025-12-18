@@ -148,9 +148,11 @@ export interface CredibilityStats {
   credibility: number;
   connectionScore: number;
   cleanupBonus: number;
+  cleanupPenalty: number;
   mistakePenalty: number;
   trashedJunkCount: number;
   junkRemaining: number;
+  maxJunkAllowed?: number;
 }
 
 export interface ConnectionResult {
