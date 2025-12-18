@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
 import { allCases } from '@/cases';
+import { getRandomJunkNodes } from '@/cases/shared/junk/junkNodes';
 
 // Scribble text pools for different events
 const SUCCESS_CONNECTION_TEXTS = [
@@ -246,7 +247,29 @@ export const useGameStore = create<GameState>((set, get) => ({
       return;
     }
 
-    const initialNodes = createNodesFromCase(level);
+    const caseNodes = createNodesFromCase(level);
+
+    // Get random junk items and convert to React Flow nodes
+    const junkEvidenceNodes = getRandomJunkNodes();
+    const junkNodes = junkEvidenceNodes.map((node) => {
+      const rotation = Math.random() * 30 - 15;
+      const zIndex = Math.floor(Math.random() * 100);
+
+      return {
+        id: node.id,
+        type: 'evidence',
+        position: node.position,
+        data: {
+          ...node,
+          rotation,
+          isDesktop: true,
+        },
+        draggable: true,
+        zIndex,
+      };
+    });
+
+    const initialNodes = [...caseNodes, ...junkNodes];
 
     set({
       currentLevelIndex: index,
@@ -267,7 +290,7 @@ export const useGameStore = create<GameState>((set, get) => ({
       trashingNodes: [],
     });
 
-    console.log(`📂 Loaded level ${index}: ${level.title}`);
+    console.log(`📂 Loaded level ${index}: ${level.title} (with ${junkNodes.length} random junk items)`);
   },
 
   nextLevel: () => {
