@@ -98,6 +98,7 @@ export interface CaseData {
   scribblePool: string[];
   combinations?: Combination[];  // Optional combinations for adventure-style puzzles
   requiredTags?: string[]; // Tags that must ALL be present in a connected cluster to win
+  allowedTagPairs?: [string, string][]; // Optional pairs that count as a valid connection even without shared tags
 }
 
 export interface GameState {

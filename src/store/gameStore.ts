@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Node, Edge, Connection, applyNodeChanges, NodeChange } from '@xyflow/react';
 import { EvidenceNode, Combination, Scribble, ScribbleVariant } from '@/types/game';
 import { allCases } from '@/data/cases';
+import type { CaseData } from '@/types/game';
 
 // Scribble text pools for different events
 const SUCCESS_CONNECTION_TEXTS = [
@@ -157,6 +158,59 @@ const createNodesFromCase = (caseData: typeof allCases[number]) => {
   });
 };
 
+const getEdgeCoverageTags = (edge: Edge) => {
+  const data = edge.data as { newlyCoveredTags?: string[] } | undefined;
+  return data?.newlyCoveredTags ?? [];
+};
+
+const buildValidatedAdjacency = (edges: Edge[]) => {
+  const adj = new Map<string, string[]>();
+
+  edges.forEach(edge => {
+    const coverageTags = getEdgeCoverageTags(edge);
+    if (coverageTags.length === 0) return;
+
+    if (!adj.has(edge.source)) adj.set(edge.source, []);
+    if (!adj.has(edge.target)) adj.set(edge.target, []);
+
+    adj.get(edge.source)!.push(edge.target);
+    adj.get(edge.target)!.push(edge.source);
+  });
+
+  return adj;
+};
+
+const collectComponentNodes = (startId: string, adjacency: Map<string, string[]>) => {
+  const visited = new Set<string>();
+  const queue = [startId];
+  visited.add(startId);
+
+  while(queue.length > 0) {
+    const current = queue.shift()!;
+    const neighbors = adjacency.get(current) || [];
+
+    neighbors.forEach(neighbor => {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        queue.push(neighbor);
+      }
+    });
+  }
+
+  return visited;
+};
+
+const collectTruthTagsForNodes = (ids: Set<string>, nodes: Node[]) => {
+  const tags = new Set<string>();
+
+  ids.forEach(id => {
+    const node = nodes.find(n => n.id === id);
+    (node?.data as { truthTags?: string[] }).truthTags?.forEach(t => tags.add(t));
+  });
+
+  return tags;
+};
+
 export const useGameStore = create<GameState>((set, get) => ({
   nodes: [],
   edges: [],
@@ -295,7 +349,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   onConnect: (params) => {
-    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled } = get();
+    const { nodes, edges, threadColor, addScribble, triggerShake, isUVEnabled, requiredTags, getCurrentCase } = get();
 
     // Prevent duplicate connections
     const exists = edges.some(e =>
@@ -359,7 +413,65 @@ export const useGameStore = create<GameState>((set, get) => ({
     // (Investigators link different facts to form a theory!)
     const isValidConnection = sourceIsReal && targetIsReal;
 
+    const sourceTags = new Set<string>(sourceData.truthTags || []);
+    const targetTags = new Set<string>(targetData.truthTags || []);
+    const sharedTags = Array.from(sourceTags).filter(tag => targetTags.has(tag));
+
+    const allowedPairs = (getCurrentCase() as CaseData | null)?.allowedTagPairs || [];
+    const allowedPairMatch = allowedPairs.find(([a, b]) =>
+      (sourceTags.has(a) && targetTags.has(b)) ||
+      (sourceTags.has(b) && targetTags.has(a))
+    );
+
+    const matchedTags = Array.from(new Set([
+      ...sharedTags,
+      ...(allowedPairMatch || [])
+    ]));
+
+    if (matchedTags.length === 0) {
+      set(state => ({
+        sanity: Math.max(0, state.sanity - 10),
+        mistakes: state.mistakes + 1,
+        lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+      }));
+      triggerShake(params.source);
+      triggerShake(params.target);
+      addScribble("NO SHARED LEADS!",
+        source.position.x,
+        source.position.y - 50
+      );
+      return;
+    }
+
+    const validatedAdjacency = buildValidatedAdjacency(edges);
+    const sourceCluster = collectComponentNodes(params.source || source.id, validatedAdjacency);
+    const targetCluster = collectComponentNodes(params.target || target.id, validatedAdjacency);
+
+    const sourceClusterTags = collectTruthTagsForNodes(sourceCluster, nodes);
+    const targetClusterTags = collectTruthTagsForNodes(targetCluster, nodes);
+
+    const tagsGainedBySource = requiredTags.filter(tag => !sourceClusterTags.has(tag) && targetClusterTags.has(tag));
+    const tagsGainedByTarget = requiredTags.filter(tag => !targetClusterTags.has(tag) && sourceClusterTags.has(tag));
+    const newlyCoveredTags = Array.from(new Set([...tagsGainedBySource, ...tagsGainedByTarget]));
+
+    const advancesRequired = newlyCoveredTags.length > 0;
+
     if (isValidConnection) {
+      if (!advancesRequired) {
+        set(state => ({
+          sanity: Math.max(0, state.sanity - 10),
+          mistakes: state.mistakes + 1,
+          lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
+        }));
+        triggerShake(params.source);
+        triggerShake(params.target);
+        addScribble("NO NEW CLUES!",
+          source.position.x,
+          source.position.y - 50
+        );
+        return;
+      }
+
       // SUCCESS
       const newEdge = {
         ...params,
@@ -369,6 +481,10 @@ export const useGameStore = create<GameState>((set, get) => ({
         style: {
           stroke: threadColor === 'blue' ? '#3b82f6' : '#e11d48',
           strokeWidth: 3,
+        },
+        data: {
+          matchedTags,
+          newlyCoveredTags
         }
       } as Edge;
 
@@ -805,13 +921,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const { nodes, edges, requiredTags, sanity, junkBinned, mistakes } = get();
     if (!requiredTags || requiredTags.length === 0) return;
 
-    // 1. Build Bidirectional Graph
-    const adj = new Map<string, string[]>();
-    nodes.forEach(n => adj.set(n.id, []));
-    edges.forEach(e => {
-      adj.get(e.source)?.push(e.target);
-      adj.get(e.target)?.push(e.source);
-    });
+    // 1. Build Bidirectional Graph using only validated connections
+    const adj = buildValidatedAdjacency(edges);
 
     // 2. Find Clusters (Flood Fill)
     const visited = new Set<string>();
@@ -820,25 +931,9 @@ export const useGameStore = create<GameState>((set, get) => ({
     for (const node of nodes) {
       if (visited.has(node.id)) continue;
 
-      const clusterTags = new Set<string>();
-      const queue = [node.id];
-      visited.add(node.id);
-
-      while(queue.length > 0) {
-        const currId = queue.shift()!;
-        const currNode = nodes.find(n => n.id === currId);
-
-        // Collect Tags
-        (currNode?.data as { truthTags?: string[] }).truthTags?.forEach((t: string) => clusterTags.add(t));
-
-        // Visit Neighbors
-        adj.get(currId)?.forEach(neighbor => {
-          if (!visited.has(neighbor)) {
-            visited.add(neighbor);
-            queue.push(neighbor);
-          }
-        });
-      }
+      const clusterNodes = collectComponentNodes(node.id, adj);
+      clusterNodes.forEach(id => visited.add(id));
+      const clusterTags = collectTruthTagsForNodes(clusterNodes, nodes);
 
       // 3. Check Logic
       const missing = requiredTags.filter(t => !clusterTags.has(t));
