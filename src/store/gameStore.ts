@@ -362,8 +362,8 @@ export const useGameStore = create<GameState>((set, get) => ({
     const target = nodes.find(n => n.id === params.target);
     if (!source || !target) return;
 
-    const sourceData = source.data as any;
-    const targetData = target.data as any;
+    const sourceData = source.data as EvidenceNode;
+    const targetData = target.data as EvidenceNode;
 
     // --- 1. UV / ENCRYPTION CHECK ---
     // If a node requires UV, it must have been revealed OR UV must be currently ON
@@ -918,7 +918,7 @@ export const useGameStore = create<GameState>((set, get) => ({
   },
 
   validateWin: () => {
-    const { nodes, edges, requiredTags, sanity, junkBinned, mistakes } = get();
+    const { nodes, edges, requiredTags, score, successfulConnections, junkBinned } = get();
     if (!requiredTags || requiredTags.length === 0) return;
 
     // 1. Build Bidirectional Graph using only validated connections
@@ -944,16 +944,12 @@ export const useGameStore = create<GameState>((set, get) => ({
     }
 
     if (victory) {
-      // Calculate Final Score
-      // Base: 1000
-      // + Sanity * 10
-      // + Junk * 100
-      // - Mistakes * 200
-      const finalScore = 1000 + (sanity * 10) + (junkBinned * 100) - (mistakes * 200);
-      console.log(`🎯 Final Score: ${finalScore} (Base: 1000, Sanity: ${sanity}*10, Junk: ${junkBinned}*100, Mistakes: ${mistakes}*-200)`);
+      const connectionScore = successfulConnections * 50;
+      const cleanupBonus = junkBinned * 100;
+      const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - score);
+      console.log(`🎯 Final Credibility: ${score} (Connections: ${connectionScore}, Junk: ${cleanupBonus}, Penalties: ${mistakePenalty})`);
       set({
         isVictory: true,
-        score: finalScore,
         lastAction: { type: 'VICTORY', id: Date.now() }
       });
     }

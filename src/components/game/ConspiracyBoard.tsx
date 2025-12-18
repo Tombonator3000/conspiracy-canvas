@@ -28,7 +28,7 @@ import { AnalogFilters } from "./AnalogFilters";
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
 
-import type { CaseData, CredibilityStats } from "@/types/game";
+import type { CaseData, CredibilityStats, EvidenceNode } from "@/types/game";
 
 const nodeTypes: NodeTypes = {
   evidence: EvidenceNodeComponent,
@@ -50,6 +50,17 @@ interface ConspiracyBoardProps {
     credibilityStats: CredibilityStats
   ) => void;
 }
+
+type BoardNodeData = EvidenceNode & {
+  rotation?: number;
+  isDesktop?: boolean;
+  isSpawning?: boolean;
+  isUVEnabled?: boolean;
+  isShaking?: boolean;
+  isGlitching?: boolean;
+  label?: string;
+  isTrashing?: boolean;
+};
 
 export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: ConspiracyBoardProps) => {
   // Zustand store - THE SINGLE SOURCE OF TRUTH
@@ -157,7 +168,8 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   useEffect(() => {
     if (isUVEnabled) {
       nodes.forEach(n => {
-        if ((n.data as any).requiresUV && !(n.data as any).isRevealed) {
+        const nodeData = n.data as BoardNodeData;
+        if (nodeData.requiresUV && !nodeData.isRevealed) {
           revealNode(n.id);
         }
       });
@@ -225,11 +237,17 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
       const finalJunkBinned = junkBinned;
       const victory = isVictory;
 
+      const connectionScore = finalConnections * 50;
+      const cleanupBonus = finalJunkBinned * 100;
+      const mistakePenalty = Math.max(0, (connectionScore + cleanupBonus) - finalScore);
+
       // Trigger game end immediately
       console.log(victory ? "🎉 Victory detected!" : "💀 Game Over!", "Score:", finalScore);
       onGameEnd(victory, finalSanity, finalConnections, finalScore, {
         credibility: finalScore,
-        cleanupBonus: finalJunkBinned * 100,
+        connectionScore,
+        cleanupBonus,
+        mistakePenalty,
         trashedJunkCount: finalJunkBinned,
         junkRemaining: remainingJunk
       });
@@ -329,7 +347,7 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
   // GLITCH TEXT & NODE TRANSFORMATION
   // Map nodes with shake, UV state, and hallucination effects for visual feedback
   const visibleNodes = useMemo(() => nodes.map(node => {
-    const nodeData = { ...node.data } as any;
+    const nodeData: BoardNodeData = { ...(node.data as BoardNodeData) };
 
     // Add base states
     nodeData.isUVEnabled = isUVEnabled;
