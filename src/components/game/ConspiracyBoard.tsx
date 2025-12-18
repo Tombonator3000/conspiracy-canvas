@@ -24,6 +24,7 @@ import { ParanoiaEvents } from "./ParanoiaEvents";
 import { Scribble } from "./Scribble";
 import { ParticleBurst } from "./ParticleBurst";
 import { AnalogFilters } from "./AnalogFilters";
+import { FlashlightOverlay } from "./FlashlightOverlay";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
@@ -483,6 +484,14 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
         enableDust={settings.filmGrain}
         enableScanlines={settings.crtScanlines}
         intensity={settings.effectsIntensity}
+      />
+
+      {/* Flashlight/Spotlight Effect - follows mouse cursor */}
+      <FlashlightOverlay
+        enabled={settings.flashlightEnabled}
+        intensity={settings.flashlightIntensity}
+        spotlightSize={settings.flashlightSize}
+        sanity={sanity}
       />
 
       {/* Madness Effects */}
