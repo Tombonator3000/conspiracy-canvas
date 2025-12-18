@@ -12,10 +12,11 @@ import desktopBg from "@/assets/desktop_bg.jpeg";
 interface MainMenuProps {
   onStartGame: () => void;
   onSelectCase?: (caseData: CaseData) => void;
+  onReviewPastTruths?: () => void;
   nextUnlockedCase?: CaseData | null;
 }
 
-export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMenuProps) => {
+export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUnlockedCase }: MainMenuProps) => {
   const [selectedOption, setSelectedOption] = useState(0);
   const [isZooming, setIsZooming] = useState(false);
   const [showCredits, setShowCredits] = useState(false);
@@ -35,7 +36,16 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
       playSFX("button_click");
       setShowSettings(true);
     }},
-    { label: "REVIEW PAST TRUTHS", action: () => {} },
+    { label: "REVIEW PAST TRUTHS", action: () => {
+      if (!isInitialized) initialize();
+      playSFX("button_click");
+      if (onReviewPastTruths) {
+        setIsZooming(true);
+        setTimeout(() => {
+          onReviewPastTruths();
+        }, 1000);
+      }
+    }},
   ];
 
   const handleStart = () => {

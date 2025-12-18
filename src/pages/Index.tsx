@@ -6,12 +6,14 @@ import { BriefingScreen } from "@/components/game/BriefingScreen";
 import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
 import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
 import { GameOverScreen } from "@/components/game/GameOverScreen";
+import { CaseArchive } from "@/components/game/CaseArchive";
 import { allCases } from "@/cases";
 import { useGameProgress } from "@/hooks/useGameProgress";
 import { useGameStore } from "@/store/gameStore";
+import { getStarRating, CASE_RESOLVED_BONUS, SANITY_BONUS_MULTIPLIER, JUNK_CLEANUP_BONUS, JUNK_REMAINING_PENALTY } from "@/constants/game";
 import type { CaseData, CredibilityStats } from "@/types/game";
 
-type GameScreen = 'menu' | 'files' | 'briefing' | 'game' | 'result' | 'gameover';
+type GameScreen = 'menu' | 'files' | 'briefing' | 'game' | 'result' | 'gameover' | 'archive';
 
 interface GameResult {
   isVictory: boolean;
@@ -25,7 +27,7 @@ const Index = () => {
   const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
   const [gameResult, setGameResult] = useState<GameResult | null>(null);
 
-  const { completedCases, completeCase } = useGameProgress();
+  const { completedCases, caseStats, completeCase } = useGameProgress();
   const { loadLevel, nextLevel, currentLevelIndex } = useGameStore();
 
   const handleStartGame = useCallback(() => {
@@ -57,12 +59,30 @@ const Index = () => {
 
     if (isVictory && selectedCase) {
       const followersGained = Math.floor(Math.random() * 500) + 100;
-      completeCase(selectedCase.id, followersGained);
+
+      // Calculate final score for stats
+      const junkBinnedScore = credibilityStats.trashedJunkCount * JUNK_CLEANUP_BONUS;
+      const mistakesPenalty = credibilityStats.junkRemaining * JUNK_REMAINING_PENALTY;
+      const sanityBonus = Math.max(0, Math.floor(sanityRemaining * SANITY_BONUS_MULTIPLIER));
+      const finalScore = CASE_RESOLVED_BONUS + junkBinnedScore - mistakesPenalty + sanityBonus;
+      const starRating = getStarRating(finalScore);
+
+      completeCase(selectedCase.id, followersGained, {
+        finalScore,
+        starRating,
+        sanityRemaining,
+        junkBinned: credibilityStats.trashedJunkCount,
+        junkRemaining: credibilityStats.junkRemaining,
+      });
       setCurrentScreen('result');
     } else {
       setCurrentScreen('gameover');
     }
   }, [selectedCase, completeCase]);
+
+  const handleReviewPastTruths = useCallback(() => {
+    setCurrentScreen('archive');
+  }, []);
 
   const handleRetry = useCallback(() => {
     setGameResult(null);
@@ -100,7 +120,7 @@ const Index = () => {
   // Render current screen
   switch (currentScreen) {
     case 'menu':
-      return <MainMenu onStartGame={handleStartGame} />;
+      return <MainMenu onStartGame={handleStartGame} onReviewPastTruths={handleReviewPastTruths} />;
     
     case 'files':
       return (
@@ -160,9 +180,19 @@ const Index = () => {
           onBackToMenu={handleBackToMenu}
         />
       );
-    
+
+    case 'archive':
+      return (
+        <CaseArchive
+          cases={allCases}
+          completedCases={completedCases}
+          caseStats={caseStats}
+          onBack={handleBackToMenu}
+        />
+      );
+
     default:
-      return <MainMenu onStartGame={handleStartGame} />;
+      return <MainMenu onStartGame={handleStartGame} onReviewPastTruths={handleReviewPastTruths} />;
   }
 };
 
