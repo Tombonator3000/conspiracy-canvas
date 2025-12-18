@@ -103,61 +103,61 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
         <div
           className="absolute flex items-center justify-center z-10"
           style={{
-            top: '17.5%',
+            top: '18%',
             left: '50%',
             transform: 'translateX(-50%)',
-            width: '22%',
-            height: '38%',
-            minWidth: '260px',
-            maxWidth: '380px',
+            width: '20%',
+            height: '36%',
+            minWidth: '240px',
+            maxWidth: '340px',
           }}
         >
-          {/* CRT Scanline Overlay */}
-          <div 
+          {/* CRT Scanline Overlay - reduced opacity for better readability */}
+          <div
             className="absolute inset-0 pointer-events-none z-20 rounded-sm"
             style={{
-              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.4) 2px, rgba(0,0,0,0.4) 4px)',
+              backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px)',
             }}
           />
           
-          {/* Screen flicker effect */}
-          <motion.div 
-            className="absolute inset-0 bg-[hsl(120,100%,50%)]/5 z-10 rounded-sm"
-            animate={{ opacity: [0, 0.15, 0] }}
-            transition={{ duration: 0.1, repeat: Infinity, repeatDelay: 4 }}
+          {/* Screen flicker effect - subtle for better readability */}
+          <motion.div
+            className="absolute inset-0 bg-[hsl(120,100%,50%)]/3 z-10 rounded-sm"
+            animate={{ opacity: [0, 0.08, 0] }}
+            transition={{ duration: 0.1, repeat: Infinity, repeatDelay: 6 }}
           />
 
           {/* Terminal content */}
           <div className="relative z-10 p-3 sm:p-4 h-full w-full flex flex-col">
             {/* Header */}
-            <div 
-              className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-1 opacity-70"
-              style={{ textShadow: '0 0 5px hsl(120,100%,50%)' }}
+            <div
+              className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-1 opacity-80"
+              style={{ textShadow: '0 0 2px hsl(120,100%,50%)' }}
             >
               APOPHENIA OS v1.337 - (c) 1997 TRUTH SEEKERS INC.
             </div>
-            <div 
-              className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-3 opacity-70 hidden sm:block"
-              style={{ textShadow: '0 0 5px hsl(120,100%,50%)' }}
+            <div
+              className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-3 opacity-80 hidden sm:block"
+              style={{ textShadow: '0 0 2px hsl(120,100%,50%)' }}
             >
               ════════════════════════════════════════
             </div>
 
             {/* Title */}
-            <motion.div 
+            <motion.div
               className="text-center mb-4 sm:mb-6"
-              animate={{ textShadow: ['0 0 10px hsl(120,100%,50%)', '0 0 25px hsl(120,100%,50%)', '0 0 10px hsl(120,100%,50%)'] }}
+              animate={{ textShadow: ['0 0 4px hsl(120,100%,50%)', '0 0 8px hsl(120,100%,50%)', '0 0 4px hsl(120,100%,50%)'] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <h1 
+              <h1
                 className="text-[hsl(120,100%,50%)] font-mono text-base sm:text-xl md:text-2xl font-bold tracking-wider"
-                style={{ textShadow: '0 0 8px hsl(120,100%,50%), 0 0 15px hsl(120,100%,50%)' }}
+                style={{ textShadow: '0 0 3px hsl(120,100%,50%)' }}
               >
                 PROJECT APOPHENIA
               </h1>
-              <p 
-                className="text-[hsl(120,100%,50%)]/80 font-mono text-[9px] sm:text-xs mt-1"
-                style={{ textShadow: '0 0 5px hsl(120,100%,50%)' }}
+              <p
+                className="text-[hsl(120,100%,50%)]/90 font-mono text-[9px] sm:text-xs mt-1"
+                style={{ textShadow: '0 0 2px hsl(120,100%,50%)' }}
               >
                 THE TRUTH IS IN THE CONNECTIONS
               </p>
@@ -169,12 +169,12 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
                 <motion.button
                   key={option.label}
                   className={`text-left font-mono text-[10px] sm:text-sm py-1 px-2 transition-colors rounded-sm ${
-                    selectedOption === index 
-                      ? 'text-[hsl(120,100%,5%)] bg-[hsl(120,100%,50%)]' 
+                    selectedOption === index
+                      ? 'text-[hsl(120,100%,5%)] bg-[hsl(120,100%,50%)]'
                       : 'text-[hsl(120,100%,50%)] hover:bg-[hsl(120,100%,50%)]/20'
                   }`}
-                  style={{ 
-                    textShadow: selectedOption === index ? 'none' : '0 0 5px hsl(120,100%,50%)',
+                  style={{
+                    textShadow: selectedOption === index ? 'none' : '0 0 2px hsl(120,100%,50%)',
                   }}
                   onMouseEnter={() => setSelectedOption(index)}
                   onClick={option.action}
@@ -186,9 +186,9 @@ export const MainMenu = ({ onStartGame, onSelectCase, nextUnlockedCase }: MainMe
             </div>
 
             {/* Footer */}
-            <div 
-              className="text-[hsl(120,100%,50%)]/60 font-mono text-[7px] sm:text-[10px] mt-2"
-              style={{ textShadow: '0 0 5px hsl(120,100%,50%)' }}
+            <div
+              className="text-[hsl(120,100%,50%)]/70 font-mono text-[7px] sm:text-[10px] mt-2"
+              style={{ textShadow: '0 0 2px hsl(120,100%,50%)' }}
             >
               <motion.span
                 animate={{ opacity: [1, 0, 1] }}
