@@ -1,5 +1,14 @@
 import type { CaseData } from "@/types/game";
 
+// Evidence images
+import imgDuplicateCat from "./evidence/duplicate_cat.jpg";
+import imgElonMusk from "./evidence/elon_musk.jpg";
+import imgFogRender from "./evidence/fog_render.jpg";
+import imgServerRoom from "./evidence/server_room.jpg";
+import imgNeuralink from "./evidence/neuralink.jpg";
+import imgPhysicsGlitch from "./evidence/physics_glitch.jpg";
+import imgTangledCables from "./evidence/tangled_cables.jpg";
+
 export const case015: CaseData = {
   id: "case_015_simulation",
   title: "Operation: Ctrl+Alt+Reality",
@@ -23,7 +32,7 @@ export const case015: CaseData = {
       id: "ev_matrix_glitch",
       type: "photo",
       title: "Duplicated Cat Photo",
-      contentUrl: null,
+      contentUrl: imgDuplicateCat,
       description: "Two identical cats, same pose, same moment, same PIXEL GLITCH. The Matrix is real and it's getting lazy with copy-paste.",
       tags: ["GLITCH", "CAT", "DUPLICATE"],
       position: { x: 80, y: 100 },
@@ -36,7 +45,7 @@ export const case015: CaseData = {
       id: "ev_elon_quote",
       type: "document",
       title: "Musk Interview Transcript",
-      contentUrl: null,
+      contentUrl: imgElonMusk,
       description: "'The odds we're in base reality is one in billions.' - Elon Musk, 2016. He has access to Tesla's AI. HE KNOWS.",
       tags: ["QUOTE", "MUSK", "PROBABILITY"],
       position: { x: 400, y: 80 },
@@ -62,7 +71,7 @@ export const case015: CaseData = {
       id: "ev_render_distance",
       type: "photo",
       title: "Fog Hiding 'Unrendered' Area",
-      contentUrl: null,
+      contentUrl: imgFogRender,
       description: "Why does fog appear at consistent distances? RENDER DISTANCE. The simulation doesn't load what you can't see to save processing power.",
       tags: ["FOG", "RENDER", "DISTANCE"],
       position: { x: 550, y: 200 },
@@ -87,7 +96,7 @@ export const case015: CaseData = {
       id: "ev_server_room",
       type: "photo",
       title: "Mysterious Data Center",
-      contentUrl: null,
+      contentUrl: imgServerRoom,
       description: "Located at coordinates that don't appear on any map. Power consumption: 47 terawatts. That's enough to run... A UNIVERSE SIMULATION.",
       tags: ["SERVER", "POWER", "SECRET"],
       position: { x: 480, y: 350 },
@@ -101,7 +110,7 @@ export const case015: CaseData = {
       id: "ev_physics_bug",
       type: "document",
       title: "Ball Phased Through Wall",
-      contentUrl: null,
+      contentUrl: imgPhysicsGlitch,
       description: "Witnessed: Object passed through solid matter. Physics engine bug. The collision detection failed momentarily.",
       tags: ["PHYSICS", "BUG", "CLIPPING"],
       position: { x: 300, y: 450 },
@@ -144,7 +153,7 @@ export const case015: CaseData = {
       id: "ev_usb_cable",
       type: "photo",
       title: "Tangled USB Cable",
-      contentUrl: null,
+      contentUrl: imgTangledCables,
       description: "They always tangle in your pocket. Proof of simulation? Or just physics? QUANTUM ENTANGLEMENT theory says... nothing useful here.",
       tags: ["USB", "TANGLED"],
       position: { x: 50, y: 300 },
@@ -218,7 +227,7 @@ export const case015: CaseData = {
           id: "ev_neuralink_truth",
           type: "document",
           title: "Neuralink: The Real Purpose",
-          contentUrl: null,
+          contentUrl: imgNeuralink,
           description: "Brain-computer interface? No. CONSCIOUSNESS UPLOAD PROTOCOL. Musk is building the bridge to Simulation 2.0. We're beta testers.",
           tags: ["NEURALINK", "UPLOAD", "MUSK"],
           position: { x: 440, y: 130 },

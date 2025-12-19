@@ -1,5 +1,13 @@
 import type { CaseData } from "@/types/game";
 
+// Evidence images
+import imgBerenstain from "./evidence/berenstain_book.jpg";
+import imgCern from "./evidence/cern_collider.jpg";
+import imgMonopoly from "./evidence/monopoly_man.jpg";
+import imgFrootLoops from "./evidence/froot_loops.jpg";
+import imgForum from "./evidence/forum_post.jpg";
+import imgMayan from "./evidence/mayan_calendar.jpg";
+
 export const case014: CaseData = {
   id: "case_014_mandela",
   title: "Operation: False Memory",
@@ -23,7 +31,7 @@ export const case014: CaseData = {
       id: "ev_berenstain",
       type: "photo",
       title: "Berenstain Bears Book",
-      contentUrl: null,
+      contentUrl: imgBerenstain,
       description: "Current books spell it 'BerenstAIN'. But you REMEMBER 'BerenstEIN'. Your childhood wasn't a lie - REALITY was rewritten!",
       tags: ["MEMORY", "SPELLING", "CHILDHOOD"],
       position: { x: 100, y: 100 },
@@ -36,7 +44,7 @@ export const case014: CaseData = {
       id: "ev_berenstein",
       type: "document",
       title: "Forum Post: 'I Remember Berenstein!'",
-      contentUrl: null,
+      contentUrl: imgForum,
       description: "Thousands of people share the SAME false memory. Mass delusion? Or mass timeline displacement?",
       tags: ["WITNESS", "MEMORY", "INTERNET"],
       position: { x: 400, y: 80 },
@@ -49,7 +57,7 @@ export const case014: CaseData = {
       id: "ev_cern_photo",
       type: "photo",
       title: "CERN Hadron Collider",
-      contentUrl: null,
+      contentUrl: imgCern,
       description: "They said they were looking for the Higgs Boson. They FOUND a way to merge parallel universes. The power surge in 2012 wasn't an accident.",
       tags: ["SCIENCE", "CERN", "PARTICLE"],
       position: { x: 250, y: 280 },
@@ -62,7 +70,7 @@ export const case014: CaseData = {
       id: "ev_timeline_2012",
       type: "document",
       title: "Timeline Merge Theory",
-      contentUrl: null,
+      contentUrl: imgMayan,
       description: "December 21, 2012 - The Mayans predicted the 'end of the world'. What ended was TIMELINE SEPARATION. Two realities became one.",
       tags: ["THEORY", "2012", "MAYAN"],
       position: { x: 550, y: 250 },
@@ -75,7 +83,7 @@ export const case014: CaseData = {
       id: "ev_monopoly_man",
       type: "photo",
       title: "Monopoly Man (No Monocle)",
-      contentUrl: null,
+      contentUrl: imgMonopoly,
       description: "He NEVER had a monocle. But you can picture it perfectly. Because in YOUR original timeline, he DID.",
       tags: ["MEMORY", "GAME", "MONOCLE"],
       position: { x: 120, y: 380 },
@@ -87,7 +95,7 @@ export const case014: CaseData = {
       id: "ev_fruit_loops",
       type: "photo",
       title: "'Froot Loops' Box",
-      contentUrl: null,
+      contentUrl: imgFrootLoops,
       description: "It's spelled 'FROOT' not 'FRUIT'. Your memories of 'Fruit Loops' are from the old timeline. The merge changed everything.",
       tags: ["MEMORY", "FOOD", "SPELLING"],
       position: { x: 480, y: 400 },

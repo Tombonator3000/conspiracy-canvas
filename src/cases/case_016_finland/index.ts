@@ -1,5 +1,14 @@
 import type { CaseData } from "@/types/game";
 
+// Evidence images
+import imgFinlandMap from "./evidence/finland_map.jpg";
+import imgNokiaHq from "./evidence/nokia_hq.jpg";
+import imgFishingBoat from "./evidence/fishing_boat.jpg";
+import imgTransSiberian from "./evidence/trans_siberian.jpg";
+import imgSauna from "./evidence/finnish_sauna.jpg";
+import imgAurora from "./evidence/aurora.jpg";
+import imgBalticFerry from "./evidence/baltic_ferry.jpg";
+
 export const case016: CaseData = {
   id: "case_016_finland",
   title: "Operation: Baltic Fishing",
@@ -23,7 +32,7 @@ export const case016: CaseData = {
       id: "ev_map_anomaly",
       type: "document",
       title: "Population Density Analysis",
-      contentUrl: null,
+      contentUrl: imgFinlandMap,
       description: "Finland: 5.5 million people in 338,000 km². That's 16 people per km². Sweden has 25. Estonia has 30. WHY IS FINLAND SO EMPTY?",
       tags: ["MAP", "POPULATION", "EMPTY"],
       position: { x: 100, y: 100 },
@@ -36,7 +45,7 @@ export const case016: CaseData = {
       id: "ev_nokia_hq",
       type: "photo",
       title: "Nokia Headquarters",
-      contentUrl: null,
+      contentUrl: imgNokiaHq,
       description: "Nokia: 'Finnish' company. Headquarters: Listed as 'Espoo, Finland'. But Espoo is just a P.O. Box in SWEDEN. The company is a FRONT.",
       tags: ["NOKIA", "COMPANY", "FRONT"],
       position: { x: 400, y: 80 },
@@ -49,7 +58,7 @@ export const case016: CaseData = {
       id: "ev_japan_fish",
       type: "document",
       title: "Japan-Finland Fish Exports",
-      contentUrl: null,
+      contentUrl: imgFishingBoat,
       description: "Japan imports 89% of its fish from 'Finland'. BUT the Baltic Sea can't produce that much! The fish comes from the ENTIRE ocean - labeled 'Finnish' to avoid quotas.",
       tags: ["FISH", "EXPORT", "JAPAN"],
       position: { x: 250, y: 280 },
@@ -62,7 +71,7 @@ export const case016: CaseData = {
       id: "ev_trans_siberian",
       type: "document",
       title: "Trans-Siberian Railway Route",
-      contentUrl: null,
+      contentUrl: imgTransSiberian,
       description: "The railway goes from Russia to Finland to Japan. Fish travels by rail, not ship. The 'Finland' section is OCEAN - the train goes through a TUNNEL.",
       tags: ["RAILWAY", "ROUTE", "TUNNEL"],
       position: { x: 550, y: 200 },
@@ -102,7 +111,7 @@ export const case016: CaseData = {
       id: "ev_ferry_routes",
       type: "photo",
       title: "Baltic Ferry Map",
-      contentUrl: null,
+      contentUrl: imgBalticFerry,
       description: "Ferries go to 'Helsinki'. But they dock in Swedish territorial waters. Passengers are BUSSED to 'Finland'. WAKE UP.",
       tags: ["FERRY", "ROUTE"],
       position: { x: 200, y: 180 },
@@ -122,7 +131,7 @@ export const case016: CaseData = {
       id: "ev_sauna_photo",
       type: "photo",
       title: "Finnish Sauna",
-      contentUrl: null,
+      contentUrl: imgSauna,
       description: "Famous 'Finnish' saunas. Also found in Sweden, Russia, Estonia. NOT unique to Finland. Because FINLAND ISN'T UNIQUE. IT'S NOT REAL.",
       tags: ["SAUNA", "CULTURE"],
       position: { x: 300, y: 150 },
@@ -132,7 +141,7 @@ export const case016: CaseData = {
       id: "ev_aurora",
       type: "photo",
       title: "Northern Lights Photo",
-      contentUrl: null,
+      contentUrl: imgAurora,
       description: "Aurora Borealis over 'Finland'. Also visible from Sweden, Norway, Russia. The lights don't prove the land exists.",
       tags: ["AURORA", "SKY"],
       position: { x: 50, y: 300 },
