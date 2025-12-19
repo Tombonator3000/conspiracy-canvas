@@ -1,5 +1,4 @@
 // Main cases aggregator
-import { testCase } from "./test_case";
 import { case001 } from "./case_001_birds";
 import { case002 } from "./case_002_socks";
 import { case003 } from "./case_003_milk";
@@ -18,11 +17,7 @@ import { case015 } from "./case_015_simulation";
 import { case016 } from "./case_016_finland";
 import type { CaseData } from "@/types/game";
 
-// Re-export TEST_CASE for backwards compatibility
-export const TEST_CASE = testCase;
-
 export const allCases: CaseData[] = [
-  testCase,
   case001,
   case002,
   case003,
@@ -50,4 +45,4 @@ export const getCasesByDifficulty = (difficulty: string): CaseData[] => {
 };
 
 // Re-export individual cases
-export { testCase, case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012, case013, case014, case015, case016 };
+export { case001, case002, case003, case004, case005, case006, case007, case008, case009, case010, case011, case012, case013, case014, case015, case016 };
