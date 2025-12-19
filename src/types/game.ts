@@ -35,6 +35,7 @@ export interface EvidenceNode {
 
 // Extended node data for React Flow rendering (includes runtime properties)
 export interface EvidenceNodeData extends EvidenceNode {
+  [key: string]: unknown; // Index signature for React Flow compatibility
   rotation?: number;
   isDesktop?: boolean;
   isSpawning?: boolean;
