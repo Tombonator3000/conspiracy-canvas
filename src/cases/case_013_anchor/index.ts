@@ -1,16 +1,16 @@
 import type { CaseData } from "@/types/game";
 
-// Assets placeholders - images to be added later
-const imgShipInField = "/assets/case_013/ship_cornfield.jpg";
-const imgFusedHand = "/assets/case_013/hand_in_steel.jpg";
-const imgRadar = "/assets/case_013/radar_glitch.jpg";
-const imgClassified = "/assets/case_013/top_secret_redacted.jpg";
-const imgMap = "/assets/case_013/kansas_map.jpg";
-const imgGeiger = "/assets/case_013/geiger_counter.jpg";
-const imgFarmer = "/assets/case_013/farmer_interview.jpg";
-const imgCropCircle = "/assets/case_013/crop_circle.jpg";
-const imgMeteor = "/assets/case_013/meteor_rock.jpg";
-const imgCompass = "/assets/case_013/spinning_compass.jpg";
+// Evidence images
+import imgShipInField from "./evidence/ship_cornfield.jpg";
+import imgFusedHand from "./evidence/hand_in_steel.jpg";
+import imgRadar from "./evidence/radar_glitch.jpg";
+import imgClassified from "./evidence/top_secret_redacted.jpg";
+import imgMap from "./evidence/kansas_map.jpg";
+import imgGeiger from "./evidence/geiger_counter.jpg";
+import imgFarmer from "./evidence/farmer_interview.jpg";
+import imgCropCircle from "./evidence/crop_circle.jpg";
+import imgMeteor from "./evidence/meteor_rock.jpg";
+import imgCompass from "./evidence/spinning_compass.jpg";
 
 export const case013: CaseData = {
   id: "case_013_anchor",
@@ -52,7 +52,7 @@ export const case013: CaseData = {
       id: "ev_autopsy_report",
       type: "document",
       title: "Coroner's Report",
-      contentUrl: null,
+      contentUrl: imgFusedHand,
       description: "Subject B: Cause of death unknown. Biological matter is fused with the steel hull on a molecular level.",
       tags: ["BODY", "STEEL", "DEATH"],
       truthTags: ["THE_AFTERMATH"],
@@ -79,7 +79,7 @@ export const case013: CaseData = {
       id: "ev_soil_sample",
       type: "photo",
       title: "Soil Sample",
-      contentUrl: null,
+      contentUrl: imgCompass,
       description: "Dirt taken from under the ship's hull. It's glowing faintly.",
       tags: ["DIRT", "GLOW", "FARM"],
       position: { x: 200, y: 500 },
@@ -100,7 +100,7 @@ export const case013: CaseData = {
       id: "ev_stopwatch",
       type: "photo",
       title: "Frozen Stopwatch",
-      contentUrl: null,
+      contentUrl: imgRadar,
       description: "Found on the captain's bridge. Stopped exactly at 03:00:00.",
       tags: ["TIME", "CLOCK"],
       position: { x: 150, y: 150 },
@@ -133,7 +133,7 @@ export const case013: CaseData = {
       id: "ev_weather_balloon",
       type: "document",
       title: "Weather Report",
-      contentUrl: null,
+      contentUrl: imgMap,
       description: "Reports of high winds and a weather balloon going off course.",
       tags: ["AIR", "WEATHER", "GOVERNMENT"],
       position: { x: 500, y: 100 },
