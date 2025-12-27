@@ -102,6 +102,20 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
           alt="Desk background"
           className="absolute inset-0 w-full h-full object-cover object-center"
         />
+        
+        {/* Atmospheric lighting overlay */}
+        <div
+          className="absolute inset-0 pointer-events-none"
+          style={{
+            background: `
+              radial-gradient(ellipse 80% 60% at 50% 30%, transparent 0%, rgba(0, 0, 0, 0.3) 70%),
+              radial-gradient(circle at 20% 80%, rgba(255, 180, 100, 0.08) 0%, transparent 40%),
+              radial-gradient(circle at 85% 20%, rgba(100, 150, 255, 0.05) 0%, transparent 30%)
+            `,
+            zIndex: 1,
+          }}
+        />
+        
         {/* Dot Matrix Printer */}
         {showPrinter && nextCase && (
           <Printer
@@ -112,7 +126,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
         )}
 
         {/* Terminal Menu - positioned to fit inside the monitor, responsive */}
-        <div
+        <motion.div
           className="absolute flex items-center justify-center z-10"
           style={{
             top: isMobile ? '15%' : '18%',
@@ -123,6 +137,9 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
             minWidth: isMobile ? '280px' : '240px',
             maxWidth: isMobile ? '360px' : '340px',
           }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.6, ease: "easeOut" }}
         >
           {/* CRT Scanline Overlay - reduced opacity for better readability */}
           <div
@@ -175,7 +192,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
               </p>
             </motion.div>
 
-            {/* Menu options - responsive touch targets */}
+            {/* Menu options - responsive touch targets with staggered animation */}
             <div className="flex-1 flex flex-col justify-center space-y-1 sm:space-y-2">
               {menuOptions.map((option, index) => (
                 <motion.button
@@ -194,10 +211,19 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
                     setSelectedOption(index);
                     option.action();
                   }}
-                  whileHover={!isMobile ? { x: 4 } : {}}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 + index * 0.1, duration: 0.4, ease: "easeOut" }}
+                  whileHover={!isMobile ? { x: 4, transition: { duration: 0.15 } } : {}}
                   whileTap={{ scale: 0.98 }}
                 >
-                  {selectedOption === index ? '►' : ' '} {option.label}
+                  <motion.span
+                    animate={selectedOption === index ? { opacity: [1, 0.5, 1] } : {}}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                  >
+                    {selectedOption === index ? '►' : ' '}
+                  </motion.span>{' '}
+                  {option.label}
                 </motion.button>
               ))}
             </div>
@@ -216,7 +242,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
               {" "}PRESS ENTER TO SELECT | THEY ARE WATCHING
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Credits area - clickable on alien photo position */}
         <motion.div 
