@@ -526,9 +526,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     if (sourceEncrypted || targetEncrypted) {
       // PENALTY: You are guessing!
+      const newSanity = Math.max(0, get().sanity - 15);
       set(state => ({
-        sanity: Math.max(0, state.sanity - 15),
+        sanity: newSanity,
         mistakes: state.mistakes + 1,
+        isGameOver: newSanity <= 0,
         lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
       }));
       triggerShake(params.source);
@@ -544,9 +546,11 @@ export const useGameStore = create<GameState>((set, get) => ({
 
       if (dateA && dateB && dateA > dateB) {
         // PENALTY: Time Paradox
+        const newSanity = Math.max(0, get().sanity - 10);
         set(state => ({
-          sanity: Math.max(0, state.sanity - 10),
+          sanity: newSanity,
           mistakes: state.mistakes + 1,
+          isGameOver: newSanity <= 0,
           lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
         }));
         triggerShake(params.source);
@@ -628,10 +632,12 @@ export const useGameStore = create<GameState>((set, get) => ({
 
     } else {
       // FAILURE (Connecting Junk)
+      const newSanity = Math.max(0, get().sanity - 10);
       set(state => ({
-        sanity: Math.max(0, state.sanity - 10),
+        sanity: newSanity,
         mistakes: state.mistakes + 1,
         consecutiveCorrect: 0, // Reset streak on failure
+        isGameOver: newSanity <= 0,
         lastAction: { type: 'CONNECT_FAIL', id: Date.now() }
       }));
 
