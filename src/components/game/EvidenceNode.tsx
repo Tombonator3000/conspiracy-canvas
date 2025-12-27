@@ -253,30 +253,117 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
   const titleSize = isMobile ? 'text-[10px]' : 'text-xs';
   const descSize = isMobile ? 'text-[8px]' : 'text-[9px]';
 
-  // Polaroid-style white border
+  // Determine if this polaroid has aging effects
+  const showCoffeeStain = hasCoffeeStain(data.id);
+  const hash = data.id.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  const hasCrease = hash % 5 === 0; // 20% chance
+  const hasThumbprint = hash % 7 === 0; // ~14% chance
+
+  // Polaroid-style white border with enhanced aging
   return (
     <div
       className="cursor-grab active:cursor-grabbing relative evidence-card-responsive"
       style={{
         "--rotation": `${rotation}deg`,
-        background: 'linear-gradient(to bottom, #fefefe 0%, #f5f5f5 100%)',
+        background: `linear-gradient(
+          165deg,
+          hsl(45 20% 98%) 0%,
+          hsl(42 18% 96%) 20%,
+          hsl(40 15% 94%) 60%,
+          hsl(38 12% 91%) 100%
+        )`,
         padding: padding,
-        boxShadow: '0 3px 12px rgba(0, 0, 0, 0.25), 0 1px 4px rgba(0, 0, 0, 0.15), inset 0 0 0 1px rgba(0, 0, 0, 0.05)',
+        boxShadow: `
+          0 4px 16px rgba(0, 0, 0, 0.35),
+          0 2px 6px rgba(0, 0, 0, 0.2),
+          0 1px 2px rgba(0, 0, 0, 0.15),
+          inset 0 1px 0 rgba(255, 255, 255, 0.8),
+          inset 0 -1px 0 rgba(0, 0, 0, 0.05)
+        `,
         borderRadius: '2px',
       } as React.CSSProperties}
     >
-      {/* Glossy reflection */}
+      {/* Paper fiber texture overlay */}
       <div
-        className="absolute pointer-events-none"
+        className="absolute inset-0 pointer-events-none"
         style={{
-          top: 0,
-          left: 0,
-          right: '60%',
-          bottom: '70%',
-          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.4) 0%, transparent 50%)',
-          borderRadius: '2px 0 0 0',
+          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='paper'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='4'/%3E%3CfeColorMatrix values='1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.08 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23paper)'/%3E%3C/svg%3E")`,
+          opacity: 0.4,
+          mixBlendMode: 'multiply',
         }}
       />
+
+      {/* Glossy reflection on photo area */}
+      <div
+        className="absolute pointer-events-none z-10"
+        style={{
+          top: isMobile ? '8px' : '10px',
+          left: isMobile ? '8px' : '10px',
+          right: '60%',
+          bottom: '50%',
+          background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0.2) 30%, transparent 60%)',
+          borderRadius: '1px',
+        }}
+      />
+
+      {/* Coffee stain */}
+      {showCoffeeStain && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            width: isMobile ? '35px' : '45px',
+            height: isMobile ? '35px' : '45px',
+            borderRadius: '50%',
+            background: `radial-gradient(
+              ellipse 55% 50% at 45% 50%,
+              transparent 30%,
+              rgba(139, 90, 43, 0.12) 45%,
+              rgba(139, 90, 43, 0.18) 55%,
+              rgba(139, 90, 43, 0.08) 70%,
+              transparent 85%
+            )`,
+            top: '60%',
+            right: '5%',
+            transform: 'rotate(25deg)',
+          }}
+        />
+      )}
+
+      {/* Subtle crease/fold line */}
+      {hasCrease && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            width: '100%',
+            height: '1px',
+            background: 'linear-gradient(90deg, transparent 10%, rgba(0, 0, 0, 0.06) 30%, rgba(0, 0, 0, 0.1) 50%, rgba(0, 0, 0, 0.06) 70%, transparent 90%)',
+            top: '75%',
+            left: 0,
+            transform: 'rotate(-2deg)',
+          }}
+        />
+      )}
+
+      {/* Thumbprint smudge */}
+      {hasThumbprint && (
+        <div
+          className="absolute pointer-events-none"
+          style={{
+            width: '25px',
+            height: '30px',
+            background: `radial-gradient(
+              ellipse at center,
+              rgba(100, 80, 60, 0.06) 0%,
+              rgba(100, 80, 60, 0.04) 40%,
+              transparent 70%
+            )`,
+            bottom: '15%',
+            right: '20%',
+            transform: 'rotate(15deg)',
+            borderRadius: '50%',
+          }}
+        />
+      )}
 
       {useTape ? (
         <TapeStrip angle={tapeAngle} position="top" />
@@ -287,13 +374,23 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
       {/* Photo area - responsive */}
       <div className={`bg-ink/10 ${photoWidth} ${photoHeight} flex items-center justify-center relative overflow-hidden`}>
         {data.contentUrl ? (
-          <img
-            src={data.contentUrl}
-            alt={data.title}
-            className="w-full h-full object-cover"
-            draggable={false}
-            style={{ filter: 'contrast(1.05) saturate(0.95)' }}
-          />
+          <>
+            <img
+              src={data.contentUrl}
+              alt={data.title}
+              className="w-full h-full object-cover"
+              draggable={false}
+              style={{ filter: 'contrast(1.08) saturate(0.92) brightness(0.98)' }}
+            />
+            {/* Photo aging overlay */}
+            <div
+              className="absolute inset-0 pointer-events-none"
+              style={{
+                background: 'linear-gradient(180deg, transparent 60%, rgba(139, 119, 89, 0.15) 100%)',
+                mixBlendMode: 'multiply',
+              }}
+            />
+          </>
         ) : (
           <>
             <div className="absolute inset-0 bg-gradient-to-br from-paper-aged/50 to-transparent" />
