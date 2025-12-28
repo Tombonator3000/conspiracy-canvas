@@ -216,32 +216,62 @@ export const useAudio = () => {
 
     switch (effect) {
       case "connect_success": {
+        // Satisfying "string snap" + rising tone
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sine";
-        osc.frequency.setValueAtTime(150, now);
-        osc.frequency.exponentialRampToValueAtTime(300, now + 0.1);
-        gain.gain.setValueAtTime(0.3, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(400, now + 0.12);
+        osc.frequency.exponentialRampToValueAtTime(350, now + 0.25);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.15, now + 0.1);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.3);
+        osc.stop(now + 0.35);
+
+        // Add a "twang" harmonic
+        const twang = ctx.createOscillator();
+        const twangGain = ctx.createGain();
+        twang.type = "triangle";
+        twang.frequency.setValueAtTime(600, now);
+        twang.frequency.exponentialRampToValueAtTime(300, now + 0.2);
+        twangGain.gain.setValueAtTime(0.15, now);
+        twangGain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        twang.connect(twangGain);
+        twangGain.connect(ctx.destination);
+        twang.start(now);
+        twang.stop(now + 0.25);
         break;
       }
 
       case "connect_fail": {
+        // Discordant "wrong" sound - buzzer-like
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.type = "sawtooth";
-        osc.frequency.setValueAtTime(400, now);
-        osc.frequency.exponentialRampToValueAtTime(100, now + 0.15);
-        gain.gain.setValueAtTime(0.2, now);
-        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.frequency.setValueAtTime(350, now);
+        osc.frequency.exponentialRampToValueAtTime(80, now + 0.2);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
         osc.connect(gain);
         gain.connect(ctx.destination);
         osc.start(now);
-        osc.stop(now + 0.2);
+        osc.stop(now + 0.25);
+
+        // Add dissonant second tone
+        const discord = ctx.createOscillator();
+        const discordGain = ctx.createGain();
+        discord.type = "square";
+        discord.frequency.setValueAtTime(90, now);
+        discord.frequency.linearRampToValueAtTime(60, now + 0.2);
+        discordGain.gain.setValueAtTime(0.1, now);
+        discordGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        discord.connect(discordGain);
+        discordGain.connect(ctx.destination);
+        discord.start(now);
+        discord.stop(now + 0.2);
         break;
       }
 
@@ -502,23 +532,32 @@ export const useAudio = () => {
   const stopAmbient = useCallback(() => {
     const roomAudio = audioElementsRef.current['ambience_room'];
     const stressAudio = audioElementsRef.current['ambience_stress'];
+    const rainAudio = audioElementsRef.current['ambience_rain'];
+    const clockAudio = audioElementsRef.current['ambience_clock'];
 
-    if (roomAudio) {
-      roomAudio.pause();
-      roomAudio.currentTime = 0;
-    }
-    if (stressAudio) {
-      stressAudio.pause();
-      stressAudio.currentTime = 0;
-    }
+    [roomAudio, stressAudio, rainAudio, clockAudio].forEach(audio => {
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+    });
   }, []);
 
-  // Start ambient audio
+  // Start ambient audio - plays room ambience plus rain and clock
   const startAmbient = useCallback(() => {
+    if (!state.isInitialized || state.isMuted) return;
+
     const roomAudio = audioElementsRef.current['ambience_room'];
-    if (roomAudio && state.isInitialized && !state.isMuted) {
-      roomAudio.play().catch(() => {});
-    }
+    const rainAudio = audioElementsRef.current['ambience_rain'];
+    const clockAudio = audioElementsRef.current['ambience_clock'];
+
+    // Start base ambient sounds
+    [roomAudio, rainAudio, clockAudio].forEach(audio => {
+      if (audio) {
+        audio.play().catch(() => {});
+      }
+    });
+
     // Stress audio is controlled by sanity level
     updateSanity(currentSanityRef.current);
   }, [state.isInitialized, state.isMuted, updateSanity]);

@@ -261,8 +261,14 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
 
   // Polaroid-style white border with enhanced aging
   return (
-    <div
-      className="cursor-grab active:cursor-grabbing relative evidence-card-responsive"
+    <motion.div
+      className="cursor-grab active:cursor-grabbing relative evidence-card-responsive group"
+      whileHover={{ 
+        scale: 1.05, 
+        y: -8,
+        rotate: rotation * 0.3,
+        transition: { type: "spring", stiffness: 400, damping: 25 }
+      }}
       style={{
         "--rotation": `${rotation}deg`,
         background: `linear-gradient(
@@ -283,6 +289,13 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
         borderRadius: '2px',
       } as React.CSSProperties}
     >
+      {/* Hover glow effect */}
+      <div 
+        className="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          boxShadow: "0 0 25px rgba(255, 200, 100, 0.4), 0 0 50px rgba(255, 180, 80, 0.2)",
+        }}
+      />
       {/* Paper fiber texture overlay */}
       <div
         className="absolute inset-0 pointer-events-none"
@@ -428,7 +441,7 @@ const PhotoNode = ({ data }: { data: EvidenceNodeData }) => {
           {data.description}
         </p>
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -478,8 +491,14 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
   };
 
   return (
-    <div
-      className={`${docWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive`}
+    <motion.div
+      className={`${docWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive group`}
+      whileHover={{ 
+        scale: 1.05, 
+        y: -8,
+        rotate: rotation * 0.3,
+        transition: { type: "spring", stiffness: 400, damping: 25 }
+      }}
       style={{
         "--rotation": `${rotation}deg`,
         ...paperStyles[paperType],
@@ -490,6 +509,13 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
         boxShadow: '2px 4px 12px rgba(0, 0, 0, 0.35), 1px 2px 4px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.08)',
       } as React.CSSProperties}
     >
+      {/* Hover glow effect */}
+      <div 
+        className="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          boxShadow: "0 0 25px rgba(255, 200, 100, 0.4), 0 0 50px rgba(255, 180, 80, 0.2)",
+        }}
+      />
       {/* Coffee stain */}
       {showCoffeeStain && (
         <div
@@ -553,7 +579,7 @@ const DocumentNode = ({ data }: { data: EvidenceNodeData }) => {
           );
         })}
       </div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -601,8 +627,14 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
   const colors = stickyColors[colorVariant];
 
   return (
-    <div
-      className={`${stickyWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive`}
+    <motion.div
+      className={`${stickyWidth} cursor-grab active:cursor-grabbing relative evidence-card-responsive group`}
+      whileHover={{ 
+        scale: 1.08, 
+        y: -6,
+        rotate: rotation * 0.2,
+        transition: { type: "spring", stiffness: 400, damping: 25 }
+      }}
       style={{
         "--rotation": `${rotation}deg`,
         background: colors.bg,
@@ -612,6 +644,13 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
         boxShadow: `1px 8px 16px rgba(0, 0, 0, 0.25), 0 2px 4px rgba(0, 0, 0, 0.15), inset 0 -1px 0 ${colors.shadow}`,
       } as React.CSSProperties}
     >
+      {/* Hover glow effect */}
+      <div 
+        className="absolute inset-0 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+        style={{
+          boxShadow: "0 0 20px rgba(255, 220, 100, 0.5), 0 0 40px rgba(255, 200, 80, 0.25)",
+        }}
+      />
       {/* Peeling top edge effect */}
       <div
         className="absolute top-0 left-0 right-0 h-2 pointer-events-none"
@@ -648,7 +687,7 @@ const StickyNoteNode = ({ data }: { data: EvidenceNodeData }) => {
       >
         {data.description}
       </p>
-    </div>
+    </motion.div>
   );
 };
 

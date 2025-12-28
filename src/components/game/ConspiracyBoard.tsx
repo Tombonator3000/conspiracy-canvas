@@ -30,6 +30,7 @@ import { StarPrediction } from "./StarPrediction";
 import { HintPanel } from "./HintPanel";
 import { TheoryMode } from "./TheoryMode";
 import { ModifierIndicators } from "./ModifierIndicators";
+import { AmbientParticles } from "./AmbientParticles";
 // FBIOverlay removed - game over is handled by Index.tsx's GameOverScreen
 import { useGameStore } from "@/store/gameStore";
 import { useAudioContext } from "@/contexts/AudioContext";
@@ -416,6 +417,9 @@ export const ConspiracyBoard = ({ caseData, onBackToMenu, onGameEnd }: Conspirac
 
   return (
     <div className={`w-full h-screen h-[100dvh] cork-texture relative overflow-hidden safe-area-all ${isVictory ? 'victory-glow' : ''}`}>
+      {/* Ambient floating particles for atmosphere */}
+      <AmbientParticles particleCount={35} showLightRays={true} />
+      
       {/* HUD - Left side */}
       <div className="absolute top-2 sm:top-4 left-2 sm:left-4 z-50 flex flex-col gap-2 sm:gap-3 safe-area-top safe-area-left">
         <CaseHeader
