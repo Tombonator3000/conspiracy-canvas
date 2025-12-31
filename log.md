@@ -1,4 +1,53 @@
-# Conspiracy Canvas - Spillanalyse og Feilrapport
+# Conspiracy Canvas - Utviklingslogg
+
+---
+
+## 2025-12-31 - GitHub Pages 404 Fix
+
+**Utvikler:** Claude Code
+**Branch:** `claude/continue-game-dev-MViHm`
+**Commit:** `a2953e9`
+
+### Problem
+GitHub Pages deployment ga 404-feil når man forsøkte å åpne spillet på `https://tombonator3000.github.io/conspiracy-canvas/`. Siden ble bygget korrekt, men React Router forsto ikke base path.
+
+### Årsak
+1. **React Router manglet basename**: BrowserRouter hadde ikke `basename` prop, så den antok at appen kjører på root (`/`) i stedet for `/conspiracy-canvas/`
+2. **PWA manifest hardkodet start_url**: Start URL var satt til `"/"` i stedet for å respektere `VITE_BASE_PATH`
+
+### Løsning
+**Filer endret:**
+- `src/App.tsx`: La til `basename={import.meta.env.BASE_URL}` på BrowserRouter
+- `vite.config.ts`: Oppdatert PWA manifest `start_url` til å bruke `process.env.VITE_BASE_PATH || "/"`
+
+### Teknisk forklaring
+Vite setter `import.meta.env.BASE_URL` basert på `base` konfig i vite.config.ts. Denne verdien:
+- Lokalt (dev): `"/"`
+- GitHub Pages (prod): `"/conspiracy-canvas/"` (satt via `VITE_BASE_PATH` env var i GitHub Actions)
+
+Ved å bruke `import.meta.env.BASE_URL` som basename for BrowserRouter, fungerer nå routing korrekt både lokalt og på GitHub Pages.
+
+### Testing
+```bash
+VITE_BASE_PATH=/conspiracy-canvas/ npm run build
+```
+
+Verifisert at:
+- ✅ Alle asset paths har `/conspiracy-canvas/` prefix
+- ✅ PWA icons lastes fra korrekt path
+- ✅ JavaScript og CSS bundles har korrekt path
+- ✅ Service Worker registreres på korrekt path
+
+### Resultat
+Spillet kan nå kjøres både via:
+- **Lovable**: https://conspiracy-canvas.lovable.app
+- **GitHub Pages**: https://tombonator3000.github.io/conspiracy-canvas/
+
+Dette gir dual hosting med uavhengighet fra Lovable og redundans ved nedetid.
+
+---
+
+## 2025-12-16 - Spillanalyse og Feilrapport
 
 **Dato:** 2025-12-16
 **Analysert av:** Claude Code
