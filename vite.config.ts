@@ -28,7 +28,7 @@ export default defineConfig(({ mode }) => ({
         background_color: "#0f0f1a",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
+        start_url: process.env.VITE_BASE_PATH || "/",
         icons: [
           {
             src: "pwa-192x192.png",
