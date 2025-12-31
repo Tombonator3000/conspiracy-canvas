@@ -62,7 +62,34 @@ This project is built with:
 
 ## How can I deploy this project?
 
+This project supports dual hosting for maximum reliability and independence:
+
+### Option 1: Deploy via Lovable (Easiest)
+
 Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+
+### Option 2: Deploy via GitHub Pages
+
+This project is configured for automatic deployment to GitHub Pages:
+
+1. **Enable GitHub Pages** in your repository:
+   - Go to Settings → Pages
+   - Under "Build and deployment", select "GitHub Actions" as the source
+
+2. **Merge to main branch**:
+   - Push or merge changes to `main` or `master` branch
+   - GitHub Actions will automatically build and deploy
+
+3. **Access your game**:
+   - Your game will be available at: `https://tombonator3000.github.io/conspiracy-canvas/`
+   - First deployment may take a few minutes
+
+### Dual Hosting Benefits
+
+- ✅ Independence from Lovable
+- ✅ Backup if Lovable has downtime
+- ✅ Redundancy and reliability
+- ✅ Choice in deployment platform
 
 ## Can I connect a custom domain to my Lovable project?
 
@@ -71,3 +98,5 @@ Yes, you can!
 To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
 
 Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+
+You can also configure a custom domain for GitHub Pages in Settings → Pages → Custom domain.
