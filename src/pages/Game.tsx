@@ -1,0 +1,199 @@
+import { useState, useCallback } from "react";
+import { ReactFlowProvider } from "@xyflow/react";
+import { MainMenu } from "@/components/game/MainMenu";
+import { FilingCabinet } from "@/components/game/FilingCabinet";
+import { BriefingScreen } from "@/components/game/BriefingScreen";
+import { ConspiracyBoard } from "@/components/game/ConspiracyBoard";
+import { VictoryScreenModal } from "@/components/game/VictoryScreenModal";
+import { GameOverScreen } from "@/components/game/GameOverScreen";
+import { CaseArchive } from "@/components/game/CaseArchive";
+import { allCases } from "@/cases";
+import { useGameProgress } from "@/hooks/useGameProgress";
+import { useGameStore } from "@/store/gameStore";
+import { getStarRating, CASE_RESOLVED_BONUS, SANITY_BONUS_MULTIPLIER, JUNK_CLEANUP_BONUS, JUNK_REMAINING_PENALTY } from "@/constants/game";
+import type { CaseData, CredibilityStats } from "@/types/game";
+
+type GameScreen = 'menu' | 'files' | 'briefing' | 'game' | 'result' | 'gameover' | 'archive';
+
+interface GameResult {
+  isVictory: boolean;
+  sanityRemaining: number;
+  connectionsFound: number;
+  credibilityStats: CredibilityStats;
+}
+
+const Game = () => {
+  const [currentScreen, setCurrentScreen] = useState<GameScreen>('menu');
+  const [selectedCase, setSelectedCase] = useState<CaseData | null>(null);
+  const [gameResult, setGameResult] = useState<GameResult | null>(null);
+
+  const { completedCases, caseStats, completeCase } = useGameProgress();
+  const { loadLevel, nextLevel, currentLevelIndex } = useGameStore();
+
+  const handleStartGame = useCallback(() => {
+    setCurrentScreen('files');
+  }, []);
+
+  const handleSelectCase = useCallback((caseData: CaseData) => {
+    const caseIndex = allCases.findIndex(c => c.id === caseData.id);
+    setSelectedCase(caseData);
+    loadLevel(caseIndex >= 0 ? caseIndex : 0);
+    setCurrentScreen('briefing');
+  }, [loadLevel]);
+
+  const handleExecuteBriefing = useCallback(() => {
+    setCurrentScreen('game');
+  }, []);
+
+  const handleAbortBriefing = useCallback(() => {
+    setCurrentScreen('files');
+  }, []);
+
+  const handleGameEnd = useCallback((
+    isVictory: boolean,
+    sanityRemaining: number,
+    connectionsFound: number,
+    credibilityStats: CredibilityStats
+  ) => {
+    setGameResult({ isVictory, sanityRemaining, connectionsFound, credibilityStats });
+
+    if (isVictory && selectedCase) {
+      const followersGained = Math.floor(Math.random() * 500) + 100;
+
+      // Calculate final score for stats
+      const junkBinnedScore = credibilityStats.trashedJunkCount * JUNK_CLEANUP_BONUS;
+      const mistakesPenalty = credibilityStats.junkRemaining * JUNK_REMAINING_PENALTY;
+      const sanityBonus = Math.max(0, Math.floor(sanityRemaining * SANITY_BONUS_MULTIPLIER));
+      const finalScore = CASE_RESOLVED_BONUS + junkBinnedScore - mistakesPenalty + sanityBonus;
+      const starRating = getStarRating(finalScore);
+
+      completeCase(selectedCase.id, followersGained, {
+        finalScore,
+        starRating,
+        sanityRemaining,
+        junkBinned: credibilityStats.trashedJunkCount,
+        junkRemaining: credibilityStats.junkRemaining,
+      });
+      setCurrentScreen('result');
+    } else {
+      setCurrentScreen('gameover');
+    }
+  }, [selectedCase, completeCase]);
+
+  const handleReviewPastTruths = useCallback(() => {
+    setCurrentScreen('archive');
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    setGameResult(null);
+    // Reload the current level to reset all nodes
+    loadLevel(currentLevelIndex);
+    setCurrentScreen('game');
+  }, [loadLevel, currentLevelIndex]);
+
+  const handleNextCase = useCallback(() => {
+    const nextIndex = currentLevelIndex + 1;
+    const nextCase = allCases[nextIndex];
+
+    if (nextCase) {
+      setSelectedCase(nextCase);
+      setGameResult(null);
+      nextLevel(); // Use store's nextLevel to load the next case
+      setCurrentScreen('briefing');
+    } else {
+      // No more cases, go back to files
+      setSelectedCase(null);
+      setGameResult(null);
+      setCurrentScreen('files');
+    }
+  }, [currentLevelIndex, nextLevel]);
+
+  const resetAndNavigate = useCallback((screen: GameScreen) => {
+    setSelectedCase(null);
+    setGameResult(null);
+    setCurrentScreen(screen);
+  }, []);
+
+  const handleBackToMenu = useCallback(() => resetAndNavigate('menu'), [resetAndNavigate]);
+  const handleBackToFiles = useCallback(() => resetAndNavigate('files'), [resetAndNavigate]);
+
+  // Render current screen
+  switch (currentScreen) {
+    case 'menu':
+      return <MainMenu onStartGame={handleStartGame} onReviewPastTruths={handleReviewPastTruths} />;
+
+    case 'files':
+      return (
+        <FilingCabinet
+          cases={allCases}
+          completedCases={completedCases}
+          onSelectCase={handleSelectCase}
+          onBack={handleBackToMenu}
+        />
+      );
+
+    case 'briefing':
+      if (!selectedCase) return null;
+      return (
+        <BriefingScreen
+          caseData={selectedCase}
+          onExecute={handleExecuteBriefing}
+          onAbort={handleAbortBriefing}
+        />
+      );
+
+    case 'game':
+      if (!selectedCase) return null;
+      return (
+        <ReactFlowProvider>
+          <ConspiracyBoard
+            caseData={selectedCase}
+            onBackToMenu={handleBackToMenu}
+            onGameEnd={handleGameEnd}
+          />
+        </ReactFlowProvider>
+      );
+
+    case 'result': {
+      if (!selectedCase || !gameResult) return null;
+      const currentCaseIndex = allCases.findIndex(c => c.id === selectedCase.id);
+      const hasNextCase = currentCaseIndex < allCases.length - 1;
+      return (
+        <VictoryScreenModal
+          caseData={selectedCase}
+          isVictory={gameResult.isVictory}
+          sanityRemaining={gameResult.sanityRemaining}
+          connectionsFound={gameResult.connectionsFound}
+          credibilityStats={gameResult.credibilityStats}
+          onNextCase={handleNextCase}
+          onRetry={handleRetry}
+          onBackToMenu={handleBackToMenu}
+          hasNextCase={hasNextCase}
+        />
+      );
+    }
+
+    case 'gameover':
+      return (
+        <GameOverScreen
+          onRetry={handleRetry}
+          onBackToMenu={handleBackToMenu}
+        />
+      );
+
+    case 'archive':
+      return (
+        <CaseArchive
+          cases={allCases}
+          completedCases={completedCases}
+          caseStats={caseStats}
+          onBack={handleBackToMenu}
+        />
+      );
+
+    default:
+      return <MainMenu onStartGame={handleStartGame} onReviewPastTruths={handleReviewPastTruths} />;
+  }
+};
+
+export default Game;

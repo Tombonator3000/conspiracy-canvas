@@ -5,7 +5,8 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AudioProvider } from "@/contexts/AudioContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
-import Index from "./pages/Index";
+import Portfolio from "./pages/Portfolio";
+import Game from "./pages/Game";
 import Install from "./pages/Install";
 import NotFound from "./pages/NotFound";
 
@@ -23,7 +24,8 @@ const App = () => (
           <Sonner />
           <BrowserRouter basename={basename}>
             <Routes>
-              <Route path="/" element={<Index />} />
+              <Route path="/" element={<Portfolio />} />
+              <Route path="/game" element={<Game />} />
               <Route path="/install" element={<Install />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
