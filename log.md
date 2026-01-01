@@ -2,6 +2,145 @@
 
 ---
 
+## 2026-01-01 - Transformasjon til Personlig Portfolio
+
+**Utvikler:** Claude Code
+**Branch:** `claude/personalize-website-R1SQ6`
+**Commit:** `1cafade`
+
+### Bakgrunn
+Nettstedet var opprinnelig bygget som en spillutviklerside med fokus på "Conspiracy Canvas"-spillet. Dette passet ikke til eiers faktiske karriere og kompetanse som førstekonsulent med administrativ og IT-erfaring. Målet var å transformere siden til en profesjonell portfolio/CV-side som fremhever faktisk erfaring, samtidig som spillet beholdes som et hobby-prosjekt.
+
+### Endringer
+
+#### 1. Ny Sidestruktur
+**Før:**
+- `/` - Spillets hovedmeny
+- `/install` - PWA installasjonsside
+
+**Etter:**
+- `/` - Profesjonell portfolio/CV-side
+- `/game` - Spillet (flyttet fra hovedsiden)
+- `/install` - PWA installasjonsside (uendret)
+
+#### 2. Filer Modifisert
+
+**index.html:**
+- Oppdatert `<title>`: "Apophenia - Conspiracy Board Game" → "Tom Bjerke - Digital Konsulent & Administrativ Spesialist"
+- Oppdatert `<meta name="description">`: Ny beskrivelse som fremhever profesjonell erfaring
+- Oppdatert `<meta name="author">`: "Apophenia Games" → "Tom Bjerke"
+- Oppdatert Open Graph og Twitter Card metadata for profesjonell presentasjon
+
+**src/App.tsx:**
+- Endret routing: `/` viser nå `Portfolio`-komponent i stedet for `Index` (spill)
+- Lagt til ny `/game`-rute som viser `Game`-komponent
+- Importert nye komponenter: `Portfolio` og `Game`
+
+#### 3. Nye Filer Opprettet
+
+**src/pages/Portfolio.tsx** (ny fil - 292 linjer):
+Profesjonell portfolio-side med følgende seksjoner:
+- **Header**: Navn, tittel, og lenker til LinkedIn, e-post og spillet
+- **Om meg**: Personlig presentasjon med fokus på:
+  - Nåværende rolle som førstekonsulent i Hamar bispedømme
+  - 15+ års erfaring fra administrasjon, kundeservice og IT
+  - Kompetanse med Microsoft 365, Public 360, Xledger
+  - Lidenskap for AI/LLM-verktøy (Stable Diffusion, ComfyUI, etc.)
+- **Arbeidserfaring**: Detaljert CV med roller fra:
+  - Hamar Bispedømme (2022-nå)
+  - SpareBank 1 Østlandet (2018-2021)
+  - Handel og Kontor (2014-2017)
+  - JYSK (2003-2012)
+- **Utdanning & Kurs**: HiST/NTNU, IT Akademiet, sertifiseringer
+- **Hobby-prosjekter**: "Conspiracy Canvas" presentert som kreativt hobby-prosjekt
+- **Kontakt-CTA**: Tydelig call-to-action for kontakt via LinkedIn eller e-post
+- **Responsive design**: Fungerer på desktop, tablet og mobil
+- **Interaktiv UX**: Ekspanderbare seksjoner med chevron-ikoner
+
+**Design-elementer:**
+- Gradient bakgrunn (slate-900 → purple-900 → slate-900)
+- Glassmorphism-effekter (`bg-white/10`, `backdrop-blur-sm`)
+- Purple/pink aksent-farger for profesjonell men kreativ profil
+- shadcn/ui komponenter (Card, Badge, Button, etc.)
+- Lucide ikoner for visuell guidning
+
+**src/pages/Game.tsx** (ny fil - 202 linjer):
+- Flyttet all spillogikk fra opprinnelig `Index.tsx`
+- Identisk funksjonalitet, bare ny filplassering
+- Inneholder alle game screens: menu, files, briefing, game, result, gameover, archive
+- Bruker samme state management og hooks som før
+
+#### 4. Teknisk Implementasjon
+
+**Routing-strategi:**
+```tsx
+// App.tsx - Før
+<Route path="/" element={<Index />} />  // Spillet
+
+// App.tsx - Etter
+<Route path="/" element={<Portfolio />} />  // CV/Portfolio
+<Route path="/game" element={<Game />} />   // Spillet
+```
+
+**Ingen breaking changes:**
+- Game-logikken er 100% identisk, bare flyttet til ny fil
+- Alle eksisterende hooks, contexts og stores fungerer som før
+- Audio, settings, og game progress lagring uendret
+- PWA-funksjonalitet bevart
+
+**TypeScript-validering:**
+```bash
+npx tsc --noEmit
+# ✅ Ingen kompileringsfeil
+```
+
+### Resultater
+
+#### ✅ Vellykket Transformasjon
+- Hovedsiden (`/`) presenterer nå profesjonell CV og kontaktinformasjon
+- Spillet er fortsatt fullt funksjonelt på `/game`-ruten
+- Ingen funksjonalitet gått tapt
+- TypeScript-kompilering uten feil
+- Klar for deployment til GitHub Pages
+
+#### 📊 SEO og Metadata
+- Søkemotorer vil nå indeksere siden som en profesjonell portfolio
+- Open Graph metadata gir riktig preview på sosiale medier
+- Title og description optimalisert for profesjonell søk
+
+#### 🎨 Brukeropplevelse
+- Tydelig profesjonell identitet på landing page
+- Enkel navigasjon til spillet via ikon i header eller hobby-seksjonen
+- Responsive design sikrer god opplevelse på alle enheter
+- Interaktive elementer gir engasjerende brukeropplevelse
+
+#### 🔗 Neste Steg
+- Merge til main branch for deployment
+- Oppdatere LinkedIn-profil med lenke til ny portfolio-side
+- Vurdere tillegg av:
+  - Prosjektbilder/screenshots
+  - Testimonials fra tidligere kolleger
+  - Blogg-seksjon for AI/teknologi-artikler
+  - Kontaktskjema
+
+### Tekniske Detaljer
+
+**Filstørrelser:**
+- Portfolio.tsx: ~12 KB
+- Game.tsx: ~6 KB (identisk med gammel Index.tsx)
+
+**Dependencies:**
+- Ingen nye npm-pakker lagt til
+- Bruker eksisterende shadcn/ui komponenter
+- Lucide-ikoner (allerede i prosjektet)
+
+**Browser-kompatibilitet:**
+- Moderne browsers (Chrome, Firefox, Safari, Edge)
+- Responsive breakpoints: mobile, tablet, desktop
+- PWA-støtte bevart
+
+---
+
 ## 2026-01-01 - CRT Meny Sentrering Forbedring
 
 **Utvikler:** Claude Code
