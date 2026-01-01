@@ -127,15 +127,29 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
 
         {/* Terminal Menu - positioned to fit inside the monitor, responsive */}
         <motion.div
-          className="absolute flex items-center justify-center z-10"
+          className="absolute z-10"
           style={{
-            top: isMobile ? '15%' : '18%',
+            // Center horizontally
             left: '50%',
-            transform: 'translateX(-50%)',
-            width: isMobile ? '85%' : isTablet ? '40%' : '20%',
-            height: isMobile ? '50%' : '36%',
-            minWidth: isMobile ? '280px' : '240px',
-            maxWidth: isMobile ? '360px' : '340px',
+            // Vertical positioning - adjusted for CRT screen center in background image
+            top: isMobile
+              ? (isLandscape ? '50%' : '22%')  // Mobile: landscape vs portrait
+              : isTablet
+                ? '24%'  // Tablet
+                : '26%',  // Desktop
+            // Transform to center on the calculated position
+            transform: 'translate(-50%, -50%)',
+            // Responsive width that scales with viewport
+            width: isMobile
+              ? (isLandscape ? '40vw' : '75vw')  // Mobile: smaller in landscape
+              : isTablet
+                ? '45vw'  // Tablet
+                : '22vw',  // Desktop
+            // Height maintains aspect ratio
+            maxWidth: isMobile ? '320px' : isTablet ? '380px' : '420px',
+            minWidth: isMobile ? '260px' : '280px',
+            // Aspect ratio to maintain proportions
+            aspectRatio: isMobile ? 'auto' : '4/3',
           }}
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -157,7 +171,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
           />
 
           {/* Terminal content */}
-          <div className="relative z-10 p-3 sm:p-4 h-full w-full flex flex-col">
+          <div className="relative z-10 p-3 sm:p-4 md:p-6 h-full w-full flex flex-col justify-center">
             {/* Header */}
             <div
               className="text-[hsl(120,100%,50%)] font-mono text-[9px] sm:text-xs mb-1 opacity-80"
