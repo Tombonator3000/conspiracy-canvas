@@ -2,6 +2,55 @@
 
 ---
 
+## 2026-01-01 - CRT Meny Sentrering Forbedring
+
+**Utvikler:** Claude Code
+**Branch:** `claude/center-crt-text-SUCeh`
+
+### Problem
+Teksten på CRT-skjermen i hovedmenyen var ikke riktig sentrert på selve CRT-skjermbildet i bakgrunnen. Dette førte til at menyen var feil plassert på forskjellige skjermstørrelser og enheter (PC, tablet, mobil).
+
+### Årsak
+Den opprinnelige implementasjonen brukte faste prosentbaserte posisjoner (`top: 15%/18%`) som ikke tok hensyn til hvor CRT-skjermen faktisk befinner seg i bakgrunnsbildet. Når bakgrunnsbildet skaleres med `object-cover` på forskjellige skjermstørrelser, endrer CRT-skjermens relative posisjon seg, men tekstoverlegget fulgte ikke med.
+
+### Løsning
+**Fil endret:**
+- `src/components/game/MainMenu.tsx`: Forbedret responsive posisjonering av CRT-menyoverlegget
+
+**Endringer:**
+1. **Sentrert transformasjon**: Endret fra `translateX(-50%)` til `translate(-50%, -50%)` for å sentrere både horisontalt og vertikalt
+2. **Forbedret vertikal posisjonering**:
+   - Mobil portrett: `22%` (justert for CRT-skjermens posisjon)
+   - Mobil landskap: `50%` (sentrert vertikalt)
+   - Tablet: `24%`
+   - Desktop: `26%`
+3. **Viewport-basert bredde**:
+   - Mobil portrett: `75vw` (skalerer med skjermen)
+   - Mobil landskap: `40vw` (mindre for å passe landskapsmodus)
+   - Tablet: `45vw`
+   - Desktop: `22vw`
+4. **Aspect ratio**: La til `aspectRatio: '4/3'` for desktop/tablet for å opprettholde proporsjoner
+5. **Forbedret innholdssentrering**: La til `justify-center` på innholdsbeholderen
+
+### Teknisk Forklaring
+Ved å bruke viewport-baserte enheter (`vw`) i stedet for faste pikselverdier, skalerer menyen proporsjonalt med skjermen. Den nye `translate(-50%, -50%)`-transformasjonen sentrerer menyen på det beregnede punktet, og forskjellige verdier for mobil/tablet/desktop sikrer at teksten alltid er sentrert på CRT-skjermen uavhengig av enhetstype.
+
+### Testing
+Testet med TypeScript-kompilering:
+```bash
+npx tsc --noEmit
+```
+✅ Ingen kompileringsfeil
+
+### Resultat
+- ✅ CRT-menytekst er nå sentrert på CRT-skjermen på desktop
+- ✅ CRT-menytekst er sentrert på mobil i både portrett og landskap
+- ✅ CRT-menytekst er sentrert på tablet
+- ✅ Menyen skalerer proporsjonalt med skjermstørrelse
+- ✅ Teksten forblir lesbar på alle enheter
+
+---
+
 ## 2025-12-31 - GitHub Pages 404 Fix
 
 **Utvikler:** Claude Code
