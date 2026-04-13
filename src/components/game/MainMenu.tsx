@@ -23,6 +23,11 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
   const [showCredits, setShowCredits] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPrinter, setShowPrinter] = useState(false);
+  const [showDevMode, setShowDevMode] = useState(false);
+  const [terminalLayout, setTerminalLayout] = useState(() => {
+    const saved = localStorage.getItem("dev_terminal_layout");
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const { initialize, isInitialized, playSFX, isMuted, toggleMute } = useAudioContext();
   const { isMobile, isTablet, isLandscape } = useResponsive();
