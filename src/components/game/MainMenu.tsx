@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Wrench } from "lucide-react";
 import { Printer } from "./Printer";
 import { SettingsModal } from "./SettingsModal";
+import { DevMode } from "./DevMode";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { allCases } from "@/cases";
@@ -22,6 +23,11 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
   const [showCredits, setShowCredits] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showPrinter, setShowPrinter] = useState(false);
+  const [showDevMode, setShowDevMode] = useState(false);
+  const [terminalLayout, setTerminalLayout] = useState(() => {
+    const saved = localStorage.getItem("dev_terminal_layout");
+    return saved ? JSON.parse(saved) : null;
+  });
 
   const { initialize, isInitialized, playSFX, isMuted, toggleMute } = useAudioContext();
   const { isMobile, isTablet, isLandscape } = useResponsive();
@@ -129,26 +135,20 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
         <motion.div
           className="absolute z-10"
           style={{
-            // Center horizontally
-            left: '50%',
-            // Vertical positioning - adjusted for CRT screen center in background image
-            top: isMobile
-              ? (isLandscape ? '50%' : '22%')  // Mobile: landscape vs portrait
+            top: terminalLayout?.top || (isMobile
+              ? (isLandscape ? '50%' : '22%')
               : isTablet
-                ? '24%'  // Tablet
-                : '26%',  // Desktop
-            // Transform to center on the calculated position
+                ? '24%'
+                : '26%'),
             transform: 'translate(-50%, -50%)',
-            // Responsive width that scales with viewport
-            width: isMobile
-              ? (isLandscape ? '40vw' : '75vw')  // Mobile: smaller in landscape
+            left: terminalLayout?.left || '50%',
+            width: terminalLayout?.width || (isMobile
+              ? (isLandscape ? '40vw' : '75vw')
               : isTablet
-                ? '45vw'  // Tablet
-                : '22vw',  // Desktop
-            // Height maintains aspect ratio
-            maxWidth: isMobile ? '320px' : isTablet ? '380px' : '420px',
-            minWidth: isMobile ? '260px' : '280px',
-            // Aspect ratio to maintain proportions
+                ? '45vw'
+                : '22vw'),
+            maxWidth: terminalLayout?.maxWidth || (isMobile ? '320px' : isTablet ? '380px' : '420px'),
+            minWidth: terminalLayout?.minWidth || (isMobile ? '260px' : '280px'),
             aspectRatio: isMobile ? 'auto' : '4/3',
           }}
           initial={{ opacity: 0, y: 20 }}
@@ -319,6 +319,31 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
 
       {/* Settings Modal */}
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* Dev Mode Button */}
+      <motion.button
+        className="fixed bottom-2 sm:bottom-4 left-2 sm:left-4 z-50 text-green-500/30 hover:text-green-400 transition-colors"
+        onClick={() => setShowDevMode(true)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        title="Dev Mode"
+      >
+        <Wrench className="w-4 h-4" />
+      </motion.button>
+
+      {/* Dev Mode Panel */}
+      <AnimatePresence>
+        {showDevMode && (
+          <DevMode
+            isOpen={showDevMode}
+            onClose={() => setShowDevMode(false)}
+            currentLayout={terminalLayout || {
+              top: "26%", left: "50%", width: "22vw", maxWidth: "420px", minWidth: "280px"
+            }}
+            onLayoutChange={(layout) => setTerminalLayout(layout)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };
