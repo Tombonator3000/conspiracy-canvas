@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX, Wrench } from "lucide-react";
 import { Printer } from "./Printer";
 import { SettingsModal } from "./SettingsModal";
+import { DevMode } from "./DevMode";
 import { useAudioContext } from "@/contexts/AudioContext";
 import { useResponsive } from "@/hooks/useResponsive";
 import { allCases } from "@/cases";
