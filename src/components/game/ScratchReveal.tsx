@@ -15,7 +15,7 @@ export const ScratchReveal = ({ hiddenText, onReveal, width = 120, height = 24 }
   const [pressure, setPressure] = useState(0);
   const [isDestroyed, setIsDestroyed] = useState(false);
   const [isRevealed, setIsRevealed] = useState(false);
-  const pressureTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const pressureTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastPosRef = useRef<{ x: number; y: number } | null>(null);
 
   // Initialize canvas with black overlay

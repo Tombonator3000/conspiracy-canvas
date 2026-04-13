@@ -10,7 +10,7 @@ const localStorageMock = {
   length: 0,
   key: vi.fn(),
 };
-global.localStorage = localStorageMock as Storage;
+(globalThis as any).localStorage = localStorageMock as Storage;
 
 // Mock window.matchMedia
 Object.defineProperty(window, 'matchMedia', {
