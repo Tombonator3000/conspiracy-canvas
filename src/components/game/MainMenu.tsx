@@ -319,6 +319,31 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
 
       {/* Settings Modal */}
       <SettingsModal isOpen={showSettings} onClose={() => setShowSettings(false)} />
+
+      {/* Dev Mode Button */}
+      <motion.button
+        className="fixed bottom-2 sm:bottom-4 left-2 sm:left-4 z-50 text-green-500/30 hover:text-green-400 transition-colors"
+        onClick={() => setShowDevMode(true)}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.95 }}
+        title="Dev Mode"
+      >
+        <Wrench className="w-4 h-4" />
+      </motion.button>
+
+      {/* Dev Mode Panel */}
+      <AnimatePresence>
+        {showDevMode && (
+          <DevMode
+            isOpen={showDevMode}
+            onClose={() => setShowDevMode(false)}
+            currentLayout={terminalLayout || {
+              top: "26%", left: "50%", width: "22vw", maxWidth: "420px", minWidth: "280px"
+            }}
+            onLayoutChange={(layout) => setTerminalLayout(layout)}
+          />
+        )}
+      </AnimatePresence>
     </>
   );
 };
