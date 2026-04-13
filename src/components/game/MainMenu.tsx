@@ -139,9 +139,9 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
               ? (isLandscape ? '50%' : '22%')
               : isTablet
                 ? '24%'
-                : '26%'),
+                : '15%'),
             transform: 'translate(-50%, -50%)',
-            left: terminalLayout?.left || '50%',
+            left: terminalLayout?.left || (isMobile ? '50%' : isTablet ? '50%' : '39%'),
             width: terminalLayout?.width || (isMobile
               ? (isLandscape ? '40vw' : '75vw')
               : isTablet
@@ -338,7 +338,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
             isOpen={showDevMode}
             onClose={() => setShowDevMode(false)}
             currentLayout={terminalLayout || {
-              top: "26%", left: "50%", width: "22vw", maxWidth: "420px", minWidth: "280px"
+              top: "15%", left: "39%", width: "22vw", maxWidth: "420px", minWidth: "280px"
             }}
             onLayoutChange={(layout) => setTerminalLayout(layout)}
           />
