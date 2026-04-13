@@ -139,9 +139,9 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
               ? (isLandscape ? '50%' : '22%')
               : isTablet
                 ? '24%'
-                : '26%'),
+                : '15%'),
             transform: 'translate(-50%, -50%)',
-            left: terminalLayout?.left || '50%',
+            left: terminalLayout?.left || (isMobile ? '50%' : isTablet ? '50%' : '39%'),
             width: terminalLayout?.width || (isMobile
               ? (isLandscape ? '40vw' : '75vw')
               : isTablet
