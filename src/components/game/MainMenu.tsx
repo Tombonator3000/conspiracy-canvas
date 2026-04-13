@@ -135,26 +135,20 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
         <motion.div
           className="absolute z-10"
           style={{
-            // Center horizontally
-            left: '50%',
-            // Vertical positioning - adjusted for CRT screen center in background image
-            top: isMobile
-              ? (isLandscape ? '50%' : '22%')  // Mobile: landscape vs portrait
+            top: terminalLayout?.top || (isMobile
+              ? (isLandscape ? '50%' : '22%')
               : isTablet
-                ? '24%'  // Tablet
-                : '26%',  // Desktop
-            // Transform to center on the calculated position
+                ? '24%'
+                : '26%'),
             transform: 'translate(-50%, -50%)',
-            // Responsive width that scales with viewport
-            width: isMobile
-              ? (isLandscape ? '40vw' : '75vw')  // Mobile: smaller in landscape
+            left: terminalLayout?.left || '50%',
+            width: terminalLayout?.width || (isMobile
+              ? (isLandscape ? '40vw' : '75vw')
               : isTablet
-                ? '45vw'  // Tablet
-                : '22vw',  // Desktop
-            // Height maintains aspect ratio
-            maxWidth: isMobile ? '320px' : isTablet ? '380px' : '420px',
-            minWidth: isMobile ? '260px' : '280px',
-            // Aspect ratio to maintain proportions
+                ? '45vw'
+                : '22vw'),
+            maxWidth: terminalLayout?.maxWidth || (isMobile ? '320px' : isTablet ? '380px' : '420px'),
+            minWidth: terminalLayout?.minWidth || (isMobile ? '260px' : '280px'),
             aspectRatio: isMobile ? 'auto' : '4/3',
           }}
           initial={{ opacity: 0, y: 20 }}
