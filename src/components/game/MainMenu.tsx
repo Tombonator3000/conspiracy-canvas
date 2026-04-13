@@ -338,7 +338,7 @@ export const MainMenu = ({ onStartGame, onSelectCase, onReviewPastTruths, nextUn
             isOpen={showDevMode}
             onClose={() => setShowDevMode(false)}
             currentLayout={terminalLayout || {
-              top: "26%", left: "50%", width: "22vw", maxWidth: "420px", minWidth: "280px"
+              top: "15%", left: "39%", width: "22vw", maxWidth: "420px", minWidth: "280px"
             }}
             onLayoutChange={(layout) => setTerminalLayout(layout)}
           />
